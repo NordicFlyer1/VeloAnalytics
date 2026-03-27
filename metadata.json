@@ -1,5 +1,7 @@
 {
-  "name": "VeloAnalytics Pro",
+  "name": "Cycling Analytics Pro",
   "description": "Advanced cycling performance analytics for .fit, .csv, and .json files with GPS mapping and power metrics.",
-  "requestFramePermissions": ["geolocation"]
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }
