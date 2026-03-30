@@ -30,6 +30,11 @@ import {
   Bike,
   Bus,
   CloudSun,
+  Cloud,
+  CloudRain,
+  Wind,
+  Thermometer,
+  Droplets,
   Maximize,
   Expand
 } from 'lucide-react';
@@ -422,6 +427,74 @@ const ComparisonView = ({ activities, pmcData, onBack }: { activities: Historica
   );
 };
 
+interface WeatherData {
+  temp: number;
+  description: string;
+  icon: string;
+  windSpeed: number;
+  humidity: number;
+  locationName: string;
+}
+
+const WeatherCard = ({ weather, isLoading }: { weather: WeatherData | null, isLoading: boolean }) => {
+  if (isLoading) {
+    return (
+      <div className="bg-app-bg/80 backdrop-blur-md p-3 rounded-2xl border border-app-border flex items-center gap-3 animate-pulse">
+        <div className="w-8 h-8 bg-app-card rounded-full" />
+        <div className="space-y-2">
+          <div className="w-16 h-2 bg-app-card rounded" />
+          <div className="w-12 h-2 bg-app-card rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!weather) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-app-bg/80 backdrop-blur-md p-3 rounded-2xl border border-app-border flex items-center gap-4 shadow-xl"
+    >
+      <div className="flex flex-col items-center">
+        <img 
+          src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`} 
+          alt={weather.description}
+          className="w-10 h-10 -my-2"
+          referrerPolicy="no-referrer"
+        />
+        <span className="text-[8px] font-bold uppercase tracking-tighter text-app-muted">{weather.description}</span>
+      </div>
+      
+      <div className="h-8 w-px bg-app-border" />
+      
+      <div className="flex flex-col">
+        <div className="flex items-center gap-1">
+          <Thermometer className="w-3 h-3 text-orange-500" />
+          <span className="text-sm font-bold tracking-tight">{Math.round(weather.temp)}°C</span>
+        </div>
+        <span className="text-[8px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[80px]">
+          {weather.locationName}
+        </span>
+      </div>
+
+      <div className="h-8 w-px bg-app-border" />
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <Wind className="w-3 h-3 text-blue-400" />
+          <span className="text-[10px] font-medium">{Math.round(weather.windSpeed * 3.6)} km/h</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Droplets className="w-3 h-3 text-cyan-400" />
+          <span className="text-[10px] font-medium">{weather.humidity}%</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export default function App() {
   const [data, setData] = useState<CyclingDataPoint[]>([]);
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
@@ -667,6 +740,47 @@ export default function App() {
   const [mapProvider, setMapProvider] = useState<'osm' | 'google'>('osm');
   const [activePoint, setActivePoint] = useState<number | null>(null);
   const [isPointLocked, setIsPointLocked] = useState(false);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+
+  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+    const apiKey = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
+    if (!apiKey) return;
+
+    setIsWeatherLoading(true);
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`
+      );
+      const data = await response.json();
+      if (data.main) {
+        setWeather({
+          temp: data.main.temp,
+          description: data.weather[0].description,
+          icon: data.weather[0].icon,
+          windSpeed: data.wind.speed,
+          humidity: data.main.humidity,
+          locationName: data.name
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+    } finally {
+      setIsWeatherLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (data.length > 0) {
+      const point = activePoint !== null ? data[activePoint] : data[0];
+      if (point.latitude && point.longitude) {
+        const timer = setTimeout(() => {
+          fetchWeather(point.latitude!, point.longitude!);
+        }, 800); // Debounce to avoid excessive API calls
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activePoint, data, fetchWeather]);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'terrain' | 'hybrid'>('roadmap');
   const [showTraffic, setShowTraffic] = useState(false);
   const [showBicycling, setShowBicycling] = useState(false);
@@ -1948,58 +2062,61 @@ export default function App() {
                     isMapExpanded ? "h-[900px]" : "h-[700px]"
                   )}
                 >
-                  <div className="absolute top-6 left-6 z-10 flex gap-2">
-                    <div className="bg-app-bg/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-app-border flex items-center gap-2">
-                      <MapIcon className="w-3 h-3 text-orange-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Course Map</span>
+                  <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
+                    <div className="flex gap-2">
+                      <div className="bg-app-bg/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-app-border flex items-center gap-2">
+                        <MapIcon className="w-3 h-3 text-orange-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Course Map</span>
+                      </div>
+                      <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+                        <button 
+                          onClick={toggleFullScreen}
+                          className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                          title="Full Screen"
+                        >
+                          <Expand className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => setIsMapExpanded(!isMapExpanded)}
+                          className={cn(
+                            "p-1 rounded-full transition-all",
+                            isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
+                          )}
+                          title={isMapExpanded ? "Collapse Map" : "Expand Map"}
+                        >
+                          <Maximize className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setActivePoint(null);
+                            setIsPointLocked(false);
+                          }}
+                          className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                          title="Fit to Course"
+                        >
+                          <Navigation className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => setMapProvider('osm')}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                            mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                          )}
+                        >
+                          OSM
+                        </button>
+                        <button 
+                          onClick={() => setMapProvider('google')}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                            mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                          )}
+                        >
+                          Google
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
-                      <button 
-                        onClick={toggleFullScreen}
-                        className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                        title="Full Screen"
-                      >
-                        <Expand className="w-3 h-3" />
-                      </button>
-                      <button 
-                        onClick={() => setIsMapExpanded(!isMapExpanded)}
-                        className={cn(
-                          "p-1 rounded-full transition-all",
-                          isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
-                        )}
-                        title={isMapExpanded ? "Collapse Map" : "Expand Map"}
-                      >
-                        <Maximize className="w-3 h-3" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setActivePoint(null);
-                          setIsPointLocked(false);
-                        }}
-                        className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                        title="Fit to Course"
-                      >
-                        <Navigation className="w-3 h-3" />
-                      </button>
-                      <button 
-                        onClick={() => setMapProvider('osm')}
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                          mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        OSM
-                      </button>
-                      <button 
-                        onClick={() => setMapProvider('google')}
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                          mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        Google
-                      </button>
-                    </div>
+                    <WeatherCard weather={weather} isLoading={isWeatherLoading} />
                   </div>
                   {gpsPoints.length > 0 ? (
                     mapProvider === 'osm' ? (
@@ -2011,7 +2128,7 @@ export default function App() {
                               setIsPointLocked(false);
                               setActivePoint(null);
                             }}
-                            className="absolute top-4 right-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
+                            className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
                             title="Clear Highlight"
                           >
                             <CheckCircle2 className="w-4 h-4 text-orange-500" />
@@ -2122,7 +2239,7 @@ export default function App() {
                                   setIsPointLocked(false);
                                   setActivePoint(null);
                                 }}
-                                className="absolute top-4 right-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
+                                className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
                                 title="Clear Highlight"
                               >
                                 <CheckCircle2 className="w-4 h-4 text-orange-500" />
