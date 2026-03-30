@@ -66,6 +66,7 @@ import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
 import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from './services/metrics';
+import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
 import L from 'leaflet';
@@ -531,7 +532,13 @@ export default function App() {
   });
 
   React.useEffect(() => {
-    localStorage.setItem('veloanalytics_history', JSON.stringify(history));
+    try {
+      // Strip out large data before saving to localStorage
+      const strippedHistory = history.map(({ fullSummary, fullData, ...rest }) => rest);
+      localStorage.setItem('veloanalytics_history', JSON.stringify(strippedHistory));
+    } catch (e) {
+      console.error('Failed to save history to localStorage:', e);
+    }
   }, [history]);
 
   React.useEffect(() => {
@@ -557,14 +564,18 @@ export default function App() {
     }
   }, [autoUpdateFtp, estimatedFtp, ftp]);
 
-  const addToHistory = (activity?: ActivitySummary | React.MouseEvent) => {
+  const addToHistory = async (activity?: ActivitySummary | React.MouseEvent, activityData?: CyclingDataPoint[]) => {
     // If called from onClick, activity will be the event object.
     // We only want to use it if it's a real ActivitySummary.
     const target = (activity && 'startTime' in activity) ? activity : summary;
+    const targetData = activityData || data;
+    
     if (!target || !target.startTime || isNaN(target.startTime.getTime())) return;
     const dateStr = target.startTime.toISOString().split('T')[0];
+    const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const newActivity: HistoricalActivity = {
-      id: `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       date: dateStr,
       name: target.name,
       tss: target.tss || 0,
@@ -580,38 +591,126 @@ export default function App() {
       avgSpeed: target.avgSpeed,
       totalAscent: target.totalAscent,
       work: target.work,
-      ftp: ftp
+      ftp: ftp,
+      fullSummary: target,
+      fullData: targetData
     };
+
+    // Save large data to IndexedDB
+    try {
+      await saveActivityData(id, { fullSummary: target, fullData: targetData });
+    } catch (e) {
+      console.error('Failed to save activity data to IndexedDB:', e);
+    }
+
     setHistory(prev => [...prev, newActivity]);
   };
 
-  const removeFromHistory = (id: string) => {
-    setHistory(prev => prev.filter(h => h.id !== id));
-    setSelectedHistoryIds(prev => prev.filter(selectedId => selectedId !== id));
+  const loadFromHistory = async (id: string) => {
+    let activity = history.find(h => h.id === id);
+    if (!activity) return;
+
+    let fullSummary = activity.fullSummary;
+    let fullData = activity.fullData;
+
+    // If data is missing (not in localStorage), fetch from IndexedDB
+    if (!fullSummary || !fullData) {
+      try {
+        const stored = await getActivityData(id);
+        if (stored) {
+          fullSummary = stored.fullSummary;
+          fullData = stored.fullData;
+        }
+      } catch (e) {
+        console.error('Failed to fetch activity data from IndexedDB:', e);
+      }
+    }
+
+    if (fullSummary && fullData) {
+      // Ensure dates are correctly parsed as Date objects
+      const restoredSummary = {
+        ...fullSummary,
+        startTime: new Date(fullSummary.startTime),
+        laps: fullSummary.laps?.map(l => ({
+          ...l,
+          startTime: new Date(l.startTime)
+        }))
+      };
+      
+      const restoredData = fullData.map(p => ({
+        ...p,
+        timestamp: new Date(p.timestamp)
+      }));
+
+      setSummary(restoredSummary);
+      setData(restoredData);
+      setCpWPrime(estimateCPWPrime(restoredData));
+      setEstimatedFtp(estimateFTP(restoredData));
+      setActivePoint(null);
+      setIsPointLocked(false);
+      setActiveTab('metrics');
+      setShowUploadView(false);
+    }
   };
 
-  const removeMultipleFromHistory = (ids: string[]) => {
+  const removeFromHistory = async (id: string) => {
+    setHistory(prev => prev.filter(h => h.id !== id));
+    setSelectedHistoryIds(prev => prev.filter(selectedId => selectedId !== id));
+    try {
+      await deleteActivityData(id);
+    } catch (e) {
+      console.error('Failed to delete activity data from IndexedDB:', e);
+    }
+  };
+
+  const removeMultipleFromHistory = async (ids: string[]) => {
     setHistory(prev => prev.filter(h => !ids.includes(h.id)));
     setSelectedHistoryIds([]);
+    try {
+      for (const id of ids) {
+        await deleteActivityData(id);
+      }
+    } catch (e) {
+      console.error('Failed to delete multiple activity data from IndexedDB:', e);
+    }
   };
 
   const exportHistoryJSON = async () => {
     if (history.length === 0) return;
     setExportStatus({ active: true, type: 'History (JSON)', progress: 0 });
     
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setExportStatus(prev => ({ ...prev, progress: 50 }));
-    
-    const jsonString = JSON.stringify(history, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `veloanalytics_history_${format(new Date(), 'yyyy-MM-dd')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      // Fetch full data for all activities from IndexedDB
+      const fullHistory = await Promise.all(history.map(async (h, index) => {
+        setExportStatus(prev => ({ ...prev, progress: Math.round((index / history.length) * 80) }));
+        
+        if (h.fullSummary && h.fullData) return h;
+        
+        const stored = await getActivityData(h.id);
+        if (stored) {
+          return {
+            ...h,
+            fullSummary: stored.fullSummary,
+            fullData: stored.fullData
+          };
+        }
+        return h;
+      }));
+
+      setExportStatus(prev => ({ ...prev, progress: 90 }));
+      const jsonString = JSON.stringify(fullHistory, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `veloanalytics_history_${format(new Date(), 'yyyy-MM-dd')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Failed to export history JSON:', e);
+    }
     
     setExportStatus(prev => ({ ...prev, progress: 100 }));
     setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
@@ -1060,7 +1159,7 @@ export default function App() {
         });
 
         if (result.summary) {
-          addToHistory(result.summary);
+          addToHistory(result.summary, result.points);
           setSummary(result.summary);
           setData(result.points);
           setOriginalFile(file);
@@ -1348,6 +1447,19 @@ export default function App() {
             
             <div className="flex items-center gap-2">
               <button 
+                onClick={() => {
+                  setActiveTab('history');
+                  setShowUploadView(false);
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
+                  activeTab === 'history' && !showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
+                )}
+              >
+                <History className="w-4 h-4" />
+                History
+              </button>
+              <button 
                 onClick={() => setShowUploadView(!showUploadView)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
@@ -1467,6 +1579,23 @@ export default function App() {
                           <p className="text-[8px] text-red-400 mt-1 uppercase tracking-widest">{item.error}</p>
                         )}
                       </div>
+                      {item.status === 'completed' && (
+                        <button 
+                          onClick={() => {
+                            setSummary(item.summary!);
+                            setData(item.data!);
+                            setCpWPrime(estimateCPWPrime(item.data!));
+                            setEstimatedFtp(estimateFTP(item.data!));
+                            setActivePoint(null);
+                            setIsPointLocked(false);
+                            setActiveTab('metrics');
+                            setShowUploadView(false);
+                          }}
+                          className="ml-4 px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all"
+                        >
+                          View
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1477,6 +1606,23 @@ export default function App() {
               <div className="flex items-center gap-2"><FileSpreadsheet className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">CSV</span></div>
               <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">FIT</span></div>
             </div>
+          </div>
+        ) : (!summary && history.length > 0 && activeTab !== 'history') ? (
+          <div className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border">
+              <History className="w-10 h-10 text-orange-500" />
+            </div>
+            <h2 className="text-3xl font-bold mb-4 tracking-tight">Select an Activity</h2>
+            <p className="text-app-muted mb-10 max-w-md leading-relaxed">
+              Your history is ready. Select an activity from the history tab to view its full metrics, map, and analysis.
+            </p>
+            <button 
+              onClick={() => setActiveTab('history')}
+              className="bg-orange-500 hover:bg-orange-600 text-black px-10 py-4 rounded-full font-bold transition-all shadow-xl shadow-orange-500/20 active:scale-95 flex items-center gap-3 group"
+            >
+              Open History
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1974,21 +2120,25 @@ export default function App() {
                           history.map(h => (
                             <div 
                               key={h.id} 
-                              onClick={() => {
-                                setSelectedHistoryIds(prev => 
-                                  prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
-                                );
-                              }}
+                              onClick={() => loadFromHistory(h.id)}
                               className={cn(
                                 "bg-app-card border rounded-xl p-4 flex items-center justify-between group cursor-pointer transition-all",
-                                selectedHistoryIds.includes(h.id) ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
+                                summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
                               )}
                             >
                               <div className="flex items-center gap-4">
-                                <div className={cn(
-                                  "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                                  selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                                )}>
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedHistoryIds(prev => 
+                                      prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
+                                    );
+                                  }}
+                                  className={cn(
+                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                                    selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                                  )}
+                                >
                                   {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
                                 </div>
                                 <div>
@@ -2001,15 +2151,26 @@ export default function App() {
                                   <div className="text-xs font-bold text-orange-500">{Math.round(h.tss)}</div>
                                   <div className="text-[8px] text-app-muted uppercase tracking-widest">TSS</div>
                                 </div>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeFromHistory(h.id);
-                                  }}
-                                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      loadFromHistory(h.id);
+                                    }}
+                                    className="px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                  >
+                                    View
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFromHistory(h.id);
+                                    }}
+                                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))
@@ -2050,13 +2211,18 @@ export default function App() {
                     <div className="flex flex-col gap-2">
                       <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-light tracking-tighter">{( (cpWPrime?.wPrime || 0) / 1000).toFixed(1)}</span>
-                        <span className="text-sm text-app-muted">kJ</span>
+                        <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
+                        <span className="text-sm text-app-muted">Joules</span>
                       </div>
                       <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
                         W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-8 pt-8 border-t border-app-border/30">
+                    <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
+                      Model: 2-Parameter Linear Model (Work = CP × t + W')
+                    </p>
                   </div>
                 </div>
 

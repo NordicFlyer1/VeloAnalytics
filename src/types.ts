@@ -103,6 +103,8 @@ export interface HistoricalActivity {
   totalAscent?: number;
   work?: number;
   ftp?: number;
+  fullSummary?: ActivitySummary;
+  fullData?: CyclingDataPoint[];
 }
 
 export interface FileStatus {
