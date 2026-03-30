@@ -566,6 +566,12 @@ export default function App() {
 
   const removeFromHistory = (id: string) => {
     setHistory(prev => prev.filter(h => h.id !== id));
+    setSelectedHistoryIds(prev => prev.filter(selectedId => selectedId !== id));
+  };
+
+  const removeMultipleFromHistory = (ids: string[]) => {
+    setHistory(prev => prev.filter(h => !ids.includes(h.id)));
+    setSelectedHistoryIds([]);
   };
 
   const exportHistoryJSON = async () => {
@@ -1881,6 +1887,22 @@ export default function App() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
+                          <div 
+                            onClick={() => {
+                              if (selectedHistoryIds.length === history.length && history.length > 0) {
+                                setSelectedHistoryIds([]);
+                              } else {
+                                setSelectedHistoryIds(history.map(h => h.id));
+                              }
+                            }}
+                            className={cn(
+                              "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
+                              selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                            )}
+                            title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
+                          >
+                            {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
+                          </div>
                           <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
                           {selectedHistoryIds.length >= 2 && (
                             <button 
@@ -1888,6 +1910,15 @@ export default function App() {
                               className="bg-orange-500 hover:bg-orange-600 text-black px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300"
                             >
                               Compare {selectedHistoryIds.length}
+                            </button>
+                          )}
+                          {selectedHistoryIds.length > 0 && (
+                            <button 
+                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete {selectedHistoryIds.length}
                             </button>
                           )}
                         </div>
