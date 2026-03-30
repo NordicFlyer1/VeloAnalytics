@@ -64,6 +64,7 @@ import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlop
 
 // Fix for Leaflet icons in React
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -2032,10 +2033,21 @@ export default function App() {
                             ))}
                           </div>
                         </div>
-                        <MapContainer center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
+                        <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
                           <TileLayer
-                            url={mapType === 'terrain' ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"}
-                            attribution={mapType === 'terrain' ? '&copy; OpenTopoMap' : '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'}
+                            url={
+                              mapType === 'terrain' 
+                                ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
+                                : theme === 'dark'
+                                  ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                                  : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                            }
+                            attribution={
+                              mapType === 'terrain'
+                                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            }
+                            maxZoom={19}
                           />
                         <LeafletPolyline 
                           positions={gpsPoints} 
