@@ -498,7 +498,14 @@ const WeatherCard = ({ weather, isLoading }: { weather: WeatherData | null, isLo
 export default function App() {
   const [data, setData] = useState<CyclingDataPoint[]>([]);
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
-  const [ftp, setFtp] = useState(250);
+  const [ftp, setFtp] = useState(() => {
+    const saved = localStorage.getItem('veloanalytics_ftp');
+    return saved ? parseInt(saved) : 250;
+  });
+  const [autoUpdateFtp, setAutoUpdateFtp] = useState(() => {
+    const saved = localStorage.getItem('veloanalytics_autoupdate_ftp');
+    return saved === 'true';
+  });
   const [estimatedFtp, setEstimatedFtp] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<FileStatus[]>([]);
@@ -535,6 +542,20 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_ftp', ftp.toString());
+  }, [ftp]);
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_autoupdate_ftp', autoUpdateFtp.toString());
+  }, [autoUpdateFtp]);
+
+  React.useEffect(() => {
+    if (autoUpdateFtp && estimatedFtp && estimatedFtp > ftp) {
+      setFtp(estimatedFtp);
+    }
+  }, [autoUpdateFtp, estimatedFtp, ftp]);
 
   const addToHistory = (activity?: ActivitySummary | React.MouseEvent) => {
     // If called from onClick, activity will be the event object.
@@ -739,7 +760,14 @@ export default function App() {
     const s = Math.floor(seconds % 60);
     return `${h > 0 ? `${h}h ` : ''}${m}m ${s}s`;
   };
-  const [maxHR, setMaxHR] = useState(190);
+  const [maxHR, setMaxHR] = useState(() => {
+    const saved = localStorage.getItem('veloanalytics_maxhr');
+    return saved ? parseInt(saved) : 190;
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_maxhr', maxHR.toString());
+  }, [maxHR]);
   const [powerZoneDefinitions, setPowerZoneDefinitions] = useState<ZoneDefinition[]>(DEFAULT_POWER_ZONES);
   const [hrZoneDefinitions, setHrZoneDefinitions] = useState<ZoneDefinition[]>(DEFAULT_HR_ZONES);
   const [showSettings, setShowSettings] = useState(false);
@@ -1294,7 +1322,7 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4 md:gap-6">
-            {estimatedFtp && estimatedFtp !== ftp && (
+            {estimatedFtp && estimatedFtp > ftp && !autoUpdateFtp && (
               <button 
                 onClick={() => setFtp(estimatedFtp)}
                 className="hidden md:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
@@ -2191,14 +2219,14 @@ export default function App() {
                                   setIsPointLocked(false);
                                   setActivePoint(null);
                                 }}
-                                className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
+                                className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
                                 title="Clear Highlight"
                               >
                                 <CheckCircle2 className="w-4 h-4 text-orange-500" />
                               </button>
                             )}
                             <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                              <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                              <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
                                 {(['roadmap', 'terrain'] as const).map((t) => (
                                   <button
                                     key={t}
@@ -2302,14 +2330,14 @@ export default function App() {
                                       setIsPointLocked(false);
                                       setActivePoint(null);
                                     }}
-                                    className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
+                                    className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
                                     title="Clear Highlight"
                                   >
                                     <CheckCircle2 className="w-4 h-4 text-orange-500" />
                                   </button>
                                 )}
                                 <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                  <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                                  <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
                                     {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
                                       <button
                                         key={t}
@@ -2323,7 +2351,7 @@ export default function App() {
                                       </button>
                                     ))}
                                   </div>
-                                  <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md gap-1">
+                                  <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
                                     <button
                                       onClick={() => setShowTraffic(!showTraffic)}
                                       className={cn(
@@ -2562,6 +2590,21 @@ export default function App() {
                         className="bg-transparent w-full text-sm font-bold focus:outline-none"
                       />
                       <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button 
+                        onClick={() => setAutoUpdateFtp(!autoUpdateFtp)}
+                        className={cn(
+                          "w-8 h-4 rounded-full transition-all relative",
+                          autoUpdateFtp ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                          autoUpdateFtp ? "left-4.5" : "left-0.5"
+                        )} />
+                      </button>
+                      <span className="text-[10px] text-app-muted font-medium">Auto-update FTP when new record is set</span>
                     </div>
                   </div>
                   <div className="space-y-2">
