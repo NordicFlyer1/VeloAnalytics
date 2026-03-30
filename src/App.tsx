@@ -786,6 +786,7 @@ export default function App() {
   const [showBicycling, setShowBicycling] = useState(false);
   const [showTransit, setShowTransit] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [showUploadView, setShowUploadView] = useState(false);
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
   const toggleFullScreen = () => {
@@ -1042,6 +1043,9 @@ export default function App() {
     }
     
     setIsProcessingBatch(false);
+    if (newFiles.length > 0) {
+      setShowUploadView(false);
+    }
   };
 
   const exportOriginal = async () => {
@@ -1310,6 +1314,16 @@ export default function App() {
             
             <div className="flex items-center gap-2">
               <button 
+                onClick={() => setShowUploadView(!showUploadView)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
+                  showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
+                )}
+              >
+                <Upload className="w-4 h-4" />
+                {showUploadView ? 'Cancel Upload' : 'Upload'}
+              </button>
+              <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
@@ -1332,7 +1346,7 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {!summary ? (
+        {(showUploadView || (!summary && history.length === 0)) ? (
           <div 
             className={cn(
               "mt-12 border-2 border-dashed rounded-3xl p-20 flex flex-col items-center justify-center transition-all duration-300",
@@ -1434,102 +1448,116 @@ export default function App() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
-                  <Timer className="w-4 h-4 text-orange-500" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
-                </div>
-              </div>
+              {summary ? (
+                <>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
+                      <Timer className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Power Metrics</span>
-                  <Zap className="w-4 h-4 text-orange-500" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{Math.round(summary.normalizedPower || 0)}</span>
-                  <span className="text-xs text-app-muted font-medium">W (NP)</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W
-                </div>
-              </div>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Power Metrics</span>
+                      <Zap className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.normalizedPower || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">W (NP)</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Training Stress</span>
-                  <Activity className="w-4 h-4 text-blue-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{Math.round(summary.tss || 0)}</span>
-                  <span className="text-xs text-app-muted font-medium">TSS</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  IF: {(summary.intensityFactor || 0).toFixed(2)}
-                </div>
-              </div>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Training Stress</span>
+                      <Activity className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.tss || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">TSS</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      IF: {(summary.intensityFactor || 0).toFixed(2)}
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Heart Rate</span>
-                  <Heart className="w-4 h-4 text-red-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
-                  <span className="text-xs text-app-muted font-medium">BPM</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Max: {Math.round(summary.maxHeartRate || 0)} bpm
-                </div>
-              </div>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Heart Rate</span>
+                      <Heart className="w-4 h-4 text-red-400" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">BPM</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Max: {Math.round(summary.maxHeartRate || 0)} bpm
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Elevation & Distance</span>
-                  <Navigation className="w-4 h-4 text-green-400 rotate-45" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
-                  <span className="text-xs text-app-muted font-medium">M</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Dist: {(summary.distance / 1000).toFixed(1)}km
-                </div>
-              </div>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Elevation & Distance</span>
+                      <Navigation className="w-4 h-4 text-green-400 rotate-45" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">M</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Dist: {(summary.distance / 1000).toFixed(1)}km
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Speed</span>
-                  <Clock className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
-                  <span className="text-xs text-app-muted font-medium">KM/H</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
-                </div>
-              </div>
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Speed</span>
+                      <Clock className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
+                      <span className="text-xs text-app-muted font-medium">KM/H</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
+                    </div>
+                  </div>
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Cadence</span>
-                  <BarChart3 className="w-4 h-4 text-purple-400" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Cadence</span>
+                      <BarChart3 className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">RPM</span>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      Max: {Math.round(summary.maxCadence || 0)} rpm
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="lg:col-span-3 bg-app-card border border-app-border rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 bg-app-bg rounded-full flex items-center justify-center mb-4">
+                    <Activity className="w-8 h-8 text-orange-500" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Welcome Back</h3>
+                  <p className="text-app-muted text-sm max-w-md">
+                    Select an activity from your history below to view detailed metrics, or upload a new file to get started.
+                  </p>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
-                  <span className="text-xs text-app-muted font-medium">RPM</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                  Max: {Math.round(summary.maxCadence || 0)} rpm
-                </div>
-              </div>
+              )}
 
               {history.length > 0 && currentPMC && (
                 <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors animate-in fade-in slide-in-from-right-4 duration-500">
@@ -1547,30 +1575,32 @@ export default function App() {
                 </div>
               )}
 
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors flex flex-col justify-center items-center gap-4">
-                <button 
-                  onClick={addToHistory}
-                  disabled={history.some(h => isSameDay(new Date(h.date), summary.startTime))}
-                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-app-border disabled:text-app-muted text-black py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                >
-                  <History className="w-4 h-4" />
-                  {history.some(h => isSameDay(new Date(h.date), summary.startTime)) ? 'In History' : 'Add to PMC'}
-                </button>
-                <div className="grid grid-cols-2 gap-2 w-full">
-                  <button onClick={exportGPX} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                    <Download className="w-3 h-3" /> GPX
+              {summary && (
+                <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors flex flex-col justify-center items-center gap-4">
+                  <button 
+                    onClick={addToHistory}
+                    disabled={history.some(h => isSameDay(new Date(h.date), summary.startTime))}
+                    className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-app-border disabled:text-app-muted text-black py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <History className="w-4 h-4" />
+                    {history.some(h => isSameDay(new Date(h.date), summary.startTime)) ? 'In History' : 'Add to PMC'}
                   </button>
-                  <button onClick={exportOriginal} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                    <FileDown className="w-3 h-3" /> Original
-                  </button>
-                  <button onClick={exportJSON} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                    <FileJson className="w-3 h-3" /> JSON
-                  </button>
-                  <button onClick={exportCSV} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                    <FileSpreadsheet className="w-3 h-3" /> CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <button onClick={exportGPX} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
+                      <Download className="w-3 h-3" /> GPX
+                    </button>
+                    <button onClick={exportOriginal} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
+                      <FileDown className="w-3 h-3" /> Original
+                    </button>
+                    <button onClick={exportJSON} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
+                      <FileJson className="w-3 h-3" /> JSON
+                    </button>
+                    <button onClick={exportCSV} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
+                      <FileSpreadsheet className="w-3 h-3" /> CSV
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Main Content Grid */}
@@ -1776,7 +1806,7 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {summary.laps?.map((lap) => (
+                          {summary?.laps?.map((lap) => (
                             <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
                               <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
                               <td className="py-4 text-xs text-app-text/60">
@@ -1805,7 +1835,7 @@ export default function App() {
                       <div className="space-y-6">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
                         <div className="space-y-3">
-                          {summary.powerZones?.map((z) => (
+                          {summary?.powerZones?.map((z) => (
                             <div key={z.name} className="space-y-1">
                               <div className="flex justify-between text-[10px]">
                                 <span className="text-app-text/60">{z.name}</span>
@@ -1823,7 +1853,7 @@ export default function App() {
                       </div>
                       <div className="space-y-6">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Heart Rate Zones</h4>
-                        {summary.hrZones ? (
+                        {summary?.hrZones ? (
                           <div className="space-y-3">
                             {summary.hrZones.map((z) => (
                               <div key={z.name} className="space-y-1">
@@ -2055,182 +2085,73 @@ export default function App() {
                 "space-y-8",
                 isMapExpanded ? "order-1" : "order-2"
               )}>
-                <div 
-                  ref={mapContainerRef}
-                  className={cn(
-                    "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
-                    isMapExpanded ? "h-[900px]" : "h-[700px]"
-                  )}
-                >
-                  <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
-                    <div className="flex gap-2">
-                      <div className="bg-app-bg/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-app-border flex items-center gap-2">
-                        <MapIcon className="w-3 h-3 text-orange-500" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Course Map</span>
-                      </div>
-                      <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
-                        <button 
-                          onClick={toggleFullScreen}
-                          className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                          title="Full Screen"
-                        >
-                          <Expand className="w-3 h-3" />
-                        </button>
-                        <button 
-                          onClick={() => setIsMapExpanded(!isMapExpanded)}
-                          className={cn(
-                            "p-1 rounded-full transition-all",
-                            isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
-                          )}
-                          title={isMapExpanded ? "Collapse Map" : "Expand Map"}
-                        >
-                          <Maximize className="w-3 h-3" />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setActivePoint(null);
-                            setIsPointLocked(false);
-                          }}
-                          className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                          title="Fit to Course"
-                        >
-                          <Navigation className="w-3 h-3" />
-                        </button>
-                        <button 
-                          onClick={() => setMapProvider('osm')}
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                            mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                          )}
-                        >
-                          OSM
-                        </button>
-                        <button 
-                          onClick={() => setMapProvider('google')}
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                            mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                          )}
-                        >
-                          Google
-                        </button>
-                      </div>
-                    </div>
-                    <WeatherCard weather={weather} isLoading={isWeatherLoading} />
-                  </div>
-                  {gpsPoints.length > 0 ? (
-                    mapProvider === 'osm' ? (
-                      <div className="w-full h-full relative">
-                        {activePoint !== null && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsPointLocked(false);
-                              setActivePoint(null);
-                            }}
-                            className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
-                            title="Clear Highlight"
-                          >
-                            <CheckCircle2 className="w-4 h-4 text-orange-500" />
-                          </button>
-                        )}
-                        <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                          <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md">
-                            {(['roadmap', 'terrain'] as const).map((t) => (
-                              <button
-                                key={t}
-                                onClick={() => setMapType(t as any)}
-                                className={cn(
-                                  "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all",
-                                  (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                )}
-                              >
-                                {t === 'roadmap' ? 'Standard' : 'Terrain'}
-                              </button>
-                            ))}
+                {summary ? (
+                  <>
+                    <div 
+                      ref={mapContainerRef}
+                      className={cn(
+                        "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
+                        isMapExpanded ? "h-[900px]" : "h-[700px]"
+                      )}
+                    >
+                      <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
+                        <div className="flex gap-2">
+                          <div className="bg-app-bg/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-app-border flex items-center gap-2">
+                            <MapIcon className="w-3 h-3 text-orange-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Course Map</span>
+                          </div>
+                          <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+                            <button 
+                              onClick={toggleFullScreen}
+                              className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                              title="Full Screen"
+                            >
+                              <Expand className="w-3 h-3" />
+                            </button>
+                            <button 
+                              onClick={() => setIsMapExpanded(!isMapExpanded)}
+                              className={cn(
+                                "p-1 rounded-full transition-all",
+                                isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
+                              )}
+                              title={isMapExpanded ? "Collapse Map" : "Expand Map"}
+                            >
+                              <Maximize className="w-3 h-3" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setActivePoint(null);
+                                setIsPointLocked(false);
+                              }}
+                              className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                              title="Fit to Course"
+                            >
+                              <Navigation className="w-3 h-3" />
+                            </button>
+                            <button 
+                              onClick={() => setMapProvider('osm')}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                              )}
+                            >
+                              OSM
+                            </button>
+                            <button 
+                              onClick={() => setMapProvider('google')}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                              )}
+                            >
+                              Google
+                            </button>
                           </div>
                         </div>
-                        <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
-                          <TileLayer
-                            url={
-                              mapType === 'terrain' 
-                                ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
-                                : theme === 'dark'
-                                  ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                                  : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                            }
-                            attribution={
-                              mapType === 'terrain'
-                                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-                                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                            }
-                            maxZoom={19}
-                          />
-                        <LeafletPolyline 
-                          positions={gpsPoints} 
-                          color="#f97316" 
-                          weight={4} 
-                          opacity={0.8} 
-                          eventHandlers={{
-                            mousemove: (e) => {
-                              if (isPointLocked) return;
-                              const { lat, lng } = e.latlng;
-                              let minDistance = Infinity;
-                              let closestIndex = -1;
-                              
-                              data.forEach((p, index) => {
-                                if (p.latitude !== undefined && p.longitude !== undefined) {
-                                  const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                  if (d < minDistance) {
-                                    minDistance = d;
-                                    closestIndex = index;
-                                  }
-                                }
-                              });
-                              
-                              if (closestIndex !== -1) setActivePoint(closestIndex);
-                            },
-                            mouseout: () => {
-                              if (!isPointLocked) setActivePoint(null);
-                            },
-                            click: (e) => {
-                              const { lat, lng } = e.latlng;
-                              let minDistance = Infinity;
-                              let closestIndex = -1;
-                              
-                              data.forEach((p, index) => {
-                                if (p.latitude !== undefined && p.longitude !== undefined) {
-                                  const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                  if (d < minDistance) {
-                                    minDistance = d;
-                                    closestIndex = index;
-                                  }
-                                }
-                              });
-                              
-                              if (closestIndex !== -1) {
-                                setActivePoint(closestIndex);
-                                setIsPointLocked(true);
-                              }
-                            }
-                          }}
-                        />
-                        {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                          <CircleMarker 
-                            center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
-                            radius={8} 
-                            fillColor="#f97316" 
-                            color="white" 
-                            weight={3} 
-                            fillOpacity={1} 
-                          />
-                        )}
-                        <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapExpanded={isMapExpanded} />
-                      </MapContainer>
-                    </div>
-                  ) : (
-                      import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-                        <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                        <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                      </div>
+                      {gpsPoints.length > 0 ? (
+                        mapProvider === 'osm' ? (
                           <div className="w-full h-full relative">
                             {activePoint !== null && (
                               <button 
@@ -2247,211 +2168,334 @@ export default function App() {
                             )}
                             <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
                               <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md">
-                                {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
+                                {(['roadmap', 'terrain'] as const).map((t) => (
                                   <button
                                     key={t}
-                                    onClick={() => setMapType(t)}
+                                    onClick={() => setMapType(t as any)}
                                     className={cn(
                                       "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all",
-                                      mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                      (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
                                     )}
                                   >
-                                    {t}
+                                    {t === 'roadmap' ? 'Standard' : 'Terrain'}
                                   </button>
                                 ))}
                               </div>
-                              <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md gap-1">
-                                <button
-                                  onClick={() => setShowTraffic(!showTraffic)}
-                                  className={cn(
-                                    "p-2 rounded-lg transition-all",
-                                    showTraffic ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                  )}
-                                  title="Toggle Traffic"
-                                >
-                                  <TrafficCone className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => setShowBicycling(!showBicycling)}
-                                  className={cn(
-                                    "p-2 rounded-lg transition-all",
-                                    showBicycling ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                  )}
-                                  title="Toggle Bicycling"
-                                >
-                                  <Bike className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => setShowTransit(!showTransit)}
-                                  className={cn(
-                                    "p-2 rounded-lg transition-all",
-                                    showTransit ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                  )}
-                                  title="Toggle Transit"
-                                >
-                                  <Bus className="w-3 h-3" />
-                                </button>
-                              </div>
                             </div>
-                            <GoogleMap
-                              defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
-                              center={activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude ? { lat: data[activePoint].latitude!, lng: data[activePoint].longitude! } : undefined}
-                              defaultZoom={13}
-                              gestureHandling={'auto'}
-                              disableDefaultUI={true}
-                              mapTypeId={mapType}
-                              mapId={'bf51a910020fa25a'}
-                              style={{ width: '100%', height: '100%' }}
-                              colorScheme="DARK"
-                              onClick={() => {
-                                if (isPointLocked) {
-                                  setIsPointLocked(false);
-                                  setActivePoint(null);
+                            <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
+                              <TileLayer
+                                url={
+                                  mapType === 'terrain' 
+                                    ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
+                                    : theme === 'dark'
+                                      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                                      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                                }
+                                attribution={
+                                  mapType === 'terrain'
+                                    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                                    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                }
+                                maxZoom={19}
+                              />
+                            <LeafletPolyline 
+                              positions={gpsPoints} 
+                              color="#f97316" 
+                              weight={4} 
+                              opacity={0.8} 
+                              eventHandlers={{
+                                mousemove: (e) => {
+                                  if (isPointLocked) return;
+                                  const { lat, lng } = e.latlng;
+                                  let minDistance = Infinity;
+                                  let closestIndex = -1;
+                                  
+                                  data.forEach((p, index) => {
+                                    if (p.latitude !== undefined && p.longitude !== undefined) {
+                                      const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                      if (d < minDistance) {
+                                        minDistance = d;
+                                        closestIndex = index;
+                                      }
+                                    }
+                                  });
+                                  
+                                  if (closestIndex !== -1) setActivePoint(closestIndex);
+                                },
+                                mouseout: () => {
+                                  if (!isPointLocked) setActivePoint(null);
+                                },
+                                click: (e) => {
+                                  const { lat, lng } = e.latlng;
+                                  let minDistance = Infinity;
+                                  let closestIndex = -1;
+                                  
+                                  data.forEach((p, index) => {
+                                    if (p.latitude !== undefined && p.longitude !== undefined) {
+                                      const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                      if (d < minDistance) {
+                                        minDistance = d;
+                                        closestIndex = index;
+                                      }
+                                    }
+                                  });
+                                  
+                                  if (closestIndex !== -1) {
+                                    setActivePoint(closestIndex);
+                                    setIsPointLocked(true);
+                                  }
                                 }
                               }}
-                            >
-                              <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapExpanded={isMapExpanded} />
-                              <GoogleMapTrafficLayer enabled={showTraffic} />
-                              <GoogleMapBicyclingLayer enabled={showBicycling} />
-                              <GoogleMapTransitLayer enabled={showTransit} />
-                              {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                                <div 
-                                  style={{ 
-                                    position: 'absolute', 
-                                    left: '50%', 
-                                    top: '50%', 
-                                    transform: 'translate(-50%, -50%)',
-                                    width: '16px',
-                                    height: '16px',
-                                    backgroundColor: '#f97316',
-                                    borderRadius: '50%',
-                                    border: '3px solid white',
-                                    boxShadow: '0 0 15px rgba(249, 115, 22, 0.5)',
-                                    zIndex: 100
-                                  }}
-                                />
-                              )}
-                            </GoogleMap>
-                            <div className="absolute bottom-4 right-4 z-10 flex gap-1 bg-app-bg/80 backdrop-blur-md p-1 rounded-lg border border-app-border">
-                              {(['roadmap', 'satellite', 'terrain'] as const).map((type) => (
-                                <button
-                                  key={type}
-                                  onClick={() => setMapType(type)}
-                                  className={cn(
-                                    "px-2 py-1 rounded text-[8px] font-bold uppercase tracking-widest transition-all",
-                                    mapType === type ? "bg-app-text/20 text-app-text" : "text-app-muted hover:text-app-text/60"
-                                  )}
-                                >
-                                  {type}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </APIProvider>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20 p-8 text-center">
-                          <MapIcon className="w-12 h-12 mb-4" />
-                          <span className="text-xs uppercase tracking-widest mb-2 font-bold">Google Maps API Key Missing</span>
-                          <p className="text-[10px] leading-relaxed">Please add VITE_GOOGLE_MAPS_API_KEY to your environment variables to enable Google Maps.</p>
+                            />
+                            {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
+                              <CircleMarker 
+                                center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
+                                radius={8} 
+                                fillColor="#f97316" 
+                                color="white" 
+                                weight={3} 
+                                fillOpacity={1} 
+                              />
+                            )}
+                            <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapExpanded={isMapExpanded} />
+                          </MapContainer>
                         </div>
-                      )
-                    )
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20">
-                      <MapIcon className="w-12 h-12 mb-4" />
-                      <span className="text-xs uppercase tracking-widest">No GPS Data</span>
+                      ) : (
+                          import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                            <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                              <div className="w-full h-full relative">
+                                {activePoint !== null && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsPointLocked(false);
+                                      setActivePoint(null);
+                                    }}
+                                    className="absolute top-24 left-4 z-50 bg-black/80 hover:bg-black text-white p-2 rounded-full border border-white/10 transition-all"
+                                    title="Clear Highlight"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-orange-500" />
+                                  </button>
+                                )}
+                                <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
+                                  <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                                    {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
+                                      <button
+                                        key={t}
+                                        onClick={() => setMapType(t)}
+                                        className={cn(
+                                          "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all",
+                                          mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                        )}
+                                      >
+                                        {t}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="flex bg-black/80 p-1 rounded-xl border border-white/10 backdrop-blur-md gap-1">
+                                    <button
+                                      onClick={() => setShowTraffic(!showTraffic)}
+                                      className={cn(
+                                        "p-2 rounded-lg transition-all",
+                                        showTraffic ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                      )}
+                                      title="Toggle Traffic"
+                                    >
+                                      <TrafficCone className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setShowBicycling(!showBicycling)}
+                                      className={cn(
+                                        "p-2 rounded-lg transition-all",
+                                        showBicycling ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                      )}
+                                      title="Toggle Bicycling"
+                                    >
+                                      <Bike className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setShowTransit(!showTransit)}
+                                      className={cn(
+                                        "p-2 rounded-lg transition-all",
+                                        showTransit ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                      )}
+                                      title="Toggle Transit"
+                                    >
+                                      <Bus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <GoogleMap
+                                  defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
+                                  center={activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude ? { lat: data[activePoint].latitude!, lng: data[activePoint].longitude! } : undefined}
+                                  defaultZoom={13}
+                                  gestureHandling={'auto'}
+                                  disableDefaultUI={true}
+                                  mapTypeId={mapType}
+                                  mapId={'bf51a910020fa25a'}
+                                  style={{ width: '100%', height: '100%' }}
+                                  colorScheme="DARK"
+                                  onClick={() => {
+                                    if (isPointLocked) {
+                                      setIsPointLocked(false);
+                                      setActivePoint(null);
+                                    }
+                                  }}
+                                >
+                                  <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapExpanded={isMapExpanded} />
+                                  <GoogleMapTrafficLayer enabled={showTraffic} />
+                                  <GoogleMapBicyclingLayer enabled={showBicycling} />
+                                  <GoogleMapTransitLayer enabled={showTransit} />
+                                  {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
+                                    <div 
+                                      style={{ 
+                                        position: 'absolute', 
+                                        left: '50%', 
+                                        top: '50%', 
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '16px',
+                                        height: '16px',
+                                        backgroundColor: '#f97316',
+                                        borderRadius: '50%',
+                                        border: '3px solid white',
+                                        boxShadow: '0 0 15px rgba(249, 115, 22, 0.5)',
+                                        zIndex: 100
+                                      }}
+                                    />
+                                  )}
+                                </GoogleMap>
+                                <div className="absolute bottom-4 right-4 z-10 flex gap-1 bg-app-bg/80 backdrop-blur-md p-1 rounded-lg border border-app-border">
+                                  {(['roadmap', 'satellite', 'terrain'] as const).map((type) => (
+                                    <button
+                                      key={type}
+                                      onClick={() => setMapType(type)}
+                                      className={cn(
+                                        "px-2 py-1 rounded text-[8px] font-bold uppercase tracking-widest transition-all",
+                                        mapType === type ? "bg-app-text/20 text-app-text" : "text-app-muted hover:text-app-text/60"
+                                      )}
+                                    >
+                                      {type}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </APIProvider>
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20 p-8 text-center">
+                              <MapIcon className="w-12 h-12 mb-4" />
+                              <span className="text-xs uppercase tracking-widest mb-2 font-bold">Google Maps API Key Missing</span>
+                              <p className="text-[10px] leading-relaxed">Please add VITE_GOOGLE_MAPS_API_KEY to your environment variables to enable Google Maps.</p>
+                            </div>
+                          )
+                        )
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20">
+                          <MapIcon className="w-12 h-12 mb-4" />
+                          <span className="text-xs uppercase tracking-widest">No GPS Data</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-6">Activity Details</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                      <span className="text-xs text-app-muted">Activity Name</span>
-                      <span className="text-xs font-medium">{summary.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                      <span className="text-xs text-app-muted">Start Time</span>
-                      <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                      <span className="text-xs text-app-muted">Avg Cadence</span>
-                      <span className="text-xs font-medium">
-                        {Math.round(summary.avgCadence || 0)} rpm
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                      <span className="text-xs text-app-muted">Avg Speed</span>
-                      <span className="text-xs font-medium">
-                        {(summary.avgSpeed || 0).toFixed(1)} km/h
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                      <span className="text-xs text-app-muted">Elevation Gain</span>
-                      <span className="text-xs font-medium">
-                        {Math.round(summary.totalAscent || 0)} m
-                      </span>
-                    </div>
-                    {estimatedFtp && (
-                      <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                        <span className="text-xs text-app-muted font-bold text-orange-500/60">Est. FTP (20m)</span>
-                        <span className="text-xs font-bold text-orange-500">
-                          {estimatedFtp} W
-                        </span>
+                    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                      <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-6">Activity Details</h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                          <span className="text-xs text-app-muted">Activity Name</span>
+                          <span className="text-xs font-medium">{summary.name}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                          <span className="text-xs text-app-muted">Start Time</span>
+                          <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                          <span className="text-xs text-app-muted">Avg Cadence</span>
+                          <span className="text-xs font-medium">
+                            {Math.round(summary.avgCadence || 0)} rpm
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                          <span className="text-xs text-app-muted">Avg Speed</span>
+                          <span className="text-xs font-medium">
+                            {(summary.avgSpeed || 0).toFixed(1)} km/h
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                          <span className="text-xs text-app-muted">Elevation Gain</span>
+                          <span className="text-xs font-medium">
+                            {Math.round(summary.totalAscent || 0)} m
+                          </span>
+                        </div>
+                        {estimatedFtp && (
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted font-bold text-orange-500/60">Est. FTP (20m)</span>
+                            <span className="text-xs font-bold text-orange-500">
+                              {estimatedFtp} W
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center py-3">
+                          <span className="text-xs text-app-muted">Max Heart Rate</span>
+                          <span className="text-xs font-medium">
+                            {Math.round(summary.maxHeartRate || 0)} bpm
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center py-3">
-                      <span className="text-xs text-app-muted">Max Heart Rate</span>
-                      <span className="text-xs font-medium">
-                        {Math.round(summary.maxHeartRate || 0)} bpm
-                      </span>
+
+                      <div className="mt-8 grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={exportOriginal}
+                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
+                        >
+                          <FileDown className="w-3 h-3 text-orange-500" />
+                          Original
+                        </button>
+                        <button 
+                          onClick={exportGPX}
+                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
+                        >
+                          <Download className="w-3 h-3 text-blue-500" />
+                          GPX
+                        </button>
+                        <button 
+                          onClick={exportJSON}
+                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
+                        >
+                          <FileJson className="w-3 h-3 text-purple-500" />
+                          JSON
+                        </button>
+                        <button 
+                          onClick={exportCSV}
+                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
+                        >
+                          <FileSpreadsheet className="w-3 h-3 text-green-500" />
+                          CSV
+                        </button>
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="bg-app-card border border-app-border rounded-3xl p-12 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-app-bg rounded-full flex items-center justify-center mb-6 border border-app-border">
+                      <Activity className="w-8 h-8 text-app-muted/40" />
+                    </div>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-2">No Activity Selected</h3>
+                    <p className="text-xs text-app-muted max-w-[200px] leading-relaxed">
+                      Select an activity from the history tab or upload a new file to see details.
+                    </p>
                   </div>
+                )}
+              </div>
 
-                  <div className="mt-8 grid grid-cols-2 gap-3">
-                    <button 
-                      onClick={exportOriginal}
-                      className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                    >
-                      <FileDown className="w-3 h-3 text-orange-500" />
-                      Original
-                    </button>
-                    <button 
-                      onClick={exportGPX}
-                      className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                    >
-                      <Download className="w-3 h-3 text-blue-500" />
-                      GPX
-                    </button>
-                    <button 
-                      onClick={exportJSON}
-                      className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                    >
-                      <FileJson className="w-3 h-3 text-purple-500" />
-                      JSON
-                    </button>
-                    <button 
-                      onClick={exportCSV}
-                      className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                    >
-                      <FileSpreadsheet className="w-3 h-3 text-green-500" />
-                      CSV
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={() => { setSummary(null); setData([]); setOriginalFile(null); }}
+              <button 
+                onClick={() => { setSummary(null); setData([]); setOriginalFile(null); }}
                     className="w-full mt-3 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all"
                   >
                     Analyze New File
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-      </main>
+            )}
+          </main>
 
       {/* Settings Modal */}
       {showSettings && (
