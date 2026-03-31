@@ -518,6 +518,7 @@ export default function App() {
   });
   const [cpWPrime, setCpWPrime] = useState<{ cp: number; wPrime: number } | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
   const [activeTab, setActiveTab] = useState<'metrics' | 'laps' | 'zones' | 'history' | 'compare'>('metrics');
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
@@ -534,7 +535,7 @@ export default function App() {
   React.useEffect(() => {
     try {
       // Strip out large data before saving to localStorage
-      const strippedHistory = history.map(({ fullSummary, fullData, ...rest }) => rest);
+      const strippedHistory = history.map(({ fullSummary, fullData, originalFile, ...rest }) => rest);
       localStorage.setItem('veloanalytics_history', JSON.stringify(strippedHistory));
     } catch (e) {
       console.error('Failed to save history to localStorage:', e);
@@ -564,13 +565,14 @@ export default function App() {
     }
   }, [autoUpdateFtp, estimatedFtp, ftp]);
 
-  const addToHistory = async (activity?: ActivitySummary | React.MouseEvent, activityData?: CyclingDataPoint[]) => {
+  const addToHistory = async (activity?: ActivitySummary | React.MouseEvent, activityData?: CyclingDataPoint[], file?: File) => {
     // If called from onClick, activity will be the event object.
     // We only want to use it if it's a real ActivitySummary.
     const target = (activity && 'startTime' in activity) ? activity : summary;
     const targetData = activityData || data;
+    const targetFile = file || originalFile;
     
-    if (!target || !target.startTime || isNaN(target.startTime.getTime())) return;
+    if (!target || !target.startTime || isNaN(target.startTime.getTime())) return null;
     const dateStr = target.startTime.toISOString().split('T')[0];
     const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -593,17 +595,25 @@ export default function App() {
       work: target.work,
       ftp: ftp,
       fullSummary: target,
-      fullData: targetData
+      fullData: targetData,
+      originalFile: targetFile || undefined,
+      originalFileName: targetFile?.name || undefined
     };
 
     // Save large data to IndexedDB
     try {
-      await saveActivityData(id, { fullSummary: target, fullData: targetData });
+      await saveActivityData(id, { 
+        fullSummary: target, 
+        fullData: targetData,
+        originalFile: targetFile || undefined,
+        originalFileName: targetFile?.name || undefined
+      });
     } catch (e) {
       console.error('Failed to save activity data to IndexedDB:', e);
     }
 
     setHistory(prev => [...prev, newActivity]);
+    return id;
   };
 
   const loadFromHistory = async (id: string) => {
@@ -612,14 +622,18 @@ export default function App() {
 
     let fullSummary = activity.fullSummary;
     let fullData = activity.fullData;
+    let originalFileBlob = activity.originalFile;
+    let originalFileName = activity.originalFileName;
 
     // If data is missing (not in localStorage), fetch from IndexedDB
-    if (!fullSummary || !fullData) {
+    if (!fullSummary || !fullData || !originalFileBlob) {
       try {
         const stored = await getActivityData(id);
         if (stored) {
           fullSummary = stored.fullSummary;
           fullData = stored.fullData;
+          originalFileBlob = stored.originalFile;
+          originalFileName = stored.originalFileName;
         }
       } catch (e) {
         console.error('Failed to fetch activity data from IndexedDB:', e);
@@ -642,8 +656,24 @@ export default function App() {
         timestamp: new Date(p.timestamp)
       }));
 
+      setCurrentActivityId(id);
       setSummary(restoredSummary);
       setData(restoredData);
+      
+      // Restore original file if available
+      if (originalFileBlob) {
+        // If it's a Blob but not a File, convert it back to a File if we have the name
+        if (originalFileBlob instanceof Blob && !(originalFileBlob instanceof File)) {
+          const fileName = originalFileName || restoredSummary.name || 'activity.fit';
+          const restoredFile = new File([originalFileBlob], fileName, { type: originalFileBlob.type });
+          setOriginalFile(restoredFile);
+        } else {
+          setOriginalFile(originalFileBlob as File);
+        }
+      } else {
+        setOriginalFile(null);
+      }
+
       setCpWPrime(estimateCPWPrime(restoredData));
       setEstimatedFtp(estimateFTP(restoredData));
       setActivePoint(null);
@@ -1159,12 +1189,13 @@ export default function App() {
         });
 
         if (result.summary) {
-          addToHistory(result.summary, result.points);
+          const activityId = await addToHistory(result.summary, result.points, file);
+          setCurrentActivityId(activityId);
           setSummary(result.summary);
           setData(result.points);
           setOriginalFile(file);
           setUploadQueue(prev => prev.map(item => 
-            item.id === id ? { ...item, status: 'completed', progress: 100, summary: result.summary!, data: result.points } : item
+            item.id === id ? { ...item, status: 'completed', progress: 100, summary: result.summary!, data: result.points, historyId: activityId || undefined } : item
           ));
         }
       } catch (err) {
@@ -1182,17 +1213,33 @@ export default function App() {
   };
 
   const exportOriginal = async () => {
-    if (!originalFile) return;
+    let fileToExport = originalFile;
+    
+    // If originalFile is missing, try to fetch it from IndexedDB using currentActivityId
+    if (!fileToExport && currentActivityId) {
+      try {
+        const stored = await getActivityData(currentActivityId);
+        if (stored && stored.originalFile) {
+          const fileName = stored.originalFileName || summary?.name || 'activity.fit';
+          fileToExport = new File([stored.originalFile], fileName, { type: stored.originalFile.type });
+          setOriginalFile(fileToExport);
+        }
+      } catch (e) {
+        console.error('Failed to fetch original file from IndexedDB for export:', e);
+      }
+    }
+
+    if (!fileToExport) return;
     setExportStatus({ active: true, type: 'Original', progress: 0 });
     
     // Simulate a bit of prep time for UX
     await new Promise(resolve => setTimeout(resolve, 500));
     setExportStatus(prev => ({ ...prev, progress: 50 }));
     
-    const url = URL.createObjectURL(originalFile);
+    const url = URL.createObjectURL(fileToExport);
     const a = document.createElement('a');
     a.href = url;
-    a.download = originalFile.name;
+    a.download = fileToExport.name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1584,6 +1631,8 @@ export default function App() {
                           onClick={() => {
                             setSummary(item.summary!);
                             setData(item.data!);
+                            setOriginalFile(item.file || null);
+                            setCurrentActivityId(item.historyId || null);
                             setCpWPrime(estimateCPWPrime(item.data!));
                             setEstimatedFtp(estimateFTP(item.data!));
                             setActivePoint(null);
@@ -1755,32 +1804,6 @@ export default function App() {
                 </div>
               )}
 
-              {summary && (
-                <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors flex flex-col justify-center items-center gap-4">
-                  <button 
-                    onClick={addToHistory}
-                    disabled={history.some(h => isSameDay(new Date(h.date), summary.startTime))}
-                    className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-app-border disabled:text-app-muted text-black py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    <History className="w-4 h-4" />
-                    {history.some(h => isSameDay(new Date(h.date), summary.startTime)) ? 'In History' : 'Add to PMC'}
-                  </button>
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <button onClick={exportGPX} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                      <Download className="w-3 h-3" /> GPX
-                    </button>
-                    <button onClick={exportOriginal} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                      <FileDown className="w-3 h-3" /> Original
-                    </button>
-                    <button onClick={exportJSON} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                      <FileJson className="w-3 h-3" /> JSON
-                    </button>
-                    <button onClick={exportCSV} className="bg-app-card/50 hover:bg-app-card text-app-muted py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-app-border flex items-center justify-center gap-2">
-                      <FileSpreadsheet className="w-3 h-3" /> CSV
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Main Content Grid */}

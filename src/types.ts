@@ -105,6 +105,8 @@ export interface HistoricalActivity {
   ftp?: number;
   fullSummary?: ActivitySummary;
   fullData?: CyclingDataPoint[];
+  originalFile?: File | Blob;
+  originalFileName?: string;
 }
 
 export interface FileStatus {
@@ -116,4 +118,5 @@ export interface FileStatus {
   file: File;
   summary?: ActivitySummary;
   data?: CyclingDataPoint[];
+  historyId?: string;
 }
