@@ -2710,17 +2710,10 @@ export default function App() {
                   </div>
                 )}
               </div>
-
-              <button 
-                onClick={() => { setSummary(null); setData([]); setOriginalFile(null); }}
-                    className="w-full mt-3 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all"
-                  >
-                    Analyze New File
-                  </button>
-                </div>
-              </div>
-            )}
-          </main>
+            </div>
+          </div>
+        )}
+      </main>
 
       {/* Settings Modal */}
       {showSettings && (
