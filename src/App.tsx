@@ -885,9 +885,12 @@ export default function App() {
     let laps: Lap[] = [];
     if (lapData && lapData.length > 0) {
       laps = lapData.map((l, idx) => {
+        const lapStartTime = l.start_time instanceof Date ? l.start_time : new Date(l.start_time);
+        const lapEndTime = new Date(lapStartTime.getTime() + (l.total_elapsed_time || 0) * 1000);
+        
         const lapPoints = points.filter(p => 
-          p.timestamp >= new Date(l.start_time) && 
-          p.timestamp <= new Date(new Date(l.start_time).getTime() + l.total_elapsed_time * 1000)
+          p.timestamp >= lapStartTime && 
+          p.timestamp <= lapEndTime
         );
         if (lapPoints.length > 0) {
           return calculateLapSummary(lapPoints, idx + 1);
@@ -988,8 +991,22 @@ export default function App() {
               fitParser.parse(e.target?.result as ArrayBuffer, (error, fitData) => {
                 if (error) reject(error);
                 else {
+                  const parseTimestamp = (ts: any) => {
+                    if (ts instanceof Date) return ts;
+                    if (typeof ts === 'number') {
+                      // fit-file-parser usually returns timestamps in seconds since Garmin epoch (1989-12-31)
+                      // or milliseconds since Unix epoch. 
+                      // Garmin epoch offset is 631065600 seconds.
+                      if (ts < 2000000000) { 
+                        return new Date((ts + 631065600) * 1000);
+                      }
+                      return new Date(ts);
+                    }
+                    return new Date(ts);
+                  };
+
                   const points: CyclingDataPoint[] = fitData.records.map((r: any) => ({
-                    timestamp: new Date(r.timestamp),
+                    timestamp: parseTimestamp(r.timestamp),
                     power: r.power,
                     heartRate: r.heart_rate,
                     cadence: r.cadence,
@@ -1000,7 +1017,14 @@ export default function App() {
                     longitude: r.position_long,
                   }));
                   setUploadQueue(prev => prev.map(item => item.id === id ? { ...item, progress: 60 } : item));
-                  const summary = processData(points, file.name, fitData.laps);
+                  
+                  // Ensure lap timestamps are also parsed correctly
+                  const processedLaps = (fitData.laps || []).map((l: any) => ({
+                    ...l,
+                    start_time: parseTimestamp(l.start_time)
+                  }));
+
+                  const summary = processData(points, file.name, processedLaps);
                   resolve({ summary, points });
                 }
               });

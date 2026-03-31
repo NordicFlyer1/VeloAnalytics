@@ -1,6 +1,6 @@
 {
   "name": "VeloAnalytics",
-  "description": "Advanced cycling performance analytics for .fit files with GPS mapping and power metrics.",
+  "description": "Advanced cycling performance analytics for .fit, .csv, and .json files with GPS mapping and power metrics.",
   "requestFramePermissions": [
     "geolocation"
   ]
