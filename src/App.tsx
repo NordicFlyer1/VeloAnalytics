@@ -5,8 +5,6 @@ import {
   Map as MapIcon, 
   BarChart3, 
   Upload, 
-  FileJson, 
-  FileSpreadsheet, 
   Zap, 
   Clock, 
   Navigation,
@@ -61,7 +59,6 @@ const ReferenceLineAny = ReferenceLine as any;
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
 import FitParser from 'fit-file-parser';
-import Papa from 'papaparse';
 import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
@@ -705,141 +702,6 @@ export default function App() {
     }
   };
 
-  const exportHistoryJSON = async () => {
-    if (history.length === 0) return;
-    setExportStatus({ active: true, type: 'History (JSON)', progress: 0 });
-    
-    try {
-      // Fetch full data for all activities from IndexedDB
-      const fullHistory = await Promise.all(history.map(async (h, index) => {
-        setExportStatus(prev => ({ ...prev, progress: Math.round((index / history.length) * 80) }));
-        
-        if (h.fullSummary && h.fullData) return h;
-        
-        const stored = await getActivityData(h.id);
-        if (stored) {
-          return {
-            ...h,
-            fullSummary: stored.fullSummary,
-            fullData: stored.fullData
-          };
-        }
-        return h;
-      }));
-
-      setExportStatus(prev => ({ ...prev, progress: 90 }));
-      const jsonString = JSON.stringify(fullHistory, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `veloanalytics_history_${format(new Date(), 'yyyy-MM-dd')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error('Failed to export history JSON:', e);
-    }
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
-  const exportHistoryCSV = async () => {
-    if (history.length === 0) return;
-    setExportStatus({ active: true, type: 'History (CSV)', progress: 0 });
-    
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const csvData = history.map(h => ({
-      Date: h.date,
-      Name: h.name,
-      'TSS': Math.round(h.tss),
-      'Duration (s)': h.duration,
-      'Duration (formatted)': formatDuration(h.duration)
-    }));
-    
-    setExportStatus(prev => ({ ...prev, progress: 60 }));
-    
-    const csv = Papa.unparse(csvData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `veloanalytics_history_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
-  const exportBatchJSON = async () => {
-    const completed = uploadQueue.filter(item => item.status === 'completed' && item.summary);
-    if (completed.length === 0) return;
-    
-    setExportStatus({ active: true, type: 'Batch (JSON)', progress: 0 });
-    
-    const batchData = completed.map(item => item.summary);
-    setExportStatus(prev => ({ ...prev, progress: 50 }));
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const jsonString = JSON.stringify(batchData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `veloanalytics_batch_${format(new Date(), 'yyyy-MM-dd')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
-  const exportBatchCSV = async () => {
-    const completed = uploadQueue.filter(item => item.status === 'completed' && item.summary);
-    if (completed.length === 0) return;
-    
-    setExportStatus({ active: true, type: 'Batch (CSV)', progress: 0 });
-    
-    const csvData = completed.map(item => ({
-      Name: item.summary!.name,
-      Date: item.summary!.startTime.toISOString(),
-      'Duration (s)': item.summary!.duration,
-      'Distance (km)': (item.summary!.distance / 1000).toFixed(2),
-      'Avg Power (W)': Math.round(item.summary!.avgPower || 0),
-      'NP (W)': Math.round(item.summary!.normalizedPower || 0),
-      'IF': (item.summary!.intensityFactor || 0).toFixed(2),
-      'TSS': Math.round(item.summary!.tss || 0),
-      'Avg HR (bpm)': Math.round(item.summary!.avgHeartRate || 0),
-      'Avg Cadence (rpm)': Math.round(item.summary!.avgCadence || 0),
-      'Elevation Gain (m)': Math.round(item.summary!.totalAscent || 0)
-    }));
-    
-    setExportStatus(prev => ({ ...prev, progress: 60 }));
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const csv = Papa.unparse(csvData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `veloanalytics_batch_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
   const pmcData = React.useMemo(() => {
     if (history.length === 0) return [];
     
@@ -1085,7 +947,15 @@ export default function App() {
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    const newFiles = Array.from(files).map(f => ({
+    const allFiles = Array.from(files);
+    const fitFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.fit'));
+    
+    if (fitFiles.length === 0) {
+      alert("Only .fit files are supported.");
+      return;
+    }
+
+    const newFiles = fitFiles.map(f => ({
       id: `${f.name}-${Date.now()}-${Math.random()}`,
       name: f.name,
       progress: 0,
@@ -1107,7 +977,7 @@ export default function App() {
         const result = await new Promise<{ summary: ActivitySummary | null; points: CyclingDataPoint[] }>((resolve, reject) => {
           const reader = new FileReader();
           
-          if (file.name.endsWith('.fit')) {
+          if (file.name.toLowerCase().endsWith('.fit')) {
             reader.onload = (e) => {
               const fitParser = new FitParser({
                 force: true,
@@ -1136,53 +1006,6 @@ export default function App() {
               });
             };
             reader.readAsArrayBuffer(file);
-          } else if (file.name.endsWith('.csv')) {
-            Papa.parse(file, {
-              header: true,
-              dynamicTyping: true,
-              complete: (results) => {
-                const points: CyclingDataPoint[] = results.data.map((r: any) => ({
-                  timestamp: new Date(r.timestamp || r.Time || Date.now()),
-                  power: r.power || r.Power,
-                  heartRate: r.heartRate || r.HR,
-                  cadence: r.cadence || r.Cadence,
-                  speed: r.speed || r.Speed,
-                  distance: r.distance || r.Distance,
-                  altitude: r.altitude || r.Altitude,
-                  latitude: r.lat || r.Latitude,
-                  longitude: r.lon || r.Longitude,
-                })).filter(p => !isNaN(p.timestamp.getTime()));
-                setUploadQueue(prev => prev.map(item => item.id === id ? { ...item, progress: 60 } : item));
-                const summary = processData(points, file.name);
-                resolve({ summary, points });
-              },
-              error: (err) => reject(err)
-            });
-          } else if (file.name.endsWith('.json')) {
-            reader.onload = (e) => {
-              try {
-                const json = JSON.parse(e.target?.result as string);
-                const samples = json.RIDE?.SAMPLES || [];
-                const startTime = new Date(json.RIDE?.STARTTIME || Date.now());
-                const points: CyclingDataPoint[] = samples.map((s: any) => ({
-                  timestamp: new Date(startTime.getTime() + (s.SECONDS || 0) * 1000),
-                  power: s.WATTS,
-                  heartRate: s.HR,
-                  cadence: s.CAD,
-                  speed: s.KPH,
-                  distance: s.KM ? s.KM * 1000 : undefined,
-                  altitude: s.ALT,
-                  latitude: s.LAT,
-                  longitude: s.LON,
-                }));
-                setUploadQueue(prev => prev.map(item => item.id === id ? { ...item, progress: 60 } : item));
-                const summary = processData(points, file.name);
-                resolve({ summary, points });
-              } catch (err) {
-                reject(err);
-              }
-            };
-            reader.readAsText(file);
           } else {
             reject(new Error("Unsupported file format"));
           }
@@ -1221,7 +1044,9 @@ export default function App() {
         const stored = await getActivityData(currentActivityId);
         if (stored && stored.originalFile) {
           const fileName = stored.originalFileName || summary?.name || 'activity.fit';
-          fileToExport = new File([stored.originalFile], fileName, { type: stored.originalFile.type });
+          // Ensure we have a valid File object for export
+          const blob = stored.originalFile instanceof Blob ? stored.originalFile : new Blob([stored.originalFile]);
+          fileToExport = new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
           setOriginalFile(fileToExport);
         }
       } catch (e) {
@@ -1229,24 +1054,33 @@ export default function App() {
       }
     }
 
-    if (!fileToExport) return;
+    if (!fileToExport) {
+      console.error('No original file available for export');
+      return;
+    }
+
     setExportStatus({ active: true, type: 'Original', progress: 0 });
     
-    // Simulate a bit of prep time for UX
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setExportStatus(prev => ({ ...prev, progress: 50 }));
-    
-    const url = URL.createObjectURL(fileToExport);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileToExport.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
+    try {
+      // Simulate a bit of prep time for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setExportStatus(prev => ({ ...prev, progress: 50 }));
+      
+      const url = URL.createObjectURL(fileToExport);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileToExport.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setExportStatus(prev => ({ ...prev, progress: 100 }));
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
+    }
   };
 
   const exportGPX = async () => {
@@ -1298,104 +1132,6 @@ export default function App() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `${summary?.name || 'activity'}.gpx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
-  const exportJSON = async () => {
-    if (!summary) return;
-    setExportStatus({ active: true, type: 'JSON', progress: 0 });
-    
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setExportStatus(prev => ({ ...prev, progress: 50 }));
-    
-    const jsonString = JSON.stringify(summary, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${summary.name || 'activity'}_summary.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setExportStatus(prev => ({ ...prev, progress: 100 }));
-    setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
-  };
-
-  const exportCSV = async () => {
-    if (!summary) return;
-    setExportStatus({ active: true, type: 'CSV', progress: 0 });
-    
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setExportStatus(prev => ({ ...prev, progress: 30 }));
-    
-    const summaryData = [
-      ['Metric', 'Value', 'Unit'],
-      ['Activity Name', summary.name, ''],
-      ['Start Time', summary.startTime instanceof Date ? summary.startTime.toISOString() : '', ''],
-      ['Duration', summary.duration, 's'],
-      ['Distance', (summary.distance / 1000).toFixed(2), 'km'],
-      ['Avg Power', Math.round(summary.avgPower || 0), 'W'],
-      ['Max Power', Math.round(summary.maxPower || 0), 'W'],
-      ['Normalized Power', Math.round(summary.normalizedPower || 0), 'W'],
-      ['Intensity Factor', (summary.intensityFactor || 0).toFixed(2), ''],
-      ['TSS', Math.round(summary.tss || 0), ''],
-      ['Avg Heart Rate', Math.round(summary.avgHeartRate || 0), 'bpm'],
-      ['Max Heart Rate', Math.round(summary.maxHeartRate || 0), 'bpm'],
-      ['Avg Cadence', Math.round(summary.avgCadence || 0), 'rpm'],
-      ['Avg Speed', (summary.avgSpeed || 0).toFixed(1), 'km/h'],
-      ['Total Ascent', Math.round(summary.totalAscent || 0), 'm'],
-    ];
-
-    let csv = Papa.unparse(summaryData);
-    setExportStatus(prev => ({ ...prev, progress: 60 }));
-
-    if (summary.laps && summary.laps.length > 0) {
-      csv += "\n\nLaps\n";
-      csv += Papa.unparse(summary.laps.map(l => ({
-        Lap: l.id,
-        'Duration (s)': l.duration,
-        'Distance (m)': l.distance.toFixed(0),
-        'Avg Power (W)': Math.round(l.avgPower || 0),
-        'Max Power (W)': Math.round(l.maxPower || 0),
-        'Avg HR (bpm)': Math.round(l.avgHeartRate || 0),
-        'Avg Cadence (rpm)': Math.round(l.avgCadence || 0),
-        'Avg Speed (km/h)': (l.avgSpeed || 0).toFixed(1)
-      })));
-    }
-
-    setExportStatus(prev => ({ ...prev, progress: 80 }));
-
-    if (summary.powerZones && summary.powerZones.length > 0) {
-      csv += "\n\nPower Zones\n";
-      csv += Papa.unparse(summary.powerZones.map(z => ({
-        Zone: z.name,
-        'Seconds': z.seconds,
-        'Percentage (%)': z.percentage.toFixed(1)
-      })));
-    }
-
-    if (summary.hrZones && summary.hrZones.length > 0) {
-      csv += "\n\nHeart Rate Zones\n";
-      csv += Papa.unparse(summary.hrZones.map(z => ({
-        Zone: z.name,
-        'Seconds': z.seconds,
-        'Percentage (%)': z.percentage.toFixed(1)
-      })));
-    }
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${summary.name || 'activity'}_summary.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1459,19 +1195,21 @@ export default function App() {
 
       {/* Header */}
       <header className="border-b border-app-border bg-app-bg/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Activity className="w-5 h-5 text-black" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">VELO<span className="text-orange-500">ANALYTICS</span></h1>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+              VELO<span className="text-orange-500 hidden sm:inline">ANALYTICS</span>
+            </h1>
           </div>
           
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
             {estimatedFtp && estimatedFtp > ftp && !autoUpdateFtp && (
               <button 
                 onClick={() => setFtp(estimatedFtp)}
-                className="hidden md:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
+                className="hidden lg:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
               >
                 <Zap className="w-3 h-3 text-orange-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
@@ -1480,58 +1218,45 @@ export default function App() {
                 <ChevronRight className="w-3 h-3 text-orange-500 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
-            <div className="flex items-center gap-2 bg-app-card border border-app-border px-3 py-1.5 rounded-full">
-              <Zap className="w-4 h-4 text-orange-400" />
-              <span className="text-xs font-medium text-app-muted">FTP:</span>
+            <div className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+              <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">FTP:</span>
               <input 
                 type="number" 
                 value={ftp} 
                 onChange={(e) => setFtp(parseInt(e.target.value) || 0)}
-                className="bg-transparent w-12 text-xs font-bold focus:outline-none text-orange-400"
+                className="bg-transparent w-8 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
               />
-              <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
+              <span className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest">W</span>
             </div>
             
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => {
-                  setActiveTab('history');
-                  setShowUploadView(false);
-                }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
-                  activeTab === 'history' && !showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
-                )}
-              >
-                <History className="w-4 h-4" />
-                History
-              </button>
+            <div className="flex items-center gap-1 sm:gap-2">
               <button 
                 onClick={() => setShowUploadView(!showUploadView)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
+                  "flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-widest transition-all",
                   showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
                 )}
               >
-                <Upload className="w-4 h-4" />
-                {showUploadView ? 'Cancel Upload' : 'Upload'}
+                <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{showUploadView ? 'Cancel' : 'Upload'}</span>
               </button>
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-5 h-5 text-orange-400" />
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                 ) : (
-                  <Moon className="w-5 h-5 text-app-muted" />
+                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
                 )}
               </button>
               <button 
                 onClick={() => setShowSettings(true)}
-                className="p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
               >
-                <Settings className="w-5 h-5 text-app-muted" />
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
               </button>
             </div>
           </div>
@@ -1554,11 +1279,11 @@ export default function App() {
             </div>
             <h2 className="text-2xl font-semibold mb-2">Drop your activity files</h2>
             <p className="text-app-muted mb-8 max-w-md text-center">
-              Support for Garmin <span className="text-app-text/60">.fit</span>, Golden Cheetah <span className="text-app-text/60">.json</span>, and standard <span className="text-app-text/60">.csv</span> power data.
+              Support for Garmin <span className="text-app-text/60">.fit</span> files.
             </p>
             <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
               Select Files
-              <input type="file" className="hidden" accept=".fit,.csv,.json" multiple onChange={(e) => handleFileUpload(e.target.files)} />
+              <input type="file" className="hidden" accept=".fit" multiple onChange={(e) => handleFileUpload(e.target.files)} />
             </label>
             
             {uploadQueue.length > 0 && (
@@ -1566,26 +1291,6 @@ export default function App() {
                 <div className="px-6 py-4 border-b border-app-border flex items-center justify-between bg-app-card/50">
                   <div className="flex items-center gap-4">
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Processing Queue</h3>
-                    {uploadQueue.some(item => item.status === 'completed') && (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={exportBatchJSON}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-app-bg border border-app-border rounded-lg text-[8px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                          title="Export all completed to JSON"
-                        >
-                          <FileJson className="w-3 h-3 text-purple-500" />
-                          Batch JSON
-                        </button>
-                        <button 
-                          onClick={exportBatchCSV}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-app-bg border border-app-border rounded-lg text-[8px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                          title="Export all completed to CSV"
-                        >
-                          <FileSpreadsheet className="w-3 h-3 text-green-500" />
-                          Batch CSV
-                        </button>
-                      </div>
-                    )}
                   </div>
                   <button 
                     onClick={() => setUploadQueue([])}
@@ -1651,8 +1356,6 @@ export default function App() {
               </div>
             )}
             <div className="mt-12 flex gap-8 opacity-40">
-              <div className="flex items-center gap-2"><FileJson className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">JSON</span></div>
-              <div className="flex items-center gap-2"><FileSpreadsheet className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">CSV</span></div>
               <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">FIT</span></div>
             </div>
           </div>
@@ -1818,11 +1521,11 @@ export default function App() {
               )}>
                 <div className="bg-app-card border border-app-border rounded-3xl p-8">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                       <button 
                         onClick={() => setActiveTab('metrics')}
                         className={cn(
-                          "text-sm font-bold uppercase tracking-[0.2em] transition-all",
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
                           activeTab === 'metrics' ? "text-orange-500" : "text-app-muted hover:text-app-text"
                         )}
                       >
@@ -1831,7 +1534,7 @@ export default function App() {
                       <button 
                         onClick={() => setActiveTab('laps')}
                         className={cn(
-                          "text-sm font-bold uppercase tracking-[0.2em] transition-all",
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
                           activeTab === 'laps' ? "text-orange-500" : "text-app-muted hover:text-app-text"
                         )}
                       >
@@ -1840,7 +1543,7 @@ export default function App() {
                       <button 
                         onClick={() => setActiveTab('zones')}
                         className={cn(
-                          "text-sm font-bold uppercase tracking-[0.2em] transition-all",
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
                           activeTab === 'zones' ? "text-orange-500" : "text-app-muted hover:text-app-text"
                         )}
                       >
@@ -1849,7 +1552,7 @@ export default function App() {
                       <button 
                         onClick={() => setActiveTab('history')}
                         className={cn(
-                          "text-sm font-bold uppercase tracking-[0.2em] transition-all",
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
                           activeTab === 'history' ? "text-orange-500" : "text-app-muted hover:text-app-text"
                         )}
                       >
@@ -2121,20 +1824,6 @@ export default function App() {
                         </div>
                         {history.length > 0 && (
                           <div className="flex gap-2">
-                            <button 
-                              onClick={exportHistoryJSON}
-                              className="flex items-center gap-1.5 px-3 py-1 bg-app-card border border-app-border rounded-lg text-[8px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                            >
-                              <FileJson className="w-3 h-3 text-purple-500" />
-                              JSON
-                            </button>
-                            <button 
-                              onClick={exportHistoryCSV}
-                              className="flex items-center gap-1.5 px-3 py-1 bg-app-card border border-app-border rounded-lg text-[8px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                            >
-                              <FileSpreadsheet className="w-3 h-3 text-green-500" />
-                              CSV
-                            </button>
                           </div>
                         )}
                       </div>
@@ -2344,10 +2033,6 @@ export default function App() {
                     >
                       <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
                         <div className="flex gap-2">
-                          <div className="bg-app-bg/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-app-border flex items-center gap-2">
-                            <MapIcon className="w-3 h-3 text-orange-500" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Course Map</span>
-                          </div>
                           <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
                             <button 
                               onClick={toggleFullScreen}
@@ -2612,7 +2297,7 @@ export default function App() {
                                     />
                                   )}
                                 </GoogleMap>
-                                <div className="absolute bottom-4 right-4 z-10 flex gap-1 bg-app-bg/80 backdrop-blur-md p-1 rounded-lg border border-app-border">
+                                <div className="absolute bottom-10 right-4 z-10 flex gap-1 bg-app-bg/80 backdrop-blur-md p-1 rounded-lg border border-app-border">
                                   {(['roadmap', 'satellite', 'terrain'] as const).map((type) => (
                                     <button
                                       key={type}
@@ -2703,20 +2388,6 @@ export default function App() {
                         >
                           <Download className="w-3 h-3 text-blue-500" />
                           GPX
-                        </button>
-                        <button 
-                          onClick={exportJSON}
-                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                        >
-                          <FileJson className="w-3 h-3 text-purple-500" />
-                          JSON
-                        </button>
-                        <button 
-                          onClick={exportCSV}
-                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                        >
-                          <FileSpreadsheet className="w-3 h-3 text-green-500" />
-                          CSV
                         </button>
                       </div>
                     </div>
