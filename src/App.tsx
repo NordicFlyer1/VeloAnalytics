@@ -862,6 +862,7 @@ export default function App() {
     const cadences = points.map(p => p.cadence || 0).filter(c => c > 0);
     const speeds = points.map(p => p.speed || 0);
     const heartRates = points.map(p => p.heartRate || 0).filter(h => h > 0);
+    const temperatures = points.map(p => p.temperature || 0).filter(t => t !== 0);
     
     const avgPower = powers.reduce((a, b) => a + b, 0) / powers.length;
     const maxPower = Math.max(...powers);
@@ -871,6 +872,7 @@ export default function App() {
     
     const ifFactor = np ? calculateIF(np, ftp) : undefined;
     const tss = (np && ifFactor) ? calculateTSS(duration, np, ifFactor, ftp) : undefined;
+    const work = (avgPower * duration) / 1000;
 
     // Total ascent calculation
     let totalAscent = 0;
@@ -934,6 +936,8 @@ export default function App() {
       avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : undefined,
       maxSpeed: speeds.length > 0 ? Math.max(...speeds) : undefined,
       totalAscent,
+      avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : undefined,
+      work,
       laps,
       powerZones: pZones,
       hrZones: hZones
@@ -1015,6 +1019,8 @@ export default function App() {
                     altitude: r.altitude,
                     latitude: r.position_lat,
                     longitude: r.position_long,
+                    temperature: r.temperature,
+                    leftRightBalance: r.left_right_balance,
                   }));
                   setUploadQueue(prev => prev.map(item => item.id === id ? { ...item, progress: 60 } : item));
                   
@@ -1112,7 +1118,11 @@ export default function App() {
     setExportStatus({ active: true, type: 'GPX', progress: 0 });
     
     let gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="VeloAnalytics Pro" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<gpx version="1.1" creator="VeloAnalytics Pro" 
+  xmlns="http://www.topografix.com/GPX/1/1" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd">
   <metadata>
     <name>${summary?.name || 'Activity'}</name>
     <time>${data[0].timestamp && !isNaN(data[0].timestamp.getTime()) ? data[0].timestamp.toISOString() : new Date().toISOString()}</time>
@@ -1131,9 +1141,12 @@ export default function App() {
         ${p.altitude !== undefined ? `<ele>${p.altitude}</ele>` : ''}
         <time>${p.timestamp.toISOString()}</time>
         <extensions>
-          ${p.power !== undefined ? `<power>${p.power}</power>` : ''}
-          ${p.heartRate !== undefined ? `<hr>${p.heartRate}</hr>` : ''}
-          ${p.cadence !== undefined ? `<cadence>${p.cadence}</cadence>` : ''}
+          ${p.power !== undefined ? `<power>${Math.round(p.power)}</power>` : ''}
+          <gpxtpx:TrackPointExtension>
+            ${p.heartRate !== undefined ? `<gpxtpx:hr>${Math.round(p.heartRate)}</gpxtpx:hr>` : ''}
+            ${p.cadence !== undefined ? `<gpxtpx:cad>${Math.round(p.cadence)}</gpxtpx:cad>` : ''}
+            ${p.temperature !== undefined ? `<gpxtpx:atemp>${Math.round(p.temperature)}</gpxtpx:atemp>` : ''}
+          </gpxtpx:TrackPointExtension>
         </extensions>
       </trkpt>`;
         }
@@ -1428,8 +1441,18 @@ export default function App() {
                       <span className="text-4xl font-light tracking-tighter">{Math.round(summary.normalizedPower || 0)}</span>
                       <span className="text-xs text-app-muted font-medium">W (NP)</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W
+                    <div className="mt-4 flex items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      <span>Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W</span>
+                      {data.some(p => p.leftRightBalance !== undefined) && (
+                        <span>L/R: {(() => {
+                          const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
+                          if (balances.length === 0) return '50/50';
+                          const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
+                          // Simple assumption: value is % left or right depending on device
+                          // Most modern devices return it as % left.
+                          return `${Math.round(avg)}/${100 - Math.round(avg)}`;
+                        })()}</span>
+                      )}
                     </div>
                   </div>
 
@@ -1502,6 +1525,22 @@ export default function App() {
                       Max: {Math.round(summary.maxCadence || 0)} rpm
                     </div>
                   </div>
+
+                  {summary.avgTemperature !== undefined && (
+                    <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Temperature</span>
+                        <Thermometer className="w-4 h-4 text-orange-400" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature)}</span>
+                        <span className="text-xs text-app-muted font-medium">°C</span>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                        Avg Temp
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="lg:col-span-3 bg-app-card border border-app-border rounded-2xl p-8 flex flex-col items-center justify-center text-center">
@@ -1733,6 +1772,7 @@ export default function App() {
                             <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
                             <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
                             <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
+                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Temp</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1754,6 +1794,9 @@ export default function App() {
                               </td>
                               <td className="py-4 text-xs text-app-text/60">
                                 {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
+                              </td>
+                              <td className="py-4 text-xs text-app-text/60">
+                                {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature)}°C` : '-'}
                               </td>
                             </tr>
                           ))}

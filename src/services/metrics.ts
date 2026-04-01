@@ -81,6 +81,7 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
   const cadences = points.map(p => p.cadence || 0).filter(c => c > 0);
   const speeds = points.map(p => p.speed || 0);
   const heartRates = points.map(p => p.heartRate || 0).filter(h => h > 0);
+  const temperatures = points.map(p => p.temperature || 0).filter(t => t !== 0);
   
   const avgPower = powers.length > 0 ? powers.reduce((a, b) => a + b, 0) / powers.length : 0;
   const maxPower = powers.length > 0 ? Math.max(...powers) : 0;
@@ -111,6 +112,7 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
     avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : undefined,
     maxSpeed: speeds.length > 0 ? Math.max(...speeds) : undefined,
     totalAscent,
+    avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : undefined,
   };
 }
 

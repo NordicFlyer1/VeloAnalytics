@@ -9,6 +9,8 @@ export interface CyclingDataPoint {
   latitude?: number;
   longitude?: number;
   slope?: number;
+  temperature?: number;
+  leftRightBalance?: number;
 }
 
 export interface Lap {
@@ -26,6 +28,7 @@ export interface Lap {
   avgSpeed?: number;
   maxSpeed?: number;
   totalAscent?: number;
+  avgTemperature?: number;
 }
 
 export interface ZoneDefinition {
@@ -66,6 +69,7 @@ export interface ActivitySummary {
   avgSpeed?: number;
   maxSpeed?: number;
   totalAscent?: number;
+  avgTemperature?: number;
   work?: number; // kJ
   laps?: Lap[];
   powerZones?: ZoneDistribution[];
