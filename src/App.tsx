@@ -2331,6 +2331,7 @@ export default function App() {
                                   defaultZoom={13}
                                   gestureHandling={'auto'}
                                   disableDefaultUI={true}
+                                  mapTypeControl={false}
                                   mapTypeId={mapType}
                                   mapId={'bf51a910020fa25a'}
                                   style={{ width: '100%', height: '100%' }}
@@ -2364,20 +2365,6 @@ export default function App() {
                                     />
                                   )}
                                 </GoogleMap>
-                                <div className="absolute bottom-10 right-4 z-10 flex gap-1 bg-app-bg/80 backdrop-blur-md p-1 rounded-lg border border-app-border">
-                                  {(['roadmap', 'satellite', 'terrain'] as const).map((type) => (
-                                    <button
-                                      key={type}
-                                      onClick={() => setMapType(type)}
-                                      className={cn(
-                                        "px-2 py-1 rounded text-[8px] font-bold uppercase tracking-widest transition-all",
-                                        mapType === type ? "bg-app-text/20 text-app-text" : "text-app-muted hover:text-app-text/60"
-                                      )}
-                                    >
-                                      {type}
-                                    </button>
-                                  ))}
-                                </div>
                               </div>
                             </APIProvider>
                           ) : (
