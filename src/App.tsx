@@ -24,6 +24,7 @@ import {
   Moon,
   ArrowLeft,
   Check,
+  ArrowUpDown,
   TrafficCone,
   Bike,
   Bus,
@@ -528,6 +529,7 @@ export default function App() {
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
   const [activeTab, setActiveTab] = useState<'metrics' | 'powerCurve' | 'laps' | 'zones' | 'history' | 'compare' | 'wprime'>('metrics');
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
+  const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
     return saved ? JSON.parse(saved) : [];
@@ -591,6 +593,14 @@ export default function App() {
       }))
       .filter(h => h.curve.length > 0);
   };
+
+  const sortedHistory = React.useMemo(() => {
+    return [...history].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return historySortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+  }, [history, historySortOrder]);
 
   const allTimeBestCurve = React.useMemo(() => {
     if (history.length === 0) return [];
@@ -2205,12 +2215,20 @@ export default function App() {
                         </div>
                         {history.length > 0 && (
                           <div className="flex gap-2">
+                            <button 
+                              onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                              className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
+                              title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
+                            >
+                              <ArrowUpDown className="w-3 h-3" />
+                              {historySortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                            </button>
                           </div>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
-                        {history.length > 0 ? (
-                          history.map(h => (
+                        {sortedHistory.length > 0 ? (
+                          sortedHistory.map(h => (
                             <div 
                               key={h.id} 
                               onClick={() => loadFromHistory(h.id)}
