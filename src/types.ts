@@ -52,6 +52,12 @@ export interface ZoneDistribution {
   color: string;
 }
 
+export interface PowerCurvePoint {
+  duration: number; // seconds
+  power: number; // watts
+  label: string; // e.g., "5s", "1m"
+}
+
 export interface ActivitySummary {
   name: string;
   startTime: Date;
@@ -74,6 +80,7 @@ export interface ActivitySummary {
   laps?: Lap[];
   powerZones?: ZoneDistribution[];
   hrZones?: ZoneDistribution[];
+  powerCurve?: PowerCurvePoint[];
 }
 
 export interface PowerMetrics {
@@ -107,6 +114,7 @@ export interface HistoricalActivity {
   totalAscent?: number;
   work?: number;
   ftp?: number;
+  powerCurve?: PowerCurvePoint[];
   fullSummary?: ActivitySummary;
   fullData?: CyclingDataPoint[];
   originalFile?: File | Blob;

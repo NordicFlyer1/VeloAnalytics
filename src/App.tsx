@@ -62,7 +62,7 @@ import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
-import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from './services/metrics';
+import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
@@ -342,7 +342,8 @@ const ComparisonView = ({ activities, pmcData, onBack }: { activities: Historica
                 domain={['auto', 'auto']}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '12px', fontSize: '10px' }}
+                contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
                 labelFormatter={(val) => val === 0 ? 'Day of Activity' : `${Math.abs(val)} days before activity`}
                 formatter={(value: number, name: string) => {
                   const idx = parseInt(name.split('_')[1]);
@@ -532,6 +533,7 @@ export default function App() {
   React.useEffect(() => {
     try {
       // Strip out large data before saving to localStorage
+      // We keep powerCurve as it's small and useful for aggregate analysis
       const strippedHistory = history.map(({ fullSummary, fullData, originalFile, ...rest }) => rest);
       localStorage.setItem('veloanalytics_history', JSON.stringify(strippedHistory));
     } catch (e) {
@@ -562,6 +564,47 @@ export default function App() {
     }
   }, [autoUpdateFtp, estimatedFtp, ftp]);
 
+  const getComparisonCurves = () => {
+    return history
+      .filter(h => selectedHistoryIds.includes(h.id))
+      .map(h => ({
+        name: h.name,
+        curve: h.powerCurve || h.fullSummary?.powerCurve || []
+      }))
+      .filter(h => h.curve.length > 0);
+  };
+
+  const allTimeBestCurve = React.useMemo(() => {
+    if (history.length === 0) return [];
+    const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
+    return durations.map(d => {
+      let maxPower = 0;
+      history.forEach(h => {
+        const curve = h.powerCurve || h.fullSummary?.powerCurve;
+        const point = curve?.find(p => p.duration === d);
+        if (point && point.power > maxPower) maxPower = point.power;
+      });
+      return { duration: d, power: maxPower };
+    }).filter(p => p.power > 0);
+  }, [history]);
+
+  const rolling90DayBestCurve = React.useMemo(() => {
+    if (history.length === 0) return [];
+    const ninetyDaysAgo = subDays(new Date(), 90);
+    const recentHistory = history.filter(h => new Date(h.date) >= ninetyDaysAgo);
+    
+    const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
+    return durations.map(d => {
+      let maxPower = 0;
+      recentHistory.forEach(h => {
+        const curve = h.powerCurve || h.fullSummary?.powerCurve;
+        const point = curve?.find(p => p.duration === d);
+        if (point && point.power > maxPower) maxPower = point.power;
+      });
+      return { duration: d, power: maxPower };
+    }).filter(p => p.power > 0);
+  }, [history]);
+
   const addToHistory = async (activity?: ActivitySummary | React.MouseEvent, activityData?: CyclingDataPoint[], file?: File) => {
     // If called from onClick, activity will be the event object.
     // We only want to use it if it's a real ActivitySummary.
@@ -591,6 +634,7 @@ export default function App() {
       totalAscent: target.totalAscent,
       work: target.work,
       ftp: ftp,
+      powerCurve: target.powerCurve,
       fullSummary: target,
       fullData: targetData,
       originalFile: targetFile || undefined,
@@ -701,6 +745,8 @@ export default function App() {
       console.error('Failed to delete multiple activity data from IndexedDB:', e);
     }
   };
+
+  const [pmcFocus, setPmcFocus] = useState<string | null>(null);
 
   const pmcData = React.useMemo(() => {
     if (history.length === 0) return [];
@@ -918,6 +964,7 @@ export default function App() {
     // Zone Calculations
     const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, ftp));
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
+    const powerCurve = calculatePowerCurve(points);
 
     const newSummary: ActivitySummary = {
       name: fileName.replace(/\.[^/.]+$/, ""),
@@ -940,7 +987,8 @@ export default function App() {
       work,
       laps,
       powerZones: pZones,
-      hrZones: hZones
+      hrZones: hZones,
+      powerCurve
     };
 
     setSummary(newSummary);
@@ -1595,6 +1643,15 @@ export default function App() {
                         Metrics
                       </button>
                       <button 
+                        onClick={() => setActiveTab('powerCurve')}
+                        className={cn(
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
+                          activeTab === 'powerCurve' ? "text-orange-500" : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        Power Curve
+                      </button>
+                      <button 
                         onClick={() => setActiveTab('laps')}
                         className={cn(
                           "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
@@ -1705,8 +1762,8 @@ export default function App() {
                             />
                           ))}
                           <Tooltip 
-                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '10px' }}
-                            itemStyle={{ color: '#fff' }}
+                            contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                            labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
                             formatter={(value: any, name: string) => {
                               const config = Object.values(metricsConfig).find(c => c.label === name);
                               return [`${value} ${config?.unit || ''}`, name];
@@ -1759,6 +1816,110 @@ export default function App() {
                           ))}
                         </AreaChart>
                       </ResponsiveContainer>
+                    </div>
+                  ) : activeTab === 'powerCurve' ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-orange-500" />
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Mean Maximal Power Curve</span>
+                        </div>
+                        {selectedHistoryIds.length > 0 && (
+                          <div className="text-[10px] text-app-muted uppercase tracking-widest">
+                            Overlaying {selectedHistoryIds.length} historical activities
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={(() => {
+                            const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
+                            const comparisons = getComparisonCurves();
+                            return durations.map(d => {
+                              const point: any = { duration: d };
+                              const current = summary?.powerCurve?.find(p => p.duration === d);
+                              if (current) point.current = current.power;
+                              
+                              const allTime = allTimeBestCurve.find(p => p.duration === d);
+                              if (allTime) point.allTime = allTime.power;
+
+                              const ninetyDay = rolling90DayBestCurve.find(p => p.duration === d);
+                              if (ninetyDay) point.ninetyDay = ninetyDay.power;
+
+                              comparisons.forEach(comp => {
+                                const p = comp.curve.find(cp => cp.duration === d);
+                                if (p) point[comp.name] = p.power;
+                              });
+                              
+                              return point;
+                            });
+                          })()}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                            <XAxis 
+                              dataKey="duration" 
+                              type="number" 
+                              scale="log" 
+                              domain={[1, 3600]} 
+                              ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
+                              tickFormatter={(tick) => {
+                                if (tick < 60) return `${tick}s`;
+                                if (tick < 3600) return `${tick / 60}m`;
+                                return `${tick / 3600}h`;
+                              }}
+                              stroke="var(--app-muted)"
+                              fontSize={10}
+                            />
+                            <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                              labelFormatter={(label) => {
+                                const d = Number(label);
+                                if (d < 60) return `${d} seconds`;
+                                if (d < 3600) return `${d / 60} minutes`;
+                                return `${d / 3600} hours`;
+                              }}
+                            />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right" 
+                              iconType="circle"
+                              wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
+                            />
+                            <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                            <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                            <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                            {getComparisonCurves().map((comp, i) => (
+                              <Line 
+                                key={comp.name} 
+                                type="monotone" 
+                                dataKey={comp.name} 
+                                stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
+                                strokeWidth={1.5} 
+                                strokeDasharray="2 2"
+                                dot={false} 
+                              />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
+                        {[5, 60, 300, 600, 1200, 1800, 3600].map(d => {
+                          const p = summary?.powerCurve?.find(cp => cp.duration === d);
+                          return (
+                            <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
+                              <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
+                                {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
+                              </div>
+                              <div className="text-sm font-bold text-app-text">
+                                {p ? `${p.power}W` : '-'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : activeTab === 'laps' ? (
                     <div className="overflow-x-auto">
@@ -2005,7 +2166,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Training Peaks Analysis Section */}
+                {/* PMC Analysis Section */}
                 {history.length > 0 && (
                   <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -2014,20 +2175,52 @@ export default function App() {
                           <TrendingUp className="w-6 h-6 text-orange-500" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-semibold">Training Peaks Analysis</h3>
+                          <h3 className="text-xl font-semibold">PMC Analysis</h3>
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Performance Management Chart (PMC)</p>
                         </div>
                       </div>
                       <div className="flex gap-8">
-                        <div className="text-center">
+                        <div 
+                          className={cn(
+                            "text-center cursor-pointer transition-all duration-300",
+                            pmcFocus === 'tss' ? "scale-110" : pmcFocus && pmcFocus !== 'tss' ? "opacity-30" : ""
+                          )}
+                          onMouseEnter={() => setPmcFocus('tss')}
+                          onMouseLeave={() => setPmcFocus(null)}
+                        >
+                          <div className="text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.tss || 0)}</div>
+                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">TSS</div>
+                        </div>
+                        <div 
+                          className={cn(
+                            "text-center cursor-pointer transition-all duration-300",
+                            pmcFocus === 'ctl' ? "scale-110" : pmcFocus && pmcFocus !== 'ctl' ? "opacity-30" : ""
+                          )}
+                          onMouseEnter={() => setPmcFocus('ctl')}
+                          onMouseLeave={() => setPmcFocus(null)}
+                        >
                           <div className="text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.ctl || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (CTL)</div>
                         </div>
-                        <div className="text-center">
+                        <div 
+                          className={cn(
+                            "text-center cursor-pointer transition-all duration-300",
+                            pmcFocus === 'atl' ? "scale-110" : pmcFocus && pmcFocus !== 'atl' ? "opacity-30" : ""
+                          )}
+                          onMouseEnter={() => setPmcFocus('atl')}
+                          onMouseLeave={() => setPmcFocus(null)}
+                        >
                           <div className="text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.atl || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (ATL)</div>
                         </div>
-                        <div className="text-center">
+                        <div 
+                          className={cn(
+                            "text-center cursor-pointer transition-all duration-300",
+                            pmcFocus === 'tsb' ? "scale-110" : pmcFocus && pmcFocus !== 'tsb' ? "opacity-30" : ""
+                          )}
+                          onMouseEnter={() => setPmcFocus('tsb')}
+                          onMouseLeave={() => setPmcFocus(null)}
+                        >
                           <div className="text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.tsb || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (TSB)</div>
                         </div>
@@ -2044,18 +2237,75 @@ export default function App() {
                             fontSize={10} 
                             tickFormatter={(str) => format(new Date(str), 'MMM d')}
                           />
-                          <YAxis yAxisId="left" stroke="var(--app-muted)" fontSize={10} />
-                          <YAxis yAxisId="right" orientation="right" stroke="var(--app-muted)" fontSize={10} />
+                          <YAxis 
+                            yAxisId="fitness" 
+                            stroke="var(--app-muted)" 
+                            fontSize={10} 
+                            hide={pmcFocus === 'tss' || pmcFocus === 'tsb'}
+                            label={pmcFocus === 'ctl' || pmcFocus === 'atl' ? { value: 'CTL/ATL', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                          />
+                          <YAxis 
+                            yAxisId="tss" 
+                            stroke="var(--app-muted)" 
+                            fontSize={10} 
+                            hide={pmcFocus !== 'tss'}
+                            label={pmcFocus === 'tss' ? { value: 'TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                          />
+                          <YAxis 
+                            yAxisId="form" 
+                            orientation="right" 
+                            stroke="var(--app-muted)" 
+                            fontSize={10} 
+                            hide={pmcFocus === 'tss' || pmcFocus === 'ctl' || pmcFocus === 'atl'}
+                            label={pmcFocus === 'tsb' ? { value: 'TSB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                          />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
                             labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                            itemStyle={{ color: 'var(--app-text)' }}
                           />
-                          <Legend verticalAlign="top" height={36}/>
-                          <Bar yAxisId="left" dataKey="tss" fill="#f97316" opacity={0.3} name="TSS" />
-                          <Line yAxisId="left" type="monotone" dataKey="ctl" stroke="#3b82f6" strokeWidth={2} dot={false} name="Fitness (CTL)" />
-                          <Line yAxisId="left" type="monotone" dataKey="atl" stroke="#ef4444" strokeWidth={2} dot={false} name="Fatigue (ATL)" />
-                          <Area yAxisId="right" type="monotone" dataKey="tsb" fill="#22c55e" stroke="#22c55e" fillOpacity={0.1} name="Form (TSB)" />
+                          <Legend 
+                            verticalAlign="top" 
+                            height={36}
+                            onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
+                            onMouseLeave={() => setPmcFocus(null)}
+                          />
+                          <Bar 
+                            yAxisId={pmcFocus === 'tss' ? "tss" : "fitness"} 
+                            dataKey="tss" 
+                            fill="#f97316" 
+                            opacity={pmcFocus === 'tss' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
+                            name="TSS" 
+                          />
+                          <Line 
+                            yAxisId="fitness" 
+                            type="monotone" 
+                            dataKey="ctl" 
+                            stroke="#3b82f6" 
+                            strokeWidth={pmcFocus === 'ctl' ? 4 : 2} 
+                            opacity={pmcFocus === 'ctl' ? 1 : pmcFocus ? 0.2 : 1}
+                            dot={false} 
+                            name="Fitness (CTL)" 
+                          />
+                          <Line 
+                            yAxisId="fitness" 
+                            type="monotone" 
+                            dataKey="atl" 
+                            stroke="#ef4444" 
+                            strokeWidth={pmcFocus === 'atl' ? 4 : 2} 
+                            opacity={pmcFocus === 'atl' ? 1 : pmcFocus ? 0.2 : 1}
+                            dot={false} 
+                            name="Fatigue (ATL)" 
+                          />
+                          <Area 
+                            yAxisId="form" 
+                            type="monotone" 
+                            dataKey="tsb" 
+                            fill="#22c55e" 
+                            stroke="#22c55e" 
+                            fillOpacity={pmcFocus === 'tsb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
+                            opacity={pmcFocus === 'tsb' ? 1 : pmcFocus ? 0.2 : 1}
+                            name="Form (TSB)" 
+                          />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>

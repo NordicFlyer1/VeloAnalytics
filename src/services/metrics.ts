@@ -1,4 +1,54 @@
-import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition } from '../types';
+import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition, PowerCurvePoint } from '../types';
+
+/**
+ * Calculates the best average power for various durations.
+ */
+export function calculatePowerCurve(data: CyclingDataPoint[]): PowerCurvePoint[] {
+  const powers = data.map(d => d.power || 0);
+  if (powers.length === 0) return [];
+
+  const durations = [
+    { s: 1, label: '1s' },
+    { s: 2, label: '2s' },
+    { s: 5, label: '5s' },
+    { s: 10, label: '10s' },
+    { s: 20, label: '20s' },
+    { s: 30, label: '30s' },
+    { s: 60, label: '1m' },
+    { s: 120, label: '2m' },
+    { s: 300, label: '5m' },
+    { s: 600, label: '10m' },
+    { s: 1200, label: '20m' },
+    { s: 1800, label: '30m' },
+    { s: 3600, label: '60m' },
+  ];
+
+  return durations
+    .filter(d => powers.length >= d.s)
+    .map(d => {
+      let maxAvg = 0;
+      let currentSum = 0;
+      
+      // Initial window
+      for (let i = 0; i < d.s; i++) {
+        currentSum += powers[i];
+      }
+      maxAvg = currentSum / d.s;
+      
+      // Sliding window
+      for (let i = d.s; i < powers.length; i++) {
+        currentSum = currentSum - powers[i - d.s] + powers[i];
+        const avg = currentSum / d.s;
+        if (avg > maxAvg) maxAvg = avg;
+      }
+      
+      return { 
+        duration: d.s, 
+        power: Math.round(maxAvg), 
+        label: d.label 
+      };
+    });
+}
 
 /**
  * Calculates time spent in each zone.
