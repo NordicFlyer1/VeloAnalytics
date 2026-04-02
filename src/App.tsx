@@ -62,7 +62,7 @@ import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
-import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve } from './services/metrics';
+import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
@@ -515,10 +515,18 @@ export default function App() {
     progress: 0
   });
   const [cpWPrime, setCpWPrime] = useState<{ cp: number; wPrime: number } | null>(null);
+  const [manualCP, setManualCP] = useState<number | null>(() => {
+    const saved = localStorage.getItem('veloanalytics_manual_cp');
+    return saved ? parseInt(saved) : null;
+  });
+  const [manualWPrime, setManualWPrime] = useState<number | null>(() => {
+    const saved = localStorage.getItem('veloanalytics_manual_wprime');
+    return saved ? parseInt(saved) : null;
+  });
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
-  const [activeTab, setActiveTab] = useState<'metrics' | 'laps' | 'zones' | 'history' | 'compare'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'powerCurve' | 'laps' | 'zones' | 'history' | 'compare' | 'wprime'>('metrics');
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
@@ -557,6 +565,16 @@ export default function App() {
   React.useEffect(() => {
     localStorage.setItem('veloanalytics_autoupdate_ftp', autoUpdateFtp.toString());
   }, [autoUpdateFtp]);
+
+  React.useEffect(() => {
+    if (manualCP !== null) localStorage.setItem('veloanalytics_manual_cp', manualCP.toString());
+    else localStorage.removeItem('veloanalytics_manual_cp');
+  }, [manualCP]);
+
+  React.useEffect(() => {
+    if (manualWPrime !== null) localStorage.setItem('veloanalytics_manual_wprime', manualWPrime.toString());
+    else localStorage.removeItem('veloanalytics_manual_wprime');
+  }, [manualWPrime]);
 
   React.useEffect(() => {
     if (autoUpdateFtp && estimatedFtp && estimatedFtp > ftp) {
@@ -696,6 +714,20 @@ export default function App() {
         ...p,
         timestamp: new Date(p.timestamp)
       }));
+
+      // Recalculate W' Balance if missing or if manual values are set
+      if (restoredData.length > 0) {
+        const cpWPrimeResult = estimateCPWPrime(restoredData);
+        const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
+        const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
+        
+        if (effectiveCP > 0 && effectiveWPrime > 0) {
+          const wBal = calculateWPrimeBalance(restoredData, effectiveCP, effectiveWPrime);
+          restoredData.forEach((p, i) => {
+            p.wPrimeBalance = wBal[i];
+          });
+        }
+      }
 
       setCurrentActivityId(id);
       setSummary(restoredSummary);
@@ -966,6 +998,18 @@ export default function App() {
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
     const powerCurve = calculatePowerCurve(points);
 
+    // Calculate W' Balance
+    const cpWPrimeResult = estimateCPWPrime(points);
+    const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
+    const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
+    
+    if (effectiveCP > 0 && effectiveWPrime > 0) {
+      const wBal = calculateWPrimeBalance(points, effectiveCP, effectiveWPrime);
+      points.forEach((p, i) => {
+        p.wPrimeBalance = wBal[i];
+      });
+    }
+
     const newSummary: ActivitySummary = {
       name: fileName.replace(/\.[^/.]+$/, ""),
       startTime: points[0].timestamp,
@@ -993,11 +1037,11 @@ export default function App() {
 
     setSummary(newSummary);
     setData(points);
-    setCpWPrime(estimateCPWPrime(points));
+    setCpWPrime(cpWPrimeResult);
     setEstimatedFtp(estimateFTP(points));
 
     return newSummary;
-  }, [ftp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
+  }, [ftp, maxHR, powerZoneDefinitions, hrZoneDefinitions, manualCP, manualWPrime]);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -1670,6 +1714,15 @@ export default function App() {
                         Zones
                       </button>
                       <button 
+                        onClick={() => setActiveTab('wprime')}
+                        className={cn(
+                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
+                          activeTab === 'wprime' ? "text-orange-500" : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        W' Balance
+                      </button>
+                      <button 
                         onClick={() => setActiveTab('history')}
                         className={cn(
                           "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
@@ -1919,6 +1972,106 @@ export default function App() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  ) : activeTab === 'wprime' ? (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                          <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
+                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
+                        </div>
+                        {cpWPrime && (
+                          <div className="flex items-center gap-6">
+                            <div className="text-center">
+                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                Critical Power
+                                {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
+                              </div>
+                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp)}W</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                W' Capacity
+                                {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
+                              </div>
+                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime) / 1000)}kJ</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={data}>
+                            <defs>
+                              <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="var(--app-muted)" 
+                              fontSize={10} 
+                              tickFormatter={(val) => {
+                                const d = new Date(val);
+                                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+                              }}
+                            />
+                            <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
+                            <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                              labelFormatter={(val) => new Date(val).toLocaleTimeString()}
+                              formatter={(value: any, name: string) => {
+                                if (name === "W' Balance") return [`${Math.round(value)} J`, name];
+                                return [`${Math.round(value)} W`, name];
+                              }}
+                            />
+                            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
+                            
+                            {cpWPrime && (
+                              <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
+                            )}
+
+                            <Area 
+                              yAxisId="wbal"
+                              type="monotone" 
+                              dataKey="wPrimeBalance" 
+                              name="W' Balance" 
+                              stroke="#a855f7" 
+                              fillOpacity={1} 
+                              fill="url(#colorWBal)" 
+                              strokeWidth={2}
+                              dot={false}
+                            />
+                            <Line 
+                              yAxisId="power"
+                              type="monotone" 
+                              dataKey="power" 
+                              name="Power" 
+                              stroke="#f97316" 
+                              strokeWidth={1} 
+                              dot={false}
+                              opacity={0.4}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
+                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-purple-500" />
+                          What is W' Balance?
+                        </h4>
+                        <p className="text-xs text-app-muted leading-relaxed">
+                          W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
+                          The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
+                          When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
+                        </p>
                       </div>
                     </div>
                   ) : activeTab === 'laps' ? (
@@ -2776,6 +2929,36 @@ export default function App() {
                       />
                       <span className="text-[10px] text-app-muted uppercase tracking-widest">BPM</span>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-app-text/60">Critical Power (CP)</label>
+                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
+                      <Zap className="w-4 h-4 text-orange-500" />
+                      <input 
+                        type="number" 
+                        placeholder={cpWPrime?.cp ? Math.round(cpWPrime.cp).toString() : "Estimated"}
+                        value={manualCP ?? ''} 
+                        onChange={(e) => setManualCP(e.target.value ? parseInt(e.target.value) : null)}
+                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                      />
+                      <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
+                    </div>
+                    <p className="text-[8px] text-app-muted uppercase tracking-widest">Leave empty to use estimated CP</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-app-text/60">W' Capacity</label>
+                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
+                      <Zap className="w-4 h-4 text-purple-500" />
+                      <input 
+                        type="number" 
+                        placeholder={cpWPrime?.wPrime ? Math.round(cpWPrime.wPrime).toString() : "Estimated"}
+                        value={manualWPrime ?? ''} 
+                        onChange={(e) => setManualWPrime(e.target.value ? parseInt(e.target.value) : null)}
+                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                      />
+                      <span className="text-[10px] text-app-muted uppercase tracking-widest">Joules</span>
+                    </div>
+                    <p className="text-[8px] text-app-muted uppercase tracking-widest">Leave empty to use estimated W'</p>
                   </div>
                 </div>
               </section>

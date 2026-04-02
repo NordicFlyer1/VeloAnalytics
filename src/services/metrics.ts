@@ -51,6 +51,44 @@ export function calculatePowerCurve(data: CyclingDataPoint[]): PowerCurvePoint[]
 }
 
 /**
+ * Calculates W' balance over time using the Skiba model.
+ */
+export function calculateWPrimeBalance(data: CyclingDataPoint[], cp: number, wPrime: number): number[] {
+  if (data.length === 0 || cp <= 0 || wPrime <= 0) return [];
+
+  const wPrimeBal: number[] = new Array(data.length);
+  wPrimeBal[0] = wPrime;
+
+  for (let i = 1; i < data.length; i++) {
+    const p = data[i].power || 0;
+    const prevWBal = wPrimeBal[i - 1];
+    
+    // Calculate time difference
+    let dt = 1;
+    if (data[i].timestamp && data[i-1].timestamp) {
+      dt = (data[i].timestamp.getTime() - data[i-1].timestamp.getTime()) / 1000;
+    }
+    if (dt <= 0) dt = 1;
+
+    if (p > cp) {
+      // Depletion
+      wPrimeBal[i] = prevWBal - (p - cp) * dt;
+    } else {
+      // Recovery
+      // Skiba (2012) recovery constant tau
+      const tau = 546 * Math.exp(-0.01 * (cp - p)) + 316;
+      wPrimeBal[i] = prevWBal + (wPrime - prevWBal) * (1 - Math.exp(-dt / tau));
+    }
+
+    // Clamp to [0, wPrime]
+    if (wPrimeBal[i] < 0) wPrimeBal[i] = 0;
+    if (wPrimeBal[i] > wPrime) wPrimeBal[i] = wPrime;
+  }
+
+  return wPrimeBal;
+}
+
+/**
  * Calculates time spent in each zone.
  */
 export function calculateZones(values: number[], zones: Zone[]): ZoneDistribution[] {

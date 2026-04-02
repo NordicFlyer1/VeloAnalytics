@@ -11,6 +11,7 @@ export interface CyclingDataPoint {
   slope?: number;
   temperature?: number;
   leftRightBalance?: number;
+  wPrimeBalance?: number;
 }
 
 export interface Lap {
