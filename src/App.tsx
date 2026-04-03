@@ -35,7 +35,9 @@ import {
   Thermometer,
   Droplets,
   Maximize,
-  Expand
+  Expand,
+  Table,
+  LayoutList
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -308,14 +310,16 @@ const ComparisonView = ({ activities, pmcData, onBack }: { activities: Historica
             <h4 className="text-sm font-bold uppercase tracking-widest text-app-text/60">PMC Overlay Analysis</h4>
             <p className="text-[10px] text-app-muted">Comparing fitness trends leading up to each activity</p>
           </div>
-          <div className="flex bg-app-bg p-1 rounded-xl border border-app-border">
+          <div className="flex gap-2">
             {(['ctl', 'atl', 'tsb'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setActivePMCMetric(m)}
                 className={cn(
-                  "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                  activePMCMetric === m ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-app-muted hover:text-app-text"
+                  "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
+                  activePMCMetric === m 
+                    ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                    : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
                 )}
               >
                 {m}
@@ -528,13 +532,13 @@ export default function App() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
-  const [activeTab, setActiveTab] = useState<'metrics' | 'powerCurve' | 'laps' | 'zones' | 'history' | 'compare' | 'wprime'>('metrics');
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
     return saved ? JSON.parse(saved) : [];
   });
+  const [trainingLoadRange, setTrainingLoadRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('veloanalytics_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -594,6 +598,83 @@ export default function App() {
       }))
       .filter(h => h.curve.length > 0);
   };
+
+  const trainingLoadData = React.useMemo(() => {
+    if (history.length === 0) return [];
+    
+    const now = new Date();
+    const data: any[] = [];
+    
+    if (trainingLoadRange === 'weekly') {
+      // Last 12 weeks
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (i * 7));
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        const weekActivities = history.filter(h => {
+          const ad = new Date(h.date);
+          return ad >= weekStart && ad <= weekEnd;
+        });
+        
+        data.push({
+          label: `W${format(weekStart, 'w')}`,
+          tss: weekActivities.reduce((sum, a) => sum + a.tss, 0),
+          work: weekActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          duration: weekActivities.reduce((sum, a) => sum + a.duration, 0)
+        });
+      }
+    } else if (trainingLoadRange === 'monthly') {
+      // Last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthActivities = history.filter(h => {
+          const ad = new Date(h.date);
+          return ad.getMonth() === d.getMonth() && ad.getFullYear() === d.getFullYear();
+        });
+        
+        data.push({
+          label: format(d, 'MMM'),
+          tss: monthActivities.reduce((sum, a) => sum + a.tss, 0),
+          work: monthActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          duration: monthActivities.reduce((sum, a) => sum + a.duration, 0)
+        });
+      }
+    } else {
+      // Last 5 years
+      for (let i = 4; i >= 0; i--) {
+        const year = now.getFullYear() - i;
+        const yearActivities = history.filter(h => new Date(h.date).getFullYear() === year);
+        
+        data.push({
+          label: year.toString(),
+          tss: yearActivities.reduce((sum, a) => sum + a.tss, 0),
+          work: yearActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          duration: yearActivities.reduce((sum, a) => sum + a.duration, 0)
+        });
+      }
+    }
+    
+    return data;
+  }, [history, trainingLoadRange]);
+
+  const trainingLoadStats = React.useMemo(() => {
+    if (trainingLoadData.length === 0) return { totalTss: 0, avgTss: 0, totalWork: 0, totalDuration: 0 };
+    
+    const totalTss = trainingLoadData.reduce((sum, d) => sum + d.tss, 0);
+    const totalWork = trainingLoadData.reduce((sum, d) => sum + d.work, 0);
+    const totalDuration = trainingLoadData.reduce((sum, d) => sum + d.duration, 0);
+    
+    return {
+      totalTss,
+      avgTss: totalTss / trainingLoadData.length,
+      totalWork,
+      totalDuration
+    };
+  }, [trainingLoadData]);
 
   const sortedHistory = React.useMemo(() => {
     return [...history].sort((a, b) => {
@@ -768,7 +849,6 @@ export default function App() {
       setEstimatedFtp(estimateFTP(restoredData));
       setActivePoint(null);
       setIsPointLocked(false);
-      setActiveTab('metrics');
       setShowUploadView(false);
     }
   };
@@ -1546,7 +1626,6 @@ export default function App() {
                             setEstimatedFtp(estimateFTP(item.data!));
                             setActivePoint(null);
                             setIsPointLocked(false);
-                            setActiveTab('metrics');
                             setShowUploadView(false);
                           }}
                           className="ml-4 px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all"
@@ -1563,30 +1642,35 @@ export default function App() {
               <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">FIT</span></div>
             </div>
           </div>
-        ) : (!summary && history.length > 0 && activeTab !== 'history') ? (
-          <div className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border">
-              <History className="w-10 h-10 text-orange-500" />
-            </div>
-            <h2 className="text-3xl font-bold mb-4 tracking-tight">Select an Activity</h2>
-            <p className="text-app-muted mb-10 max-w-md leading-relaxed">
-              Your history is ready. Select an activity from the history tab to view its full metrics, map, and analysis.
-            </p>
-            <button 
-              onClick={() => setActiveTab('history')}
-              className="bg-orange-500 hover:bg-orange-600 text-black px-10 py-4 rounded-full font-bold transition-all shadow-xl shadow-orange-500/20 active:scale-95 flex items-center gap-3 group"
-            >
-              Open History
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Summary Cards */}
+            {!summary && history.length > 0 && selectedHistoryIds.length < 2 && (
+              <div className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border">
+                  <History className="w-10 h-10 text-orange-500" />
+                </div>
+                <h2 className="text-3xl font-bold mb-4 tracking-tight">Select an Activity</h2>
+                <p className="text-app-muted mb-10 max-w-md leading-relaxed">
+                  Your history is ready. Select an activity from the history list below to view its full metrics, map, and analysis.
+                </p>
+              </div>
+            )}
+
+            {selectedHistoryIds.length >= 2 && (
+              <div className="bg-app-card border border-app-border rounded-3xl p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <ComparisonView 
+                  activities={history.filter(h => selectedHistoryIds.includes(h.id))} 
+                  pmcData={pmcData}
+                  onBack={() => setSelectedHistoryIds([])}
+                />
+              </div>
+            )}
+
+            {summary && (
+              <>
+                {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {summary ? (
-                <>
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-4">
                       <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
                       <Timer className="w-4 h-4 text-orange-500" />
@@ -1735,19 +1819,6 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="lg:col-span-3 bg-app-card border border-app-border rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-app-bg rounded-full flex items-center justify-center mb-4">
-                    <Activity className="w-8 h-8 text-orange-500" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Welcome Back</h3>
-                  <p className="text-app-muted text-sm max-w-md">
-                    Select an activity from your history below to view detailed metrics, or upload a new file to get started.
-                  </p>
-                </div>
-              )}
-
               {history.length > 0 && currentPMC && (
                 <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors animate-in fade-in slide-in-from-right-4 duration-500">
                   <div className="flex justify-between items-start mb-4">
@@ -1763,78 +1834,20 @@ export default function App() {
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Main Content Grid */}
-            <div className={cn(
-              "grid grid-cols-1 gap-8",
-              isMapExpanded ? "lg:grid-cols-1" : "lg:grid-cols-3"
-            )}>
-              {/* Power Chart */}
-              <div className={cn(
-                "space-y-8",
-                isMapExpanded ? "order-2" : "lg:col-span-2 order-1"
-              )}>
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <button 
-                        onClick={() => setActiveTab('metrics')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'metrics' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        Metrics
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('powerCurve')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'powerCurve' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        Power Curve
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('laps')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'laps' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        Laps
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('zones')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'zones' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        Zones
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('wprime')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'wprime' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        W' Balance
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('history')}
-                        className={cn(
-                          "text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all",
-                          activeTab === 'history' ? "text-orange-500" : "text-app-muted hover:text-app-text"
-                        )}
-                      >
-                        History
-                      </button>
-                    </div>
-                    {activeTab === 'metrics' && (
+            <div className="grid grid-cols-1 gap-8">
+              {/* Main Analysis Area */}
+              <div className="space-y-8">
+                <div className="space-y-8">
+                  {/* Metrics Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-orange-500" />
+                        <h3 className="text-sm font-bold uppercase tracking-[0.2em]">Activity Metrics</h3>
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(metricsConfig).map(([key, config]) => (
                           <button
@@ -1857,10 +1870,8 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {activeTab === 'metrics' ? (
                     <div className="h-[400px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart 
@@ -1972,7 +1983,503 @@ export default function App() {
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : activeTab === 'powerCurve' ? (
+                  </div>                  {/* Map Section */}
+                  <div 
+                    ref={mapContainerRef}
+                    className={cn(
+                      "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
+                      isMapExpanded ? "h-[900px]" : "h-[600px]"
+                    )}
+                  >
+                        <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
+                          <div className="flex gap-2">
+                            <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+                              <button 
+                                onClick={toggleFullScreen}
+                                className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                                title="Full Screen"
+                              >
+                                <Expand className="w-3 h-3" />
+                              </button>
+                              <button 
+                                onClick={() => setIsMapExpanded(!isMapExpanded)}
+                                className={cn(
+                                  "p-1 rounded-full transition-all",
+                                  isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
+                                )}
+                                title={isMapExpanded ? "Collapse Map" : "Expand Map"}
+                              >
+                                <Maximize className="w-3 h-3" />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setActivePoint(null);
+                                  setIsPointLocked(false);
+                                }}
+                                className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                                title="Fit to Course"
+                              >
+                                <Navigation className="w-3 h-3" />
+                              </button>
+                              <button 
+                                onClick={() => setMapProvider('osm')}
+                                className={cn(
+                                  "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                  mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                )}
+                              >
+                                OSM
+                              </button>
+                              <button 
+                                onClick={() => setMapProvider('google')}
+                                className={cn(
+                                  "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                  mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                )}
+                              >
+                                Google
+                              </button>
+                            </div>
+                          </div>
+                          <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                        </div>
+                        {gpsPoints.length > 0 ? (
+                          mapProvider === 'osm' ? (
+                            <div className="w-full h-full relative">
+                              {activePoint !== null && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsPointLocked(false);
+                                    setActivePoint(null);
+                                  }}
+                                  className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
+                                  title="Clear Highlight"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 text-orange-500" />
+                                </button>
+                              )}
+                              <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
+                                <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                                  {(['roadmap', 'terrain'] as const).map((t) => (
+                                    <button
+                                      key={t}
+                                      onClick={() => setMapType(t as any)}
+                                      className={cn(
+                                        "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                        (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                      )}
+                                    >
+                                      {t === 'roadmap' ? 'Standard' : 'Terrain'}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
+                                <TileLayer
+                                  url={
+                                    mapType === 'terrain' 
+                                      ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
+                                      : theme === 'dark'
+                                        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                                        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                                  }
+                                  attribution={
+                                    mapType === 'terrain'
+                                      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                                      : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                  }
+                                  maxZoom={19}
+                                />
+                                <LeafletPolyline 
+                                  positions={gpsPoints} 
+                                  color="#f97316" 
+                                  weight={4} 
+                                  opacity={0.8} 
+                                  eventHandlers={{
+                                    mousemove: (e) => {
+                                      if (isPointLocked) return;
+                                      const { lat, lng } = e.latlng;
+                                      let minDistance = Infinity;
+                                      let closestIndex = -1;
+                                      
+                                      data.forEach((p, index) => {
+                                        if (p.latitude !== undefined && p.longitude !== undefined) {
+                                          const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                          if (d < minDistance) {
+                                            minDistance = d;
+                                            closestIndex = index;
+                                          }
+                                        }
+                                      });
+                                      
+                                      if (closestIndex !== -1) setActivePoint(closestIndex);
+                                    },
+                                    mouseout: () => {
+                                      if (!isPointLocked) setActivePoint(null);
+                                    },
+                                    click: (e) => {
+                                      const { lat, lng } = e.latlng;
+                                      let minDistance = Infinity;
+                                      let closestIndex = -1;
+                                      
+                                      data.forEach((p, index) => {
+                                        if (p.latitude !== undefined && p.longitude !== undefined) {
+                                          const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                          if (d < minDistance) {
+                                            minDistance = d;
+                                            closestIndex = index;
+                                          }
+                                        }
+                                      });
+                                      
+                                      if (closestIndex !== -1) {
+                                        setActivePoint(closestIndex);
+                                        setIsPointLocked(true);
+                                      }
+                                    }
+                                  }}
+                                />
+                                {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
+                                  <CircleMarker 
+                                    center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
+                                    radius={8} 
+                                    fillColor="#f97316" 
+                                    color="white" 
+                                    weight={3} 
+                                    fillOpacity={1} 
+                                  />
+                                )}
+                                <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapExpanded={isMapExpanded} />
+                              </MapContainer>
+                            </div>
+                          ) : (
+                            import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                              <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                                <div className="w-full h-full relative">
+                                  {activePoint !== null && (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsPointLocked(false);
+                                        setActivePoint(null);
+                                      }}
+                                      className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
+                                      title="Clear Highlight"
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 text-orange-500" />
+                                    </button>
+                                  )}
+                                  <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
+                                    <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                                      {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
+                                        <button
+                                          key={t}
+                                          onClick={() => setMapType(t)}
+                                          className={cn(
+                                            "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
+                                            mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                          )}
+                                        >
+                                          {t}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
+                                      <button
+                                        onClick={() => setShowTraffic(!showTraffic)}
+                                        className={cn(
+                                          "p-2 rounded-full transition-all",
+                                          showTraffic ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                        )}
+                                        title="Toggle Traffic"
+                                      >
+                                        <TrafficCone className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setShowBicycling(!showBicycling)}
+                                        className={cn(
+                                          "p-2 rounded-full transition-all",
+                                          showBicycling ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                        )}
+                                        title="Toggle Bicycling"
+                                      >
+                                        <Bike className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setShowTransit(!showTransit)}
+                                        className={cn(
+                                          "p-2 rounded-full transition-all",
+                                          showTransit ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                                        )}
+                                        title="Toggle Transit"
+                                      >
+                                        <Bus className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <GoogleMap
+                                    defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
+                                    center={activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude ? { lat: data[activePoint].latitude!, lng: data[activePoint].longitude! } : undefined}
+                                    defaultZoom={13}
+                                    gestureHandling={'auto'}
+                                    disableDefaultUI={true}
+                                    mapTypeControl={false}
+                                    mapTypeId={mapType}
+                                    mapId={'bf51a910020fa25a'}
+                                    style={{ width: '100%', height: '100%' }}
+                                    colorScheme="DARK"
+                                    onClick={() => {
+                                      if (isPointLocked) {
+                                        setIsPointLocked(false);
+                                        setActivePoint(null);
+                                      }
+                                    }}
+                                  >
+                                    <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapExpanded={isMapExpanded} />
+                                    <GoogleMapTrafficLayer enabled={showTraffic} />
+                                    <GoogleMapBicyclingLayer enabled={showBicycling} />
+                                    <GoogleMapTransitLayer enabled={showTransit} />
+                                    {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
+                                      <div 
+                                        style={{ 
+                                          position: 'absolute', 
+                                          left: '50%', 
+                                          top: '50%', 
+                                          transform: 'translate(-50%, -50%)',
+                                          width: '16px',
+                                          height: '16px',
+                                          backgroundColor: '#f97316',
+                                          borderRadius: '50%',
+                                          border: '3px solid white',
+                                          boxShadow: '0 0 15px rgba(249, 115, 22, 0.5)',
+                                          zIndex: 100
+                                        }}
+                                      />
+                                    )}
+                                  </GoogleMap>
+                                </div>
+                              </APIProvider>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20 p-8 text-center">
+                                <MapIcon className="w-12 h-12 mb-4" />
+                                <span className="text-xs uppercase tracking-widest mb-2 font-bold">Google Maps API Key Missing</span>
+                                <p className="text-[10px] leading-relaxed">Please add VITE_GOOGLE_MAPS_API_KEY to your environment variables to enable Google Maps.</p>
+                              </div>
+                            )
+                          )
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20">
+                            <MapIcon className="w-12 h-12 mb-4" />
+                            <span className="text-xs uppercase tracking-widest">No GPS Data</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Activity Details Section */}
+                      <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-6">Activity Details</h3>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Activity Name</span>
+                            <span className="text-xs font-medium">{summary.name}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Start Time</span>
+                            <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Avg Cadence</span>
+                            <span className="text-xs font-medium">
+                              {Math.round(summary.avgCadence || 0)} rpm
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Avg Speed</span>
+                            <span className="text-xs font-medium">
+                              {(summary.avgSpeed || 0).toFixed(1)} km/h
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Elevation Gain</span>
+                            <span className="text-xs font-medium">
+                              {Math.round(summary.totalAscent || 0)} m
+                            </span>
+                          </div>
+                          {estimatedFtp && (
+                            <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                              <span className="text-xs text-app-muted font-bold text-orange-500/60">Est. FTP (20m)</span>
+                              <span className="text-xs font-bold text-orange-500">
+                                {estimatedFtp} W
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center py-3">
+                            <span className="text-xs text-app-muted">Max Heart Rate</span>
+                            <span className="text-xs font-medium">
+                              {Math.round(summary.maxHeartRate || 0)} bpm
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-8 grid grid-cols-2 gap-3">
+                          <button 
+                            onClick={exportOriginal}
+                            className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                          >
+                            <FileDown className="w-3 h-3 text-orange-500" />
+                            Original
+                          </button>
+                          <button 
+                            onClick={exportGPX}
+                            className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                          >
+                            <Download className="w-3 h-3 text-orange-500" />
+                            GPX
+                          </button>
+                        </div>
+                      </div>
+
+                  {/* W' Balance Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                          <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
+                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
+                        </div>
+                        {cpWPrime && (
+                          <div className="flex items-center gap-6">
+                            <div className="text-center">
+                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                Critical Power
+                                {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
+                              </div>
+                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp)}W</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                W' Capacity
+                                {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
+                              </div>
+                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime) / 1000)}kJ</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={data}>
+                            <defs>
+                              <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="var(--app-muted)" 
+                              fontSize={10} 
+                              tickFormatter={(val) => {
+                                const d = new Date(val);
+                                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+                              }}
+                            />
+                            <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
+                            <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                              labelFormatter={(val) => new Date(val).toLocaleTimeString()}
+                              formatter={(value: any, name: string) => {
+                                if (name === "W' Balance") return [`${Math.round(value)} J`, name];
+                                return [`${Math.round(value)} W`, name];
+                              }}
+                            />
+                            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
+                            
+                            {cpWPrime && (
+                              <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
+                            )}
+
+                            <Area 
+                              yAxisId="wbal"
+                              type="monotone" 
+                              dataKey="wPrimeBalance" 
+                              name="W' Balance" 
+                              stroke="#a855f7" 
+                              fillOpacity={1} 
+                              fill="url(#colorWBal)" 
+                              strokeWidth={2}
+                              dot={false}
+                            />
+                            <Line 
+                              yAxisId="power"
+                              type="monotone" 
+                              dataKey="power" 
+                              name="Power" 
+                              stroke="#f97316" 
+                              strokeWidth={1} 
+                              dot={false}
+                              opacity={0.4}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* CP & W' Analysis */}
+                      <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                        <div className="flex items-center justify-between mb-8">
+                          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
+                          <Zap className="w-4 h-4 text-orange-500" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated CP</span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
+                              <span className="text-sm text-app-muted">Watts</span>
+                            </div>
+                            <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
+                              Critical Power represents the highest power output you can maintain indefinitely without fatigue.
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
+                              <span className="text-sm text-app-muted">Joules</span>
+                            </div>
+                            <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
+                              W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-8 pt-8 border-t border-app-border/30">
+                          <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
+                            Model: 2-Parameter Linear Model (Work = CP × t + W')
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
+                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-purple-500" />
+                          What is W' Balance?
+                        </h4>
+                        <p className="text-xs text-app-muted leading-relaxed">
+                          W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
+                          The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
+                          When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Power Curve Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -2076,150 +2583,10 @@ export default function App() {
                         })}
                       </div>
                     </div>
-                  ) : activeTab === 'wprime' ? (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                          <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
-                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
-                        </div>
-                        {cpWPrime && (
-                          <div className="flex items-center gap-6">
-                            <div className="text-center">
-                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                Critical Power
-                                {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
-                              </div>
-                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp)}W</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                W' Capacity
-                                {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
-                              </div>
-                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime) / 1000)}kJ</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  </div>
 
-                      <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={data}>
-                            <defs>
-                              <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="var(--app-muted)" 
-                              fontSize={10} 
-                              tickFormatter={(val) => {
-                                const d = new Date(val);
-                                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
-                              }}
-                            />
-                            <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
-                            <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                              labelFormatter={(val) => new Date(val).toLocaleTimeString()}
-                              formatter={(value: any, name: string) => {
-                                if (name === "W' Balance") return [`${Math.round(value)} J`, name];
-                                return [`${Math.round(value)} W`, name];
-                              }}
-                            />
-                            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
-                            
-                            {cpWPrime && (
-                              <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
-                            )}
-
-                            <Area 
-                              yAxisId="wbal"
-                              type="monotone" 
-                              dataKey="wPrimeBalance" 
-                              name="W' Balance" 
-                              stroke="#a855f7" 
-                              fillOpacity={1} 
-                              fill="url(#colorWBal)" 
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                            <Line 
-                              yAxisId="power"
-                              type="monotone" 
-                              dataKey="power" 
-                              name="Power" 
-                              stroke="#f97316" 
-                              strokeWidth={1} 
-                              dot={false}
-                              opacity={0.4}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
-                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-purple-500" />
-                          What is W' Balance?
-                        </h4>
-                        <p className="text-xs text-app-muted leading-relaxed">
-                          W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
-                          The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
-                          When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
-                        </p>
-                      </div>
-                    </div>
-                  ) : activeTab === 'laps' ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-app-border">
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
-                            <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Temp</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {summary?.laps?.map((lap) => (
-                            <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
-                              <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
-                              <td className="py-4 text-xs text-app-text/60">
-                                {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
-                              </td>
-                              <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
-                              <td className="py-4 text-xs text-app-text/60 font-bold">
-                                {Math.round(lap.avgPower || 0)}W / {Math.round(lap.maxPower || 0)}W
-                              </td>
-                              <td className="py-4 text-xs text-app-text/60">
-                                {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
-                              </td>
-                              <td className="py-4 text-xs text-app-text/60">
-                                {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
-                              </td>
-                              <td className="py-4 text-xs text-app-text/60">
-                                {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
-                              </td>
-                              <td className="py-4 text-xs text-app-text/60">
-                                {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature)}°C` : '-'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : activeTab === 'zones' ? (
+                  {/* Zones Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                       <div className="space-y-6">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
@@ -2266,173 +2633,62 @@ export default function App() {
                         )}
                       </div>
                     </div>
-                  ) : activeTab === 'history' ? (
+                  </div>
+
+                  {/* Laps Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div 
-                            onClick={() => {
-                              if (selectedHistoryIds.length === history.length && history.length > 0) {
-                                setSelectedHistoryIds([]);
-                              } else {
-                                setSelectedHistoryIds(history.map(h => h.id));
-                              }
-                            }}
-                            className={cn(
-                              "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
-                              selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                            )}
-                            title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
-                          >
-                            {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
-                          </div>
-                          <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
-                          {selectedHistoryIds.length >= 2 && (
-                            <button 
-                              onClick={() => setActiveTab('compare')}
-                              className="bg-orange-500 hover:bg-orange-600 text-black px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300"
-                            >
-                              Compare {selectedHistoryIds.length}
-                            </button>
-                          )}
-                          {selectedHistoryIds.length > 0 && (
-                            <button 
-                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete {selectedHistoryIds.length}
-                            </button>
-                          )}
-                        </div>
-                        {history.length > 0 && (
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                              className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                              title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
-                            >
-                              <ArrowUpDown className="w-3 h-3" />
-                              {historySortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
-                            </button>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <LayoutList className="w-4 h-4 text-orange-500" />
+                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap Breakdown</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
-                        {sortedHistory.length > 0 ? (
-                          sortedHistory.map(h => (
-                            <div 
-                              key={h.id} 
-                              onClick={() => loadFromHistory(h.id)}
-                              className={cn(
-                                "bg-app-card border rounded-xl p-4 flex items-center justify-between group cursor-pointer transition-all",
-                                summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
-                              )}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedHistoryIds(prev => 
-                                      prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
-                                    );
-                                  }}
-                                  className={cn(
-                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                                    selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                                  )}
-                                >
-                                  {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
-                                </div>
-                                <div>
-                                  <div className="text-xs font-bold">{h.name}</div>
-                                  <div className="text-[10px] text-app-muted">{format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                  <div className="text-xs font-bold text-orange-500">{Math.round(h.tss)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest">TSS</div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      loadFromHistory(h.id);
-                                    }}
-                                    className="px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all opacity-0 group-hover:opacity-100"
-                                  >
-                                    View
-                                  </button>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeFromHistory(h.id);
-                                    }}
-                                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="col-span-full py-12 flex flex-col items-center justify-center text-app-muted/30 border border-dashed border-app-border rounded-2xl">
-                            <History className="w-8 h-8 mb-2" />
-                            <span className="text-[10px] uppercase tracking-widest">No activities in history</span>
-                          </div>
-                        )}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-app-border">
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
+                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Temp</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summary?.laps?.map((lap) => (
+                              <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
+                                <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
+                                <td className="py-4 text-xs text-app-text/60">
+                                  {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
+                                </td>
+                                <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
+                                <td className="py-4 text-xs text-app-text/60 font-bold">
+                                  {Math.round(lap.avgPower || 0)}W / {Math.round(lap.maxPower || 0)}W
+                                </td>
+                                <td className="py-4 text-xs text-app-text/60">
+                                  {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
+                                </td>
+                                <td className="py-4 text-xs text-app-text/60">
+                                  {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
+                                </td>
+                                <td className="py-4 text-xs text-app-text/60">
+                                  {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
+                                </td>
+                                <td className="py-4 text-xs text-app-text/60">
+                                  {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature)}°C` : '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  ) : (
-                    <ComparisonView 
-                      activities={history.filter(h => selectedHistoryIds.includes(h.id))}
-                      pmcData={pmcData}
-                      onBack={() => setActiveTab('history')}
-                    />
-                  )}
-                </div>
+                  </div>
 
-                {/* CP & W' Analysis */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
-                    <Zap className="w-4 h-4 text-orange-500" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated CP</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
-                        <span className="text-sm text-app-muted">Watts</span>
-                      </div>
-                      <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                        Critical Power represents the highest power output you can maintain indefinitely without fatigue.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
-                        <span className="text-sm text-app-muted">Joules</span>
-                      </div>
-                      <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                        W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-8 pt-8 border-t border-app-border/30">
-                    <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
-                      Model: 2-Parameter Linear Model (Work = CP × t + W')
-                    </p>
-                  </div>
-                </div>
-
-                {/* PMC Analysis Section */}
-                {history.length > 0 && (
-                  <>
-                    <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  {/* PMC Analysis Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-orange-500/10 rounded-2xl">
@@ -2626,460 +2882,205 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Training Load Summary */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8 shadow-2xl">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  {/* Training Load Summary Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-orange-500/10 rounded-2xl">
                           <BarChart3 className="w-6 h-6 text-orange-500" />
                         </div>
                         <div>
                           <h3 className="text-xl font-semibold">Training Load Summary</h3>
-                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Aggregated TSS over time</p>
+                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Weekly/Monthly/Yearly Volume Analysis</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {[
-                          { id: 'weekly', label: 'Weekly' },
-                          { id: 'monthly', label: 'Monthly' },
-                          { id: 'yearly', label: 'Yearly' }
-                        ].map(view => (
+                      <div className="flex gap-2">
+                        {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
                           <button
-                            key={view.id}
-                            onClick={() => setTssSummaryView(view.id as any)}
+                            key={range}
+                            onClick={() => setTrainingLoadRange(range)}
                             className={cn(
-                              "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
-                              tssSummaryView === view.id 
+                              "px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
+                              trainingLoadRange === range 
                                 ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
                                 : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
                             )}
                           >
-                            {view.label}
+                            {range}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="h-[300px] w-full">
+                    <div className="h-[400px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={tssSummaryData}>
+                        <BarChart data={trainingLoadData}>
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
                           <XAxis 
                             dataKey="label" 
                             stroke="var(--app-muted)" 
                             fontSize={10} 
-                            tick={{ fill: 'var(--app-muted)' }}
+                            tickFormatter={(str) => str}
                           />
-                          <YAxis 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            tick={{ fill: 'var(--app-muted)' }}
-                            label={{ value: 'Total TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }}
-                          />
+                          <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
-                            cursor={{ fill: 'var(--app-border)', opacity: 0.4 }}
+                            labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
                           />
                           <Bar 
                             dataKey="tss" 
                             fill="#f97316" 
-                            radius={[4, 4, 0, 0]} 
-                            name="Total TSS" 
+                            radius={[6, 6, 0, 0]} 
+                            name="TSS"
                           />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="mt-8 p-4 bg-orange-500/5 rounded-2xl border border-orange-500/10">
-                      <p className="text-[10px] text-app-muted leading-relaxed">
-                        This chart shows your total training stress accumulated per {tssSummaryView.replace('ly', '')}. 
-                        Consistent training load is key to building fitness, while sudden spikes (ramping too fast) 
-                        can increase injury risk or lead to overtraining.
-                      </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
+                      <div className="text-center">
+                        <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalTss)}</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total TSS</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgTss)}</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg TSS / Period</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork / 1000)}kJ</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalDuration / 3600)}h</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
+                      </div>
                     </div>
                   </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
+          </>
+        )}
 
-              {/* Sidebar: Map & Details */}
-              <div className={cn(
-                "space-y-8",
-                isMapExpanded ? "order-1" : "order-2"
-              )}>
-                {summary ? (
-                  <>
-                    <div 
-                      ref={mapContainerRef}
-                      className={cn(
-                        "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
-                        isMapExpanded ? "h-[900px]" : "h-[700px]"
-                      )}
-                    >
-                      <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
-                        <div className="flex gap-2">
-                          <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+        {/* Activity History Section */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div 
+                            onClick={() => {
+                              if (selectedHistoryIds.length === history.length && history.length > 0) {
+                                setSelectedHistoryIds([]);
+                              } else {
+                                setSelectedHistoryIds(history.map(h => h.id));
+                              }
+                            }}
+                            className={cn(
+                              "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
+                              selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                            )}
+                            title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
+                          >
+                            {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
+                          </div>
+                          <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
+                          {selectedHistoryIds.length > 0 && (
                             <button 
-                              onClick={toggleFullScreen}
-                              className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                              title="Full Screen"
+                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
                             >
-                              <Expand className="w-3 h-3" />
+                              <Trash2 className="w-3 h-3" />
+                              Delete {selectedHistoryIds.length}
                             </button>
+                          )}
+                        </div>
+                        {history.length > 0 && (
+                          <div className="flex gap-2">
                             <button 
-                              onClick={() => setIsMapExpanded(!isMapExpanded)}
-                              className={cn(
-                                "p-1 rounded-full transition-all",
-                                isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
-                              )}
-                              title={isMapExpanded ? "Collapse Map" : "Expand Map"}
+                              onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                              className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
+                              title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
                             >
-                              <Maximize className="w-3 h-3" />
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setActivePoint(null);
-                                setIsPointLocked(false);
-                              }}
-                              className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                              title="Fit to Course"
-                            >
-                              <Navigation className="w-3 h-3" />
-                            </button>
-                            <button 
-                              onClick={() => setMapProvider('osm')}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                              )}
-                            >
-                              OSM
-                            </button>
-                            <button 
-                              onClick={() => setMapProvider('google')}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                              )}
-                            >
-                              Google
+                              <ArrowUpDown className="w-3 h-3" />
+                              {historySortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
                             </button>
                           </div>
-                        </div>
-                        <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                        )}
                       </div>
-                      {gpsPoints.length > 0 ? (
-                        mapProvider === 'osm' ? (
-                          <div className="w-full h-full relative">
-                            {activePoint !== null && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setIsPointLocked(false);
-                                  setActivePoint(null);
-                                }}
-                                className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
-                                title="Clear Highlight"
-                              >
-                                <CheckCircle2 className="w-4 h-4 text-orange-500" />
-                              </button>
-                            )}
-                            <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                              <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
-                                {(['roadmap', 'terrain'] as const).map((t) => (
-                                  <button
-                                    key={t}
-                                    onClick={() => setMapType(t as any)}
-                                    className={cn(
-                                      "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all",
-                                      (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                    )}
-                                  >
-                                    {t === 'roadmap' ? 'Standard' : 'Terrain'}
-                                  </button>
-                                ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
+                        {sortedHistory.length > 0 ? (
+                          sortedHistory.map(h => (
+                            <div 
+                              key={h.id} 
+                              onClick={() => loadFromHistory(h.id)}
+                              className={cn(
+                                "bg-app-card border rounded-xl p-4 flex items-center justify-between group cursor-pointer transition-all",
+                                summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
+                              )}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedHistoryIds(prev => 
+                                      prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
+                                    );
+                                  }}
+                                  className={cn(
+                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                                    selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                                  )}
+                                >
+                                  {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
+                                </div>
+                                <div>
+                                  <div className="text-xs font-bold">{h.name}</div>
+                                  <div className="text-[10px] text-app-muted">{format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}</div>
+                                </div>
                               </div>
-                            </div>
-                            <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
-                              <TileLayer
-                                url={
-                                  mapType === 'terrain' 
-                                    ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
-                                    : theme === 'dark'
-                                      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                                      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                                }
-                                attribution={
-                                  mapType === 'terrain'
-                                    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-                                    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                                }
-                                maxZoom={19}
-                              />
-                            <LeafletPolyline 
-                              positions={gpsPoints} 
-                              color="#f97316" 
-                              weight={4} 
-                              opacity={0.8} 
-                              eventHandlers={{
-                                mousemove: (e) => {
-                                  if (isPointLocked) return;
-                                  const { lat, lng } = e.latlng;
-                                  let minDistance = Infinity;
-                                  let closestIndex = -1;
-                                  
-                                  data.forEach((p, index) => {
-                                    if (p.latitude !== undefined && p.longitude !== undefined) {
-                                      const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                      if (d < minDistance) {
-                                        minDistance = d;
-                                        closestIndex = index;
-                                      }
-                                    }
-                                  });
-                                  
-                                  if (closestIndex !== -1) setActivePoint(closestIndex);
-                                },
-                                mouseout: () => {
-                                  if (!isPointLocked) setActivePoint(null);
-                                },
-                                click: (e) => {
-                                  const { lat, lng } = e.latlng;
-                                  let minDistance = Infinity;
-                                  let closestIndex = -1;
-                                  
-                                  data.forEach((p, index) => {
-                                    if (p.latitude !== undefined && p.longitude !== undefined) {
-                                      const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                      if (d < minDistance) {
-                                        minDistance = d;
-                                        closestIndex = index;
-                                      }
-                                    }
-                                  });
-                                  
-                                  if (closestIndex !== -1) {
-                                    setActivePoint(closestIndex);
-                                    setIsPointLocked(true);
-                                  }
-                                }
-                              }}
-                            />
-                            {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                              <CircleMarker 
-                                center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
-                                radius={8} 
-                                fillColor="#f97316" 
-                                color="white" 
-                                weight={3} 
-                                fillOpacity={1} 
-                              />
-                            )}
-                            <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapExpanded={isMapExpanded} />
-                          </MapContainer>
-                        </div>
-                      ) : (
-                          import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-                            <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                              <div className="w-full h-full relative">
-                                {activePoint !== null && (
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-orange-500">{Math.round(h.tss)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest">TSS</div>
+                                </div>
+                                <div className="flex items-center gap-2">
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setIsPointLocked(false);
-                                      setActivePoint(null);
+                                      loadFromHistory(h.id);
                                     }}
-                                    className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
-                                    title="Clear Highlight"
+                                    className="px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100 shadow-lg shadow-orange-500/20"
                                   >
-                                    <CheckCircle2 className="w-4 h-4 text-orange-500" />
+                                    View
                                   </button>
-                                )}
-                                <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                  <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
-                                    {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
-                                      <button
-                                        key={t}
-                                        onClick={() => setMapType(t)}
-                                        className={cn(
-                                          "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all",
-                                          mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                        )}
-                                      >
-                                        {t}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
-                                    <button
-                                      onClick={() => setShowTraffic(!showTraffic)}
-                                      className={cn(
-                                        "p-2 rounded-lg transition-all",
-                                        showTraffic ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                      )}
-                                      title="Toggle Traffic"
-                                    >
-                                      <TrafficCone className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => setShowBicycling(!showBicycling)}
-                                      className={cn(
-                                        "p-2 rounded-lg transition-all",
-                                        showBicycling ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                      )}
-                                      title="Toggle Bicycling"
-                                    >
-                                      <Bike className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => setShowTransit(!showTransit)}
-                                      className={cn(
-                                        "p-2 rounded-lg transition-all",
-                                        showTransit ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                      )}
-                                      title="Toggle Transit"
-                                    >
-                                      <Bus className="w-3 h-3" />
-                                    </button>
-                                  </div>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFromHistory(h.id);
+                                    }}
+                                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </button>
                                 </div>
-                                <GoogleMap
-                                  defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
-                                  center={activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude ? { lat: data[activePoint].latitude!, lng: data[activePoint].longitude! } : undefined}
-                                  defaultZoom={13}
-                                  gestureHandling={'auto'}
-                                  disableDefaultUI={true}
-                                  mapTypeControl={false}
-                                  mapTypeId={mapType}
-                                  mapId={'bf51a910020fa25a'}
-                                  style={{ width: '100%', height: '100%' }}
-                                  colorScheme="DARK"
-                                  onClick={() => {
-                                    if (isPointLocked) {
-                                      setIsPointLocked(false);
-                                      setActivePoint(null);
-                                    }
-                                  }}
-                                >
-                                  <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapExpanded={isMapExpanded} />
-                                  <GoogleMapTrafficLayer enabled={showTraffic} />
-                                  <GoogleMapBicyclingLayer enabled={showBicycling} />
-                                  <GoogleMapTransitLayer enabled={showTransit} />
-                                  {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                                    <div 
-                                      style={{ 
-                                        position: 'absolute', 
-                                        left: '50%', 
-                                        top: '50%', 
-                                        transform: 'translate(-50%, -50%)',
-                                        width: '16px',
-                                        height: '16px',
-                                        backgroundColor: '#f97316',
-                                        borderRadius: '50%',
-                                        border: '3px solid white',
-                                        boxShadow: '0 0 15px rgba(249, 115, 22, 0.5)',
-                                        zIndex: 100
-                                      }}
-                                    />
-                                  )}
-                                </GoogleMap>
                               </div>
-                            </APIProvider>
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20 p-8 text-center">
-                              <MapIcon className="w-12 h-12 mb-4" />
-                              <span className="text-xs uppercase tracking-widest mb-2 font-bold">Google Maps API Key Missing</span>
-                              <p className="text-[10px] leading-relaxed">Please add VITE_GOOGLE_MAPS_API_KEY to your environment variables to enable Google Maps.</p>
                             </div>
-                          )
-                        )
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20">
-                          <MapIcon className="w-12 h-12 mb-4" />
-                          <span className="text-xs uppercase tracking-widest">No GPS Data</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                      <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-6">Activity Details</h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                          <span className="text-xs text-app-muted">Activity Name</span>
-                          <span className="text-xs font-medium">{summary.name}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                          <span className="text-xs text-app-muted">Start Time</span>
-                          <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                          <span className="text-xs text-app-muted">Avg Cadence</span>
-                          <span className="text-xs font-medium">
-                            {Math.round(summary.avgCadence || 0)} rpm
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                          <span className="text-xs text-app-muted">Avg Speed</span>
-                          <span className="text-xs font-medium">
-                            {(summary.avgSpeed || 0).toFixed(1)} km/h
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                          <span className="text-xs text-app-muted">Elevation Gain</span>
-                          <span className="text-xs font-medium">
-                            {Math.round(summary.totalAscent || 0)} m
-                          </span>
-                        </div>
-                        {estimatedFtp && (
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted font-bold text-orange-500/60">Est. FTP (20m)</span>
-                            <span className="text-xs font-bold text-orange-500">
-                              {estimatedFtp} W
-                            </span>
+                          ))
+                        ) : (
+                          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
+                            <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
+                              <Activity className="w-6 h-6 text-app-muted" />
+                            </div>
+                            <p className="text-xs uppercase tracking-[0.2em] font-bold mb-2">No activities yet</p>
+                            <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
                           </div>
                         )}
-                        <div className="flex justify-between items-center py-3">
-                          <span className="text-xs text-app-muted">Max Heart Rate</span>
-                          <span className="text-xs font-medium">
-                            {Math.round(summary.maxHeartRate || 0)} bpm
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 grid grid-cols-2 gap-3">
-                        <button 
-                          onClick={exportOriginal}
-                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                        >
-                          <FileDown className="w-3 h-3 text-orange-500" />
-                          Original
-                        </button>
-                        <button 
-                          onClick={exportGPX}
-                          className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                        >
-                          <Download className="w-3 h-3 text-orange-500" />
-                          GPX
-                        </button>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <div className="bg-app-card border border-app-border rounded-3xl p-12 flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 bg-app-bg rounded-full flex items-center justify-center mb-6 border border-app-border">
-                      <Activity className="w-8 h-8 text-app-muted/40" />
-                    </div>
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-2">No Activity Selected</h3>
-                    <p className="text-xs text-app-muted max-w-[200px] leading-relaxed">
-                      Select an activity from the history tab or upload a new file to see details.
-                    </p>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+                </div>
+              )}
+            </main>
 
       {/* Settings Modal */}
       {showSettings && (
