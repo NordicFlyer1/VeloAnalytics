@@ -312,3 +312,31 @@ export function estimateFTP(data: CyclingDataPoint[]): number | null {
   
   return Math.round(maxAvg * 0.95);
 }
+
+/**
+ * Calculates Aerobic Decoupling (Pw:HR)
+ * Compares the ratio of Power to Heart Rate in the first half vs the second half.
+ * Decoupling % = ((Ratio1 - Ratio2) / Ratio1) * 100
+ */
+export function calculateAerobicDecoupling(data: CyclingDataPoint[]): number | undefined {
+  const validPoints = data.filter(p => p.power !== undefined && p.heartRate !== undefined && p.heartRate > 0);
+  if (validPoints.length < 600) return undefined; // Need at least 10 minutes of data
+
+  const midIndex = Math.floor(validPoints.length / 2);
+  const firstHalf = validPoints.slice(0, midIndex);
+  const secondHalf = validPoints.slice(midIndex);
+
+  const avgPower1 = firstHalf.reduce((a, b) => a + (b.power || 0), 0) / firstHalf.length;
+  const avgHR1 = firstHalf.reduce((a, b) => a + (b.heartRate || 0), 0) / firstHalf.length;
+  const ratio1 = avgPower1 / avgHR1;
+
+  const avgPower2 = secondHalf.reduce((a, b) => a + (b.power || 0), 0) / secondHalf.length;
+  const avgHR2 = secondHalf.reduce((a, b) => a + (b.heartRate || 0), 0) / secondHalf.length;
+  const ratio2 = avgPower2 / avgHR2;
+
+  if (ratio1 === 0) return 0;
+
+  // Decoupling is typically expressed as (Ratio1 - Ratio2) / Ratio1
+  // If Ratio2 is smaller (Power dropped or HR increased), decoupling is positive.
+  return ((ratio1 - ratio2) / ratio1) * 100;
+}

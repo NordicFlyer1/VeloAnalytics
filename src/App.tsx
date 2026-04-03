@@ -63,7 +63,7 @@ import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
-import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance } from './services/metrics';
+import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
@@ -661,6 +661,7 @@ export default function App() {
       avgSpeed: target.avgSpeed,
       totalAscent: target.totalAscent,
       work: target.work,
+      aerobicDecoupling: target.aerobicDecoupling,
       ftp: ftp,
       powerCurve: target.powerCurve,
       fullSummary: target,
@@ -737,6 +738,11 @@ export default function App() {
             p.wPrimeBalance = wBal[i];
           });
         }
+      }
+
+      // Recalculate Aerobic Decoupling if missing
+      if (restoredSummary.aerobicDecoupling === undefined) {
+        restoredSummary.aerobicDecoupling = calculateAerobicDecoupling(restoredData);
       }
 
       setCurrentActivityId(id);
@@ -1063,7 +1069,8 @@ export default function App() {
       laps,
       powerZones: pZones,
       hrZones: hZones,
-      powerCurve
+      powerCurve,
+      aerobicDecoupling: calculateAerobicDecoupling(points),
     };
 
     setSummary(newSummary);
@@ -1648,6 +1655,33 @@ export default function App() {
                       Max: {Math.round(summary.maxCadence || 0)} rpm
                     </div>
                   </div>
+
+                  {summary.aerobicDecoupling !== undefined && (
+                    <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Aerobic Decoupling</span>
+                        <TrendingUp className={cn(
+                          "w-4 h-4",
+                          summary.aerobicDecoupling < 5 ? "text-green-500" :
+                          summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
+                        )} />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className={cn(
+                          "text-4xl font-light tracking-tighter",
+                          summary.aerobicDecoupling < 5 ? "text-green-500" :
+                          summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
+                        )}>
+                          {summary.aerobicDecoupling.toFixed(1)}%
+                        </span>
+                        <span className="text-xs text-app-muted font-medium">Pw:HR</span>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                        {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
+                         summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
+                      </div>
+                    </div>
+                  )}
 
                   {summary.avgTemperature !== undefined && (
                     <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">

@@ -82,6 +82,7 @@ export interface ActivitySummary {
   powerZones?: ZoneDistribution[];
   hrZones?: ZoneDistribution[];
   powerCurve?: PowerCurvePoint[];
+  aerobicDecoupling?: number;
 }
 
 export interface PowerMetrics {
@@ -114,6 +115,7 @@ export interface HistoricalActivity {
   avgSpeed?: number;
   totalAscent?: number;
   work?: number;
+  aerobicDecoupling?: number;
   ftp?: number;
   powerCurve?: PowerCurvePoint[];
   fullSummary?: ActivitySummary;
