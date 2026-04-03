@@ -789,15 +789,21 @@ export default function App() {
   };
 
   const [pmcFocus, setPmcFocus] = useState<string | null>(null);
+  const [pmcDateRange, setPmcDateRange] = useState<'all' | '1year' | '6months' | '3months' | '6weeks'>('all');
 
   const pmcData = React.useMemo(() => {
     if (history.length === 0) return [];
     
     const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
+    const historyByDate = sortedHistory.reduce((acc, h) => {
+      acc[h.date] = (acc[h.date] || 0) + h.tss;
+      return acc;
+    }, {} as Record<string, number>);
+
     const startDate = subDays(new Date(sortedHistory[0].date), 42); // Start 42 days before first activity
     const endDate = new Date();
     
-    const data: PMCDataPoint[] = [];
+    const allData: PMCDataPoint[] = [];
     let currentCTL = 0;
     let currentATL = 0;
     
@@ -808,13 +814,12 @@ export default function App() {
         continue;
       }
       const dateStr = curr.toISOString().split('T')[0];
-      const dayActivities = sortedHistory.filter(h => h.date === dateStr);
-      const dayTSS = dayActivities.reduce((sum, h) => sum + h.tss, 0);
+      const dayTSS = historyByDate[dateStr] || 0;
       
       currentCTL = currentCTL + (dayTSS - currentCTL) / 42;
       currentATL = currentATL + (dayTSS - currentATL) / 7;
       
-      data.push({
+      allData.push({
         date: dateStr,
         tss: dayTSS,
         ctl: currentCTL,
@@ -824,9 +829,25 @@ export default function App() {
       
       curr.setDate(curr.getDate() + 1);
     }
+
+    // Filter based on pmcDateRange
+    if (pmcDateRange === 'all') return allData;
+
+    const now = new Date();
+    let filterDate: Date | null = null;
+
+    if (pmcDateRange === '6weeks') filterDate = subDays(now, 42);
+    else if (pmcDateRange === '3months') filterDate = subDays(now, 90);
+    else if (pmcDateRange === '6months') filterDate = subDays(now, 180);
+    else if (pmcDateRange === '1year') filterDate = subDays(now, 365);
+
+    if (filterDate) {
+      const filterStr = filterDate.toISOString().split('T')[0];
+      return allData.filter(d => d.date >= filterStr);
+    }
     
-    return data;
-  }, [history]);
+    return allData;
+  }, [history, pmcDateRange]);
 
   const currentPMC = React.useMemo(() => {
     if (pmcData.length === 0) return null;
@@ -2406,7 +2427,13 @@ export default function App() {
                             dataKey="date" 
                             stroke="var(--app-muted)" 
                             fontSize={10} 
-                            tickFormatter={(str) => format(new Date(str), 'MMM d')}
+                            tickFormatter={(str) => {
+                              const date = new Date(str);
+                              if (pmcDateRange === '6weeks' || pmcDateRange === '3months') {
+                                return format(date, 'MMM d');
+                              }
+                              return format(date, 'MMM yy');
+                            }}
                           />
                           <YAxis 
                             yAxisId="fitness" 
@@ -2433,6 +2460,7 @@ export default function App() {
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
                             labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                            labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
                           />
                           <Legend 
                             verticalAlign="top" 
@@ -2479,6 +2507,29 @@ export default function App() {
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-app-border/30">
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: '1year', label: 'One Year' },
+                        { id: '6months', label: 'Six Months' },
+                        { id: '3months', label: 'Three Months' },
+                        { id: '6weeks', label: 'Six Weeks' }
+                      ].map(range => (
+                        <button
+                          key={range.id}
+                          onClick={() => setPmcDateRange(range.id as any)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
+                            pmcDateRange === range.id 
+                              ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                              : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                          )}
+                        >
+                          {range.label}
+                        </button>
+                      ))}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
