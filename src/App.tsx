@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { 
   LineChart, 
+  BarChart,
   Line, 
   XAxis, 
   YAxis, 
@@ -60,7 +61,7 @@ const ReferenceLineAny = ReferenceLine as any;
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
 import FitParser from 'fit-file-parser';
-import { format, subDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
 import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
@@ -796,6 +797,42 @@ export default function App() {
 
   const [pmcFocus, setPmcFocus] = useState<string | null>(null);
   const [pmcDateRange, setPmcDateRange] = useState<'all' | '1year' | '6months' | '3months' | '6weeks'>('all');
+  const [tssSummaryView, setTssSummaryView] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+
+  const tssSummaryData = React.useMemo(() => {
+    if (history.length === 0) return [];
+
+    const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
+    const summary: Record<string, { date: Date, tss: number, label: string }> = {};
+
+    sortedHistory.forEach(h => {
+      const date = new Date(h.date);
+      let key = '';
+      let label = '';
+      let startOfPeriod: Date;
+
+      if (tssSummaryView === 'weekly') {
+        startOfPeriod = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+        key = format(startOfPeriod, 'yyyy-ww');
+        label = `Wk ${format(startOfPeriod, 'ww, yyyy')}`;
+      } else if (tssSummaryView === 'monthly') {
+        startOfPeriod = startOfMonth(date);
+        key = format(startOfPeriod, 'yyyy-MM');
+        label = format(startOfPeriod, 'MMM yyyy');
+      } else {
+        startOfPeriod = startOfYear(date);
+        key = format(startOfPeriod, 'yyyy');
+        label = format(startOfPeriod, 'yyyy');
+      }
+
+      if (!summary[key]) {
+        summary[key] = { date: startOfPeriod, tss: 0, label };
+      }
+      summary[key].tss += h.tss;
+    });
+
+    return Object.values(summary).sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [history, tssSummaryView]);
 
   const pmcData = React.useMemo(() => {
     if (history.length === 0) return [];
@@ -1812,7 +1849,7 @@ export default function App() {
                             className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
                               activeMetrics.includes(key) 
-                                ? "bg-app-text text-app-bg border-app-text" 
+                                ? "bg-orange-500 text-black border-orange-500" 
                                 : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
                             )}
                           >
@@ -2394,7 +2431,8 @@ export default function App() {
 
                 {/* PMC Analysis Section */}
                 {history.length > 0 && (
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <>
+                    <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-orange-500/10 rounded-2xl">
@@ -2587,8 +2625,82 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Training Load Summary */}
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8 shadow-2xl">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-orange-500/10 rounded-2xl">
+                          <BarChart3 className="w-6 h-6 text-orange-500" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold">Training Load Summary</h3>
+                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Aggregated TSS over time</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[
+                          { id: 'weekly', label: 'Weekly' },
+                          { id: 'monthly', label: 'Monthly' },
+                          { id: 'yearly', label: 'Yearly' }
+                        ].map(view => (
+                          <button
+                            key={view.id}
+                            onClick={() => setTssSummaryView(view.id as any)}
+                            className={cn(
+                              "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
+                              tssSummaryView === view.id 
+                                ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                                : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                            )}
+                          >
+                            {view.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={tssSummaryData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                          <XAxis 
+                            dataKey="label" 
+                            stroke="var(--app-muted)" 
+                            fontSize={10} 
+                            tick={{ fill: 'var(--app-muted)' }}
+                          />
+                          <YAxis 
+                            stroke="var(--app-muted)" 
+                            fontSize={10} 
+                            tick={{ fill: 'var(--app-muted)' }}
+                            label={{ value: 'Total TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
+                            cursor={{ fill: 'var(--app-border)', opacity: 0.4 }}
+                          />
+                          <Bar 
+                            dataKey="tss" 
+                            fill="#f97316" 
+                            radius={[4, 4, 0, 0]} 
+                            name="Total TSS" 
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-8 p-4 bg-orange-500/5 rounded-2xl border border-orange-500/10">
+                      <p className="text-[10px] text-app-muted leading-relaxed">
+                        This chart shows your total training stress accumulated per {tssSummaryView.replace('ly', '')}. 
+                        Consistent training load is key to building fitness, while sudden spikes (ramping too fast) 
+                        can increase injury risk or lead to overtraining.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
               {/* Sidebar: Map & Details */}
               <div className={cn(
@@ -2946,7 +3058,7 @@ export default function App() {
                           onClick={exportGPX}
                           className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
                         >
-                          <Download className="w-3 h-3 text-blue-500" />
+                          <Download className="w-3 h-3 text-orange-500" />
                           GPX
                         </button>
                       </div>
