@@ -37,7 +37,8 @@ import {
   Maximize,
   Expand,
   Table,
-  LayoutList
+  LayoutList,
+  Pencil
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -323,6 +324,8 @@ export default function App() {
   });
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -627,6 +630,8 @@ export default function App() {
       setCurrentActivityId(id);
       setSummary(restoredSummary);
       setData(restoredData);
+      setIsEditingName(false);
+      setEditedName('');
       
       // Restore original file if available
       if (originalFileBlob) {
@@ -660,6 +665,22 @@ export default function App() {
       await deleteActivityData(id);
     } catch (e) {
       console.error('Failed to delete activity data from IndexedDB:', e);
+    }
+  };
+
+  const updateActivityName = (id: string, newName: string) => {
+    setHistory(prev => prev.map(h => {
+      if (h.id === id) {
+        const updated = { ...h, name: newName };
+        if (updated.fullSummary) {
+          updated.fullSummary = { ...updated.fullSummary, name: newName };
+        }
+        return updated;
+      }
+      return h;
+    }));
+    if (currentActivityId === id && summary) {
+      setSummary(prev => prev ? { ...prev, name: newName } : null);
     }
   };
 
@@ -1093,6 +1114,8 @@ export default function App() {
           setCurrentActivityId(activityId);
           setSummary(result.summary);
           setData(result.points);
+          setIsEditingName(false);
+          setEditedName('');
           setOriginalFile(file);
           setUploadQueue(prev => prev.map(item => 
             item.id === id ? { ...item, status: 'completed', progress: 100, summary: result.summary!, data: result.points, historyId: activityId || undefined } : item
@@ -1420,6 +1443,8 @@ export default function App() {
                           onClick={() => {
                             setSummary(item.summary!);
                             setData(item.data!);
+                            setIsEditingName(false);
+                            setEditedName('');
                             setOriginalFile(item.file || null);
                             setCurrentActivityId(item.historyId || null);
                             setCpWPrime(estimateCPWPrime(item.data!));
@@ -2079,7 +2104,58 @@ export default function App() {
                         <div className="space-y-4">
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Activity Name</span>
-                            <span className="text-xs font-medium">{summary.name}</span>
+                            {isEditingName ? (
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="text" 
+                                  value={editedName}
+                                  onChange={(e) => setEditedName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      if (currentActivityId) {
+                                        updateActivityName(currentActivityId, editedName);
+                                      }
+                                      setIsEditingName(false);
+                                    } else if (e.key === 'Escape') {
+                                      setIsEditingName(false);
+                                    }
+                                  }}
+                                  className="bg-app-bg border border-app-border rounded px-2 py-1 text-xs focus:border-orange-500 outline-none w-48"
+                                  autoFocus
+                                />
+                                <button 
+                                  onClick={() => {
+                                    if (currentActivityId) {
+                                      updateActivityName(currentActivityId, editedName);
+                                    }
+                                    setIsEditingName(false);
+                                  }}
+                                  className="p-1 hover:bg-orange-500/10 rounded text-orange-500"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  onClick={() => setIsEditingName(false)}
+                                  className="p-1 hover:bg-red-500/10 rounded text-red-500"
+                                >
+                                  <XCircle className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium">{summary.name}</span>
+                                <button 
+                                  onClick={() => {
+                                    setEditedName(summary.name);
+                                    setIsEditingName(true);
+                                  }}
+                                  className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors"
+                                  title="Edit Activity Name"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Start Time</span>
