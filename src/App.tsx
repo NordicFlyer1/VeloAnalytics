@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -224,214 +224,6 @@ function GoogleMapTransitLayer({ enabled }: { enabled: boolean }) {
   return null;
 }
 
-const ComparisonView = ({ activities, pmcData, onBack }: { activities: HistoricalActivity[], pmcData: PMCDataPoint[], onBack: () => void }) => {
-  const [activePMCMetric, setActivePMCMetric] = useState<'ctl' | 'atl' | 'tsb'>('ctl');
-  const COLORS = ['#f97316', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#eab308'];
-
-  const metrics: { label: string; key: keyof HistoricalActivity; format: (v: any) => React.ReactNode }[] = [
-    { label: 'Date', key: 'date', format: (v: string) => format(new Date(v), 'MMM d, yyyy') },
-    { label: 'Duration', key: 'duration', format: (v: number) => {
-      const h = Math.floor(v / 3600);
-      const m = Math.floor((v % 3600) / 60);
-      return `${h > 0 ? `${h}h ` : ''}${m}m`;
-    }},
-    { label: 'Distance', key: 'distance', format: (v: number) => v ? `${(v / 1000).toFixed(1)} km` : '-' },
-    { label: 'TSS', key: 'tss', format: (v: number) => Math.round(v) },
-    { label: 'NP', key: 'normalizedPower', format: (v: number) => v ? `${Math.round(v)} W` : '-' },
-    { label: 'Avg Power', key: 'avgPower', format: (v: number) => v ? `${Math.round(v)} W` : '-' },
-    { label: 'Max Power', key: 'maxPower', format: (v: number) => v ? `${Math.round(v)} W` : '-' },
-    { label: 'IF', key: 'intensityFactor', format: (v: number) => v?.toFixed(2) || '-' },
-    { label: 'Avg HR', key: 'avgHeartRate', format: (v: number) => v ? `${Math.round(v)} bpm` : '-' },
-    { label: 'Max HR', key: 'maxHeartRate', format: (v: number) => v ? `${Math.round(v)} bpm` : '-' },
-    { label: 'Avg Cadence', key: 'avgCadence', format: (v: number) => v ? `${Math.round(v)} rpm` : '-' },
-    { label: 'Avg Speed', key: 'avgSpeed', format: (v: number) => v ? `${v.toFixed(1)} km/h` : '-' },
-    { label: 'Ascent', key: 'totalAscent', format: (v: number) => v ? `${Math.round(v)} m` : '-' },
-    { label: 'Work', key: 'work', format: (v: number) => v ? `${Math.round(v)} kJ` : '-' },
-    { label: 'FTP', key: 'ftp', format: (v: number) => v ? `${v} W` : '-' },
-  ];
-
-  const comparisonPMCData = React.useMemo(() => {
-    if (pmcData.length === 0 || activities.length === 0) return [];
-
-    // For each activity, get the 42 days leading up to it
-    const activityContexts = activities.map(activity => {
-      const activityDate = activity.date;
-      const index = pmcData.findIndex(p => p.date === activityDate);
-      if (index === -1) return [];
-      
-      // Get up to 43 points (42 days leading + the day of)
-      const slice = pmcData.slice(Math.max(0, index - 42), index + 1);
-      return slice.map((p, i, arr) => ({
-        ...p,
-        daysRelative: i - (arr.length - 1)
-      }));
-    });
-
-    // Merge into a single dataset for Recharts with X-axis as daysRelative (-42 to 0)
-    const merged = Array.from({ length: 43 }, (_, i) => {
-      const daysRelative = i - 42;
-      const point: any = { daysRelative };
-      activities.forEach((activity, idx) => {
-        const context = activityContexts[idx];
-        const match = context.find(p => p.daysRelative === daysRelative);
-        if (match) {
-          point[`ctl_${idx}`] = match.ctl;
-          point[`atl_${idx}`] = match.atl;
-          point[`tsb_${idx}`] = match.tsb;
-        }
-      });
-      return point;
-    });
-
-    return merged.filter(p => Object.keys(p).length > 1); // Only keep points that have at least one activity's data
-  }, [pmcData, activities]);
-
-  return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack}
-            className="p-2 hover:bg-app-card rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h3 className="text-xl font-semibold">Activity Comparison</h3>
-        </div>
-        <div className="text-[10px] uppercase tracking-widest text-app-muted font-bold">
-          {activities.length} Activities Selected
-        </div>
-      </div>
-
-      {/* PMC Overlay Chart */}
-      <div className="bg-app-card border border-app-border rounded-3xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-app-text/60">PMC Overlay Analysis</h4>
-            <p className="text-[10px] text-app-muted">Comparing fitness trends leading up to each activity</p>
-          </div>
-          <div className="flex gap-2">
-            {(['ctl', 'atl', 'tsb'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setActivePMCMetric(m)}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
-                  activePMCMetric === m 
-                    ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                    : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                )}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={comparisonPMCData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-              <XAxis 
-                dataKey="daysRelative" 
-                stroke="#525252" 
-                fontSize={10} 
-                tickLine={false} 
-                axisLine={false}
-                tickFormatter={(val) => val === 0 ? 'Activity' : `${val}d`}
-              />
-              <YAxis 
-                stroke="#525252" 
-                fontSize={10} 
-                tickLine={false} 
-                axisLine={false}
-                domain={['auto', 'auto']}
-              />
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                labelFormatter={(val) => val === 0 ? 'Day of Activity' : `${Math.abs(val)} days before activity`}
-                formatter={(value: number, name: string) => {
-                  const idx = parseInt(name.split('_')[1]);
-                  return [Math.round(value), activities[idx].name];
-                }}
-              />
-              <Legend 
-                verticalAlign="top" 
-                align="right" 
-                iconType="circle"
-                wrapperStyle={{ fontSize: '10px', paddingBottom: '20px' }}
-                formatter={(value, entry: any) => {
-                  const idx = parseInt(entry.dataKey.split('_')[1]);
-                  return <span className="text-app-text/60">{activities[idx].name}</span>;
-                }}
-              />
-              {activities.map((activity, idx) => (
-                <Line
-                  key={activity.id}
-                  type="monotone"
-                  dataKey={`${activePMCMetric}_${idx}`}
-                  stroke={COLORS[idx % COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 0 }}
-                  animationDuration={1000}
-                />
-              ))}
-              <ReferenceLine x={0} stroke="#f97316" strokeDasharray="3 3" label={{ position: 'top', value: 'Activity', fill: '#f97316', fontSize: 10 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto pb-4">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="text-left py-4 px-6 bg-app-card/50 border-b border-app-border first:rounded-tl-2xl">
-                <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Metric</span>
-              </th>
-              {activities.map((activity, idx) => (
-                <th key={activity.id} className={cn(
-                  "text-center py-4 px-6 bg-app-card/50 border-b border-app-border",
-                  idx === activities.length - 1 && "rounded-tr-2xl"
-                )}>
-                  <div className="text-xs font-bold truncate max-w-[150px] mx-auto">{activity.name}</div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((metric, mIdx) => (
-              <tr key={metric.label} className="group hover:bg-app-card/30 transition-colors">
-                <td className={cn(
-                  "py-4 px-6 border-b border-app-border/50",
-                  mIdx === metrics.length - 1 && "rounded-bl-2xl"
-                )}>
-                  <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">{metric.label}</span>
-                </td>
-                {activities.map((activity, aIdx) => {
-                  const value = (activity as any)[metric.key];
-                  return (
-                    <td key={activity.id} className={cn(
-                      "py-4 px-6 border-b border-app-border/50 text-center",
-                      mIdx === metrics.length - 1 && aIdx === activities.length - 1 && "rounded-br-2xl"
-                    )}>
-                      <span className="text-sm font-medium">
-                        {value !== undefined && value !== null ? metric.format(value) : '-'}
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
 interface WeatherData {
   temp: number;
   description: string;
@@ -534,6 +326,11 @@ export default function App() {
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
+  const mmpCurveRef = useRef<HTMLDivElement>(null);
+
+  const handleCompare = () => {
+    mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
     return saved ? JSON.parse(saved) : [];
@@ -1666,16 +1463,6 @@ export default function App() {
               </div>
             )}
 
-            {selectedHistoryIds.length >= 2 && (
-              <div className="bg-app-card border border-app-border rounded-3xl p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <ComparisonView 
-                  activities={history.filter(h => selectedHistoryIds.includes(h.id))} 
-                  pmcData={pmcData}
-                  onBack={() => setSelectedHistoryIds([])}
-                />
-              </div>
-            )}
-
             {summary && (
               <>
                 {/* Summary Cards */}
@@ -2489,16 +2276,24 @@ export default function App() {
                   </div>
 
                   {/* Power Curve Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Zap className="w-4 h-4 text-orange-500" />
                           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Mean Maximal Power Curve</span>
                         </div>
-                        {selectedHistoryIds.length > 0 && (
-                          <div className="text-[10px] text-app-muted uppercase tracking-widest">
-                            Overlaying {selectedHistoryIds.length} historical activities
+                        {selectedHistoryIds.length >= 2 && (
+                          <div className="flex items-center gap-4">
+                            <div className="text-[10px] text-app-muted uppercase tracking-widest">
+                              Overlaying {selectedHistoryIds.length} activities
+                            </div>
+                            <button 
+                              onClick={() => setSelectedHistoryIds([])}
+                              className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
+                            >
+                              Clear Comparison
+                            </button>
                           </div>
                         )}
                       </div>
@@ -2994,15 +2789,26 @@ export default function App() {
                             {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
                           </div>
                           <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
-                          {selectedHistoryIds.length > 0 && (
-                            <button 
-                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete {selectedHistoryIds.length}
-                            </button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {selectedHistoryIds.length >= 2 && (
+                              <button 
+                                onClick={handleCompare}
+                                className="bg-orange-500 text-black px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
+                              >
+                                <TrendingUp className="w-3 h-3" />
+                                Compare {selectedHistoryIds.length}
+                              </button>
+                            )}
+                            {selectedHistoryIds.length > 0 && (
+                              <button 
+                                onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Delete {selectedHistoryIds.length}
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {history.length > 0 && (
                           <div className="flex gap-2">
