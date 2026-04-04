@@ -850,6 +850,9 @@ export default function App() {
       setActivePoint(null);
       setIsPointLocked(false);
       setShowUploadView(false);
+      
+      // Scroll to top when loading an activity
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -1627,6 +1630,7 @@ export default function App() {
                             setActivePoint(null);
                             setIsPointLocked(false);
                             setShowUploadView(false);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                           className="ml-4 px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all"
                         >
@@ -1645,13 +1649,19 @@ export default function App() {
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {!summary && history.length > 0 && selectedHistoryIds.length < 2 && (
-              <div className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border">
+              <div 
+                onClick={() => {
+                  const latest = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                  if (latest) loadFromHistory(latest.id);
+                }}
+                className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700 cursor-pointer group hover:bg-white/[0.02] rounded-3xl transition-all"
+              >
+                <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border group-hover:border-orange-500/50 group-hover:scale-110 transition-all duration-500">
                   <History className="w-10 h-10 text-orange-500" />
                 </div>
-                <h2 className="text-3xl font-bold mb-4 tracking-tight">Select an Activity</h2>
-                <p className="text-app-muted mb-10 max-w-md leading-relaxed">
-                  Your history is ready. Select an activity from the history list below to view its full metrics, map, and analysis.
+                <h2 className="text-3xl font-bold mb-4 tracking-tight group-hover:text-orange-500 transition-colors">Select an Activity</h2>
+                <p className="text-app-muted mb-10 max-w-md leading-relaxed group-hover:text-app-text transition-colors">
+                  Your history is ready. Click here to view your latest activity, or select one from the history list below.
                 </p>
               </div>
             )}
