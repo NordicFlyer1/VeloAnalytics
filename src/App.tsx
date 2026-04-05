@@ -91,7 +91,8 @@ function MapBounds({ points, data, activePoint, isMapExpanded }: { points: [numb
   React.useEffect(() => {
     if (points.length > 0 && activePoint === null) {
       const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [100, 100] });
+      const isMobile = window.innerWidth < 640;
+      map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
     }
   }, [points, map, activePoint]);
 
@@ -101,7 +102,8 @@ function MapBounds({ points, data, activePoint, isMapExpanded }: { points: [numb
       map.invalidateSize();
       if (points.length > 0 && activePoint === null) {
         const bounds = L.latLngBounds(points);
-        map.fitBounds(bounds, { padding: [100, 100] });
+        const isMobile = window.innerWidth < 640;
+        map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
       }
     });
     observer.observe(container);
@@ -172,11 +174,12 @@ function GoogleMapPolyline({ points, data, setActivePoint, setIsPointLocked, isM
 
     const bounds = new google.maps.LatLngBounds();
     points.forEach(p => bounds.extend(p));
-    map.fitBounds(bounds, 100);
+    const isMobile = window.innerWidth < 640;
+    map.fitBounds(bounds, isMobile ? { top: 150, bottom: 150, left: 50, right: 50 } : 100);
 
     const observer = new ResizeObserver(() => {
       google.maps.event.trigger(map, 'resize');
-      map.fitBounds(bounds, 100);
+      map.fitBounds(bounds, isMobile ? { top: 150, bottom: 150, left: 50, right: 50 } : 100);
     });
     const container = map.getDiv();
     observer.observe(container);
@@ -807,6 +810,14 @@ export default function App() {
     const s = Math.floor(seconds % 60);
     return `${h > 0 ? `${h}h ` : ''}${m}m ${s}s`;
   };
+
+  const formatNumericalDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const [maxHR, setMaxHR] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_maxhr');
     const parsed = saved ? parseInt(saved) : 190;
@@ -1382,7 +1393,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {(showUploadView || (!summary && history.length === 0)) ? (
           <div 
             className={cn(
@@ -1504,135 +1515,136 @@ export default function App() {
             {summary && (
               <>
                 {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
-                      <Timer className="w-4 h-4 text-orange-500" />
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
+                      <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Power Metrics</span>
-                      <Zap className="w-4 h-4 text-orange-500" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Power Metrics</span>
+                      <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">W (xPower)</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      <span>Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W</span>
+                    <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
+                      <div className="flex gap-3">
+                        <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
+                        <span>Max: {Math.round(summary.maxPower || 0)}W</span>
+                      </div>
                       {data.some(p => p.leftRightBalance !== undefined) && (
                         <span>L/R: {(() => {
                           const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
                           if (balances.length === 0) return '50/50';
                           const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
-                          // Simple assumption: value is % left or right depending on device
-                          // Most modern devices return it as % left.
                           return `${Math.round(avg)}/${100 - Math.round(avg)}`;
                         })()}</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Training Stress</span>
-                      <Activity className="w-4 h-4 text-blue-400" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Training Stress</span>
+                      <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">BikeScore</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BS</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       RI: {(summary.relativeIntensity || 0).toFixed(2)}
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Heart Rate</span>
-                      <Heart className="w-4 h-4 text-red-400" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Heart Rate</span>
+                      <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">BPM</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {Math.round(summary.maxHeartRate || 0)} bpm
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Elevation & Distance</span>
-                      <Navigation className="w-4 h-4 text-green-400 rotate-45" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Elevation & Distance</span>
+                      <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">M</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Dist: {(summary.distance / 1000).toFixed(1)}km
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Speed</span>
-                      <Clock className="w-4 h-4 text-purple-400" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Speed</span>
+                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
-                      <span className="text-xs text-app-muted font-medium">KM/H</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
                     </div>
                   </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Cadence</span>
-                      <BarChart3 className="w-4 h-4 text-purple-400" />
+                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Cadence</span>
+                      <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">RPM</span>
+                    <div className="flex items-baseline gap-1 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {Math.round(summary.maxCadence || 0)} rpm
                     </div>
                   </div>
 
                   {summary.aerobicDecoupling !== undefined && (
-                    <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Aerobic Decoupling</span>
+                    <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                      <div className="flex justify-between items-start mb-2 sm:mb-4">
+                        <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Aerobic Decoupling</span>
                         <TrendingUp className={cn(
-                          "w-4 h-4",
+                          "w-3 h-3 sm:w-4 sm:h-4",
                           summary.aerobicDecoupling < 5 ? "text-green-500" :
                           summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
                         )} />
                       </div>
-                      <div className="flex items-baseline gap-2">
+                      <div className="flex items-baseline gap-1 sm:gap-2">
                         <span className={cn(
-                          "text-4xl font-light tracking-tighter",
+                          "text-3xl sm:text-4xl font-light tracking-tighter",
                           summary.aerobicDecoupling < 5 ? "text-green-500" :
                           summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
                         )}>
                           {(summary.aerobicDecoupling || 0).toFixed(1)}%
                         </span>
-                        <span className="text-xs text-app-muted font-medium">Pw:HR</span>
+                        <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
                       </div>
-                      <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
                         {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
                          summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
                       </div>
@@ -1640,17 +1652,17 @@ export default function App() {
                   )}
 
                   {summary.avgTemperature !== undefined && (
-                    <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Temperature</span>
-                        <Thermometer className="w-4 h-4 text-orange-400" />
+                    <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                      <div className="flex justify-between items-start mb-2 sm:mb-4">
+                        <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Temperature</span>
+                        <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
-                        <span className="text-xs text-app-muted font-medium">°C</span>
+                      <div className="flex items-baseline gap-1 sm:gap-2">
+                        <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
+                        <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
                       </div>
-                      <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                        Avg Temp
+                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                        Avg Ambient
                       </div>
                     </div>
                   )}
@@ -1823,10 +1835,10 @@ export default function App() {
                     ref={mapContainerRef}
                     className={cn(
                       "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
-                      isMapExpanded ? "h-[900px]" : "h-[600px]"
+                      isMapExpanded ? "h-[750px] sm:h-[900px]" : "h-[500px] sm:h-[600px]"
                     )}
                   >
-                        <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3">
+                        <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 flex flex-col items-end gap-3">
                           <div className="flex gap-2">
                             <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
                               <button 
@@ -1856,6 +1868,7 @@ export default function App() {
                               >
                                 <Navigation className="w-3 h-3" />
                               </button>
+                              <div className="w-px h-4 bg-app-border mx-0.5 self-center" />
                               <button 
                                 onClick={() => setMapProvider('osm')}
                                 className={cn(
@@ -1876,7 +1889,9 @@ export default function App() {
                               </button>
                             </div>
                           </div>
-                          <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                          <div className="hidden sm:block">
+                            <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                          </div>
                         </div>
                         {gpsPoints.length > 0 ? (
                           mapProvider === 'osm' ? (
@@ -2110,6 +2125,11 @@ export default function App() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Mobile Weather Info */}
+                      <div className="sm:hidden mt-4">
+                        <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+                      </div>
 
                       {/* Activity Details Section */}
                       <div className="bg-app-card border border-app-border rounded-3xl p-8">
@@ -2175,16 +2195,44 @@ export default function App() {
                             <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Duration</span>
+                            <span className="text-xs font-medium">{formatNumericalDuration(summary.duration)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Distance</span>
+                            <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Avg Power</span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} W</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Max Power</span>
+                            <span className="text-xs font-medium">{Math.round(summary.maxPower || 0)} W</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Avg Cadence</span>
-                            <span className="text-xs font-medium">
-                              {Math.round(summary.avgCadence || 0)} rpm
-                            </span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} rpm</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Max Cadence</span>
+                            <span className="text-xs font-medium">{Math.round(summary.maxCadence || 0)} rpm</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Avg Speed</span>
-                            <span className="text-xs font-medium">
-                              {(summary.avgSpeed || 0).toFixed(1)} km/h
-                            </span>
+                            <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} km/h</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Max Speed</span>
+                            <span className="text-xs font-medium">{(summary.maxSpeed || 0).toFixed(1)} km/h</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Avg Heart Rate</span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} bpm</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                            <span className="text-xs text-app-muted">Max Heart Rate</span>
+                            <span className="text-xs font-medium">{Math.round(summary.maxHeartRate || 0)} bpm</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Elevation Gain</span>
@@ -2200,12 +2248,6 @@ export default function App() {
                               </span>
                             </div>
                           )}
-                          <div className="flex justify-between items-center py-3">
-                            <span className="text-xs text-app-muted">Max Heart Rate</span>
-                            <span className="text-xs font-medium">
-                              {Math.round(summary.maxHeartRate || 0)} bpm
-                            </span>
-                          </div>
                         </div>
 
                         <div className="mt-8 grid grid-cols-2 gap-3">
@@ -2235,20 +2277,20 @@ export default function App() {
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
                         </div>
                         {cpWPrime && (
-                          <div className="flex items-center gap-6">
+                          <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
                             <div className="text-center">
-                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                              <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
                                 Critical Power
                                 {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
                               </div>
-                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
+                              <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                              <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
                                 W' Capacity
                                 {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
                               </div>
-                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
+                              <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
                             </div>
                           </div>
                         )}
@@ -2537,7 +2579,8 @@ export default function App() {
                         <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap Breakdown</span>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        {/* Desktop Table View */}
+                        <table className="w-full text-left border-collapse hidden md:table">
                           <thead>
                             <tr className="border-b border-app-border">
                               <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
@@ -2577,6 +2620,44 @@ export default function App() {
                             ))}
                           </tbody>
                         </table>
+
+                        {/* Mobile Card View */}
+                        <div className="grid grid-cols-1 gap-4 md:hidden">
+                          {summary?.laps?.map((lap) => (
+                            <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
+                              <div className="flex justify-between items-center border-b border-app-border pb-3">
+                                <span className="text-sm font-bold text-orange-500">Lap #{lap.id}</span>
+                                <span className="text-xs font-medium text-app-text/60">
+                                  {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} km
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                                <div className="space-y-1">
+                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
+                                  <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)}W / {Math.round(lap.maxPower || 0)}W</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
+                                  <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
+                                  <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
+                                  <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h</div>
+                                </div>
+                                {lap.avgTemperature !== undefined && (
+                                  <div className="space-y-1">
+                                    <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Temp</span>
+                                    <div className="text-xs text-app-text/80">{Math.round(lap.avgTemperature || 0)}°C</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2593,7 +2674,7 @@ export default function App() {
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Performance Management Chart (PMC)</p>
                         </div>
                       </div>
-                      <div className="flex gap-8">
+                      <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
                         <div 
                           className={cn(
                             "text-center cursor-pointer transition-all duration-300",
@@ -2602,7 +2683,7 @@ export default function App() {
                           onMouseEnter={() => setPmcFocus('bikeScore')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
+                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
                         </div>
                         <div 
@@ -2613,7 +2694,7 @@ export default function App() {
                           onMouseEnter={() => setPmcFocus('lts')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
+                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
                         </div>
                         <div 
@@ -2624,7 +2705,7 @@ export default function App() {
                           onMouseEnter={() => setPmcFocus('sts')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
+                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
                         </div>
                         <div 
@@ -2635,7 +2716,7 @@ export default function App() {
                           onMouseEnter={() => setPmcFocus('sb')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
+                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
                           <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
                         </div>
                       </div>
@@ -2788,13 +2869,13 @@ export default function App() {
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Weekly/Monthly/Yearly Volume Analysis</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
                         {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
                           <button
                             key={range}
                             onClick={() => setTrainingLoadRange(range)}
                             className={cn(
-                              "px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
+                              "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
                               trainingLoadRange === range 
                                 ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
                                 : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
@@ -2865,58 +2946,59 @@ export default function App() {
         {/* Activity History Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div 
-                            onClick={() => {
-                              if (selectedHistoryIds.length === history.length && history.length > 0) {
-                                setSelectedHistoryIds([]);
-                              } else {
-                                setSelectedHistoryIds(history.map(h => h.id));
-                              }
-                            }}
-                            className={cn(
-                              "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
-                              selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                            )}
-                            title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
-                          >
-                            {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
-                          </div>
-                          <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
-                          <div className="flex items-center gap-2">
-                            {selectedHistoryIds.length >= 2 && (
-                              <button 
-                                onClick={handleCompare}
-                                className="bg-orange-500 text-black px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                              >
-                                <TrendingUp className="w-3 h-3" />
-                                Compare {selectedHistoryIds.length}
-                              </button>
-                            )}
-                            {selectedHistoryIds.length > 0 && (
-                              <button 
-                                onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                Delete {selectedHistoryIds.length}
-                              </button>
-                            )}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center justify-between sm:justify-start gap-4">
+                          <div className="flex items-center gap-4">
+                            <div 
+                              onClick={() => {
+                                if (selectedHistoryIds.length === history.length && history.length > 0) {
+                                  setSelectedHistoryIds([]);
+                                } else {
+                                  setSelectedHistoryIds(history.map(h => h.id));
+                                }
+                              }}
+                              className={cn(
+                                "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
+                                selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                              )}
+                              title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
+                            >
+                              {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
+                            </div>
+                            <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
                           </div>
                         </div>
-                        {history.length > 0 && (
-                          <div className="flex gap-2">
+                        
+                        <div className="flex flex-wrap items-center gap-2">
+                          {selectedHistoryIds.length >= 2 && (
+                            <button 
+                              onClick={handleCompare}
+                              className="bg-orange-500 text-black px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
+                            >
+                              <TrendingUp className="w-3 h-3" />
+                              Compare {selectedHistoryIds.length}
+                            </button>
+                          )}
+                          {selectedHistoryIds.length > 0 && (
+                            <button 
+                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete {selectedHistoryIds.length}
+                            </button>
+                          )}
+                          {history.length > 0 && (
                             <button 
                               onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
                               className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
                               title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
                             >
                               <ArrowUpDown className="w-3 h-3" />
-                              {historySortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                              {historySortOrder === 'newest' ? 'Newest' : 'Oldest'}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
                         {sortedHistory.length > 0 ? (
@@ -2925,11 +3007,11 @@ export default function App() {
                               key={h.id} 
                               onClick={() => loadFromHistory(h.id)}
                               className={cn(
-                                "bg-app-card border rounded-xl p-4 flex items-center justify-between group cursor-pointer transition-all",
+                                "bg-app-card border rounded-xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all",
                                 summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
                               )}
                             >
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                                 <div 
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -2938,29 +3020,32 @@ export default function App() {
                                     );
                                   }}
                                   className={cn(
-                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0",
                                     selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
                                   )}
                                 >
                                   {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
                                 </div>
-                                <div>
-                                  <div className="text-xs font-bold">{h.name}</div>
-                                  <div className="text-[10px] text-app-muted">{format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}</div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold truncate">{h.name}</div>
+                                  <div className="text-[10px] text-app-muted truncate">
+                                    {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
+                                    {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W avg`}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
+                              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                                <div className="text-right hidden sm:block">
                                   <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
                                   <div className="text-[8px] text-app-muted uppercase tracking-widest">BikeScore</div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 sm:gap-2">
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       loadFromHistory(h.id);
                                     }}
-                                    className="px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100 shadow-lg shadow-orange-500/20"
+                                    className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
                                   >
                                     View
                                   </button>
@@ -2969,9 +3054,9 @@ export default function App() {
                                       e.stopPropagation();
                                       removeFromHistory(h.id);
                                     }}
-                                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                   >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
                                   </button>
                                 </div>
                               </div>
