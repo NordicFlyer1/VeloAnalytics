@@ -1,4 +1,4 @@
-import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition, PowerCurvePoint } from '../types';
+import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition, PowerCurvePoint, PMCDataPoint } from '../types';
 
 /**
  * Calculates the best average power for various durations.
@@ -112,7 +112,7 @@ export function calculateZones(values: number[], zones: Zone[]): ZoneDistributio
 }
 
 /**
- * Default Coggan-style power zones based on FTP.
+ * Default Coggan-style power zones based on Critical Power (CP).
  */
 export const DEFAULT_POWER_ZONES: ZoneDefinition[] = [
   { name: 'Z1 Active Recovery', percentMin: 0, percentMax: 55, color: '#94a3b8' },
@@ -136,22 +136,23 @@ export const DEFAULT_HR_ZONES: ZoneDefinition[] = [
 ];
 
 /**
- * Converts zone definitions (percentages) to absolute zones based on a threshold value (FTP or MaxHR).
+ * Converts zone definitions (percentages) to absolute zones based on a threshold value (CP or MaxHR).
  */
 export function getZonesFromDefinitions(definitions: ZoneDefinition[], threshold: number): Zone[] {
+  const safeThreshold = isNaN(threshold) ? 0 : threshold;
   return definitions.map(d => ({
     name: d.name,
-    min: (d.percentMin / 100) * threshold,
-    max: d.percentMax === 999 ? 9999 : (d.percentMax / 100) * threshold,
+    min: (d.percentMin / 100) * safeThreshold,
+    max: d.percentMax === 999 ? 9999 : (d.percentMax / 100) * safeThreshold,
     color: d.color
   }));
 }
 
 /**
- * Default Coggan-style power zones based on FTP.
+ * Default Coggan-style power zones based on Critical Power (CP).
  */
-export function getPowerZones(ftp: number): Zone[] {
-  return getZonesFromDefinitions(DEFAULT_POWER_ZONES, ftp);
+export function getPowerZones(cp: number): Zone[] {
+  return getZonesFromDefinitions(DEFAULT_POWER_ZONES, cp);
 }
 
 /**
@@ -173,7 +174,7 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
   
   const avgPower = powers.length > 0 ? powers.reduce((a, b) => a + b, 0) / powers.length : 0;
   const maxPower = powers.length > 0 ? Math.max(...powers) : 0;
-  const np = calculateNP(points);
+  const xPower = calculateXPower(points);
   const duration = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000;
   const distance = (points[points.length - 1].distance || 0) - (points[0].distance || 0);
   
@@ -192,7 +193,7 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
     distance,
     avgPower,
     maxPower,
-    normalizedPower: np,
+    xPower,
     avgHeartRate: heartRates.length > 0 ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length : undefined,
     maxHeartRate: heartRates.length > 0 ? Math.max(...heartRates) : undefined,
     avgCadence: cadences.length > 0 ? cadences.reduce((a, b) => a + b, 0) / cadences.length : undefined,
@@ -205,30 +206,94 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
 }
 
 /**
- * Calculates Normalized Power (NP)
- * NP = 4th root of (average of (30s rolling average power values ^ 4))
+ * Calculates xPower (open-source alternative to NP)
+ * xPower uses a 25s Exponentially Weighted Moving Average (EWMA)
+ * xPower = 4th root of (average of (25s EWMA power values ^ 4))
  */
-export function calculateNP(data: CyclingDataPoint[]): number | undefined {
+export function calculateXPower(data: CyclingDataPoint[]): number | undefined {
   const powers = data.map(d => d.power || 0);
-  if (powers.length < 30) return undefined;
+  if (powers.length < 25) return undefined;
 
-  const rollingAverages: number[] = [];
-  for (let i = 29; i < powers.length; i++) {
-    const window = powers.slice(i - 29, i + 1);
-    const avg = window.reduce((a, b) => a + b, 0) / 30;
-    rollingAverages.push(Math.pow(avg, 4));
+  const alpha = 1 / 25; // 25-second time constant
+  let ema = powers[0];
+  const emaValues: number[] = [Math.pow(ema, 4)];
+
+  for (let i = 1; i < powers.length; i++) {
+    ema = (powers[i] * alpha) + (ema * (1 - alpha));
+    emaValues.push(Math.pow(ema, 4));
   }
 
-  const avgOfQuads = rollingAverages.reduce((a, b) => a + b, 0) / rollingAverages.length;
-  return Math.pow(avgOfQuads, 0.25);
+  const avgOfQuads = emaValues.reduce((a, b) => a + b, 0) / emaValues.length;
+  const result = Math.pow(avgOfQuads, 0.25);
+  return isNaN(result) ? undefined : result;
 }
 
-export function calculateIF(np: number, ftp: number): number {
-  return np / ftp;
+/**
+ * Calculates Relative Intensity (RI), an open-source alternative to Intensity Factor (IF).
+ */
+export function calculateRI(xPower: number, cp: number): number {
+  if (cp <= 0) return 0;
+  return xPower / cp;
 }
 
-export function calculateTSS(durationSec: number, np: number, ifFactor: number, ftp: number): number {
-  return (durationSec * np * ifFactor) / (ftp * 36) ; // Simplified from (s * NP * IF) / (FTP * 3600) * 100
+/**
+ * Calculates BikeScore, an open-source alternative to training stress metrics.
+ */
+export function calculateBikeScore(durationSec: number, xPower: number, ri: number, cp: number): number {
+  if (cp <= 0) return 0;
+  return (durationSec * xPower * ri) / (cp * 3600) * 100;
+}
+
+/**
+ * Calculates the Performance Management Chart (PMC) metrics: LTS, STS, and SB.
+ */
+export function calculatePMC(history: { date: string, bikeScore: number }[]): PMCDataPoint[] {
+  if (history.length === 0) return [];
+
+  // Sort history by date
+  const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  const pmc: PMCDataPoint[] = [];
+  let currentLTS = 0;
+  let currentSTS = 0;
+
+  // Constants for exponentially weighted moving averages
+  const ltsDays = 42;
+  const stsDays = 7;
+  const ltsLambda = 1 / ltsDays;
+  const stsLambda = 1 / stsDays;
+
+  // We need to fill in gaps between activities
+  const firstDate = new Date(sortedHistory[0].date);
+  const lastDate = new Date(sortedHistory[sortedHistory.length - 1].date);
+  const dayCount = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const dailyScores: Record<string, number> = {};
+  sortedHistory.forEach(h => {
+    dailyScores[h.date] = (dailyScores[h.date] || 0) + h.bikeScore;
+  });
+
+  for (let i = 0; i < dayCount; i++) {
+    const currentDate = new Date(firstDate);
+    currentDate.setDate(firstDate.getDate() + i);
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    const todaysScore = dailyScores[dateStr] || 0;
+
+    // LTS(today) = LTS(yesterday) + (Score(today) - LTS(yesterday)) * lambda
+    currentLTS = currentLTS + (todaysScore - currentLTS) * ltsLambda;
+    currentSTS = currentSTS + (todaysScore - currentSTS) * stsLambda;
+
+    pmc.push({
+      date: dateStr,
+      bikeScore: todaysScore,
+      lts: currentLTS,
+      sts: currentSTS,
+      sb: currentLTS - currentSTS
+    });
+  }
+
+  return pmc;
 }
 
 /**
@@ -286,9 +351,9 @@ export function estimateCPWPrime(data: CyclingDataPoint[]): { cp: number; wPrime
 }
 
 /**
- * Estimates FTP as 95% of the best 20-minute power effort.
+ * Estimates CP as 95% of the best 20-minute power effort.
  */
-export function estimateFTP(data: CyclingDataPoint[]): number | null {
+export function estimateCP(data: CyclingDataPoint[]): number | null {
   const powers = data.map(d => d.power || 0);
   const duration = 1200; // 20 minutes in seconds
   

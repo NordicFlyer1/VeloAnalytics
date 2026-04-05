@@ -67,7 +67,7 @@ import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { cn } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
-import { calculateNP, calculateIF, calculateTSS, estimateCPWPrime, calculateSlope, estimateFTP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
+import { calculateXPower, calculateRI, calculateBikeScore, estimateCPWPrime, calculateSlope, estimateCP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
@@ -296,15 +296,16 @@ const WeatherCard = ({ weather, isLoading }: { weather: WeatherData | null, isLo
 export default function App() {
   const [data, setData] = useState<CyclingDataPoint[]>([]);
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
-  const [ftp, setFtp] = useState(() => {
-    const saved = localStorage.getItem('veloanalytics_ftp');
-    return saved ? parseInt(saved) : 250;
+  const [cp, setCP] = useState(() => {
+    const saved = localStorage.getItem('veloanalytics_cp');
+    const parsed = saved ? parseInt(saved) : 250;
+    return isNaN(parsed) ? 250 : parsed;
   });
-  const [autoUpdateFtp, setAutoUpdateFtp] = useState(() => {
-    const saved = localStorage.getItem('veloanalytics_autoupdate_ftp');
-    return saved === 'true';
+  const [autoUpdateCP, setAutoUpdateCP] = useState(() => {
+    const saved = localStorage.getItem('veloanalytics_autoupdate_cp');
+    return saved ? saved === 'true' : true;
   });
-  const [estimatedFtp, setEstimatedFtp] = useState<number | null>(null);
+  const [estimatedCp, setEstimatedCp] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<FileStatus[]>([]);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
@@ -366,12 +367,12 @@ export default function App() {
   }, [theme]);
 
   React.useEffect(() => {
-    localStorage.setItem('veloanalytics_ftp', ftp.toString());
-  }, [ftp]);
+    localStorage.setItem('veloanalytics_cp', cp.toString());
+  }, [cp]);
 
   React.useEffect(() => {
-    localStorage.setItem('veloanalytics_autoupdate_ftp', autoUpdateFtp.toString());
-  }, [autoUpdateFtp]);
+    localStorage.setItem('veloanalytics_autoupdate_cp', autoUpdateCP.toString());
+  }, [autoUpdateCP]);
 
   React.useEffect(() => {
     if (manualCP !== null) localStorage.setItem('veloanalytics_manual_cp', manualCP.toString());
@@ -384,10 +385,10 @@ export default function App() {
   }, [manualWPrime]);
 
   React.useEffect(() => {
-    if (autoUpdateFtp && estimatedFtp && estimatedFtp > ftp) {
-      setFtp(estimatedFtp);
+    if (autoUpdateCP && estimatedCp && estimatedCp > cp) {
+      setCP(estimatedCp);
     }
-  }, [autoUpdateFtp, estimatedFtp, ftp]);
+  }, [autoUpdateCP, estimatedCp, cp]);
 
   const getComparisonCurves = () => {
     return history
@@ -422,8 +423,8 @@ export default function App() {
         
         data.push({
           label: `W${format(weekStart, 'w')}`,
-          tss: weekActivities.reduce((sum, a) => sum + a.tss, 0),
-          work: weekActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          bikeScore: weekActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
+          work: weekActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
           duration: weekActivities.reduce((sum, a) => sum + a.duration, 0)
         });
       }
@@ -438,8 +439,8 @@ export default function App() {
         
         data.push({
           label: format(d, 'MMM'),
-          tss: monthActivities.reduce((sum, a) => sum + a.tss, 0),
-          work: monthActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          bikeScore: monthActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
+          work: monthActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
           duration: monthActivities.reduce((sum, a) => sum + a.duration, 0)
         });
       }
@@ -451,8 +452,8 @@ export default function App() {
         
         data.push({
           label: year.toString(),
-          tss: yearActivities.reduce((sum, a) => sum + a.tss, 0),
-          work: yearActivities.reduce((sum, a) => sum + (a.fullSummary?.avgPower || 0) * (a.duration / 1000), 0),
+          bikeScore: yearActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
+          work: yearActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
           duration: yearActivities.reduce((sum, a) => sum + a.duration, 0)
         });
       }
@@ -462,15 +463,15 @@ export default function App() {
   }, [history, trainingLoadRange]);
 
   const trainingLoadStats = React.useMemo(() => {
-    if (trainingLoadData.length === 0) return { totalTss: 0, avgTss: 0, totalWork: 0, totalDuration: 0 };
+    if (trainingLoadData.length === 0) return { totalBikeScore: 0, avgBikeScore: 0, totalWork: 0, totalDuration: 0 };
     
-    const totalTss = trainingLoadData.reduce((sum, d) => sum + d.tss, 0);
+    const totalBikeScore = trainingLoadData.reduce((sum, d) => sum + d.bikeScore, 0);
     const totalWork = trainingLoadData.reduce((sum, d) => sum + d.work, 0);
     const totalDuration = trainingLoadData.reduce((sum, d) => sum + d.duration, 0);
     
     return {
-      totalTss,
-      avgTss: totalTss / trainingLoadData.length,
+      totalBikeScore,
+      avgBikeScore: totalBikeScore / trainingLoadData.length,
       totalWork,
       totalDuration
     };
@@ -530,13 +531,13 @@ export default function App() {
       id,
       date: dateStr,
       name: target.name,
-      tss: target.tss || 0,
+      bikeScore: target.bikeScore || 0,
       duration: target.duration,
       distance: target.distance,
       avgPower: target.avgPower,
       maxPower: target.maxPower,
-      normalizedPower: target.normalizedPower,
-      intensityFactor: target.intensityFactor,
+      xPower: target.xPower,
+      relativeIntensity: target.relativeIntensity,
       avgHeartRate: target.avgHeartRate,
       maxHeartRate: target.maxHeartRate,
       avgCadence: target.avgCadence,
@@ -544,7 +545,7 @@ export default function App() {
       totalAscent: target.totalAscent,
       work: target.work,
       aerobicDecoupling: target.aerobicDecoupling,
-      ftp: ftp,
+      cp: cp,
       powerCurve: target.powerCurve,
       fullSummary: target,
       fullData: targetData,
@@ -609,8 +610,9 @@ export default function App() {
       }));
 
       // Recalculate W' Balance if missing or if manual values are set
+      let cpWPrimeResult = null;
       if (restoredData.length > 0) {
-        const cpWPrimeResult = estimateCPWPrime(restoredData);
+        cpWPrimeResult = estimateCPWPrime(restoredData);
         const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
         const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
         
@@ -647,8 +649,8 @@ export default function App() {
         setOriginalFile(null);
       }
 
-      setCpWPrime(estimateCPWPrime(restoredData));
-      setEstimatedFtp(estimateFTP(restoredData));
+      setCpWPrime(cpWPrimeResult);
+      setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
       setActivePoint(null);
       setIsPointLocked(false);
       setShowUploadView(false);
@@ -698,13 +700,13 @@ export default function App() {
 
   const [pmcFocus, setPmcFocus] = useState<string | null>(null);
   const [pmcDateRange, setPmcDateRange] = useState<'all' | '1year' | '6months' | '3months' | '6weeks'>('all');
-  const [tssSummaryView, setTssSummaryView] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [bikeScoreSummaryView, setBikeScoreSummaryView] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
 
-  const tssSummaryData = React.useMemo(() => {
+  const bikeScoreSummaryData = React.useMemo(() => {
     if (history.length === 0) return [];
 
     const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
-    const summary: Record<string, { date: Date, tss: number, label: string }> = {};
+    const summary: Record<string, { date: Date, bikeScore: number, label: string }> = {};
 
     sortedHistory.forEach(h => {
       const date = new Date(h.date);
@@ -712,11 +714,11 @@ export default function App() {
       let label = '';
       let startOfPeriod: Date;
 
-      if (tssSummaryView === 'weekly') {
+      if (bikeScoreSummaryView === 'weekly') {
         startOfPeriod = startOfWeek(date, { weekStartsOn: 1 }); // Monday
         key = format(startOfPeriod, 'yyyy-ww');
         label = `Wk ${format(startOfPeriod, 'ww, yyyy')}`;
-      } else if (tssSummaryView === 'monthly') {
+      } else if (bikeScoreSummaryView === 'monthly') {
         startOfPeriod = startOfMonth(date);
         key = format(startOfPeriod, 'yyyy-MM');
         label = format(startOfPeriod, 'MMM yyyy');
@@ -727,20 +729,20 @@ export default function App() {
       }
 
       if (!summary[key]) {
-        summary[key] = { date: startOfPeriod, tss: 0, label };
+        summary[key] = { date: startOfPeriod, bikeScore: 0, label };
       }
-      summary[key].tss += h.tss;
+      summary[key].bikeScore += (h.bikeScore || 0);
     });
 
     return Object.values(summary).sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [history, tssSummaryView]);
+  }, [history, bikeScoreSummaryView]);
 
   const pmcData = React.useMemo(() => {
     if (history.length === 0) return [];
     
     const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
     const historyByDate = sortedHistory.reduce((acc, h) => {
-      acc[h.date] = (acc[h.date] || 0) + h.tss;
+      acc[h.date] = (acc[h.date] || 0) + (h.bikeScore || 0);
       return acc;
     }, {} as Record<string, number>);
 
@@ -748,8 +750,8 @@ export default function App() {
     const endDate = new Date();
     
     const allData: PMCDataPoint[] = [];
-    let currentCTL = 0;
-    let currentATL = 0;
+    let currentLTS = 0;
+    let currentSTS = 0;
     
     const curr = new Date(startDate);
     while (curr <= endDate) {
@@ -758,17 +760,17 @@ export default function App() {
         continue;
       }
       const dateStr = curr.toISOString().split('T')[0];
-      const dayTSS = historyByDate[dateStr] || 0;
+      const dayBikeScore = historyByDate[dateStr] || 0;
       
-      currentCTL = currentCTL + (dayTSS - currentCTL) / 42;
-      currentATL = currentATL + (dayTSS - currentATL) / 7;
+      currentLTS = currentLTS + (dayBikeScore - currentLTS) / 42;
+      currentSTS = currentSTS + (dayBikeScore - currentSTS) / 7;
       
       allData.push({
         date: dateStr,
-        tss: dayTSS,
-        ctl: currentCTL,
-        atl: currentATL,
-        tsb: currentCTL - currentATL
+        bikeScore: dayBikeScore,
+        lts: currentLTS,
+        sts: currentSTS,
+        sb: currentLTS - currentSTS
       });
       
       curr.setDate(curr.getDate() + 1);
@@ -806,7 +808,8 @@ export default function App() {
   };
   const [maxHR, setMaxHR] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_maxhr');
-    return saved ? parseInt(saved) : 190;
+    const parsed = saved ? parseInt(saved) : 190;
+    return isNaN(parsed) ? 190 : parsed;
   });
 
   React.useEffect(() => {
@@ -886,22 +889,22 @@ export default function App() {
     const heartRates = data.map(p => p.heartRate || 0).filter(h => h > 0);
     const duration = (data[data.length - 1].timestamp.getTime() - data[0].timestamp.getTime()) / 1000;
     
-    const np = calculateNP(data);
-    const ifFactor = np ? calculateIF(np, ftp) : undefined;
-    const tss = (np && ifFactor) ? calculateTSS(duration, np, ifFactor, ftp) : undefined;
+    const xPower = calculateXPower(data);
+    const relativeIntensity = xPower ? calculateRI(xPower, cp) : undefined;
+    const bikeScore = (xPower && relativeIntensity) ? calculateBikeScore(duration, xPower, relativeIntensity, cp) : undefined;
 
-    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, ftp));
+    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, cp));
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
 
     setSummary(prev => prev ? ({
       ...prev,
-      normalizedPower: np,
-      intensityFactor: ifFactor,
-      tss,
+      xPower,
+      relativeIntensity,
+      bikeScore,
       powerZones: pZones,
       hrZones: hZones
     }) : null);
-  }, [ftp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
+  }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
 
   const processData = useCallback((points: CyclingDataPoint[], fileName: string, lapData?: any[]) => {
     if (points.length === 0) return null;
@@ -919,12 +922,12 @@ export default function App() {
     
     const avgPower = powers.reduce((a, b) => a + b, 0) / powers.length;
     const maxPower = Math.max(...powers);
-    const np = calculateNP(points);
+    const xPower = calculateXPower(points);
     const duration = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000;
     const distance = points[points.length - 1].distance || 0;
     
-    const ifFactor = np ? calculateIF(np, ftp) : undefined;
-    const tss = (np && ifFactor) ? calculateTSS(duration, np, ifFactor, ftp) : undefined;
+    const relativeIntensity = xPower ? calculateRI(xPower, cp) : undefined;
+    const bikeScore = (xPower && relativeIntensity) ? calculateBikeScore(duration, xPower, relativeIntensity, cp) : undefined;
     const work = (avgPower * duration) / 1000;
 
     // Total ascent calculation
@@ -969,7 +972,7 @@ export default function App() {
     }
 
     // Zone Calculations
-    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, ftp));
+    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, cp));
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
     const powerCurve = calculatePowerCurve(points);
 
@@ -992,9 +995,9 @@ export default function App() {
       distance,
       avgPower,
       maxPower,
-      normalizedPower: np,
-      intensityFactor: ifFactor,
-      tss,
+      xPower,
+      relativeIntensity,
+      bikeScore,
       avgHeartRate: heartRates.length > 0 ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length : undefined,
       maxHeartRate: heartRates.length > 0 ? Math.max(...heartRates) : undefined,
       avgCadence: cadences.length > 0 ? cadences.reduce((a, b) => a + b, 0) / cadences.length : undefined,
@@ -1014,10 +1017,10 @@ export default function App() {
     setSummary(newSummary);
     setData(points);
     setCpWPrime(cpWPrimeResult);
-    setEstimatedFtp(estimateFTP(points));
+    setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
 
     return newSummary;
-  }, [ftp, maxHR, powerZoneDefinitions, hrZoneDefinitions, manualCP, manualWPrime]);
+  }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions, manualCP, manualWPrime]);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -1313,25 +1316,25 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {estimatedFtp && estimatedFtp > ftp && !autoUpdateFtp && (
+            {estimatedCp && estimatedCp > cp && !autoUpdateCP && (
               <button 
-                onClick={() => setFtp(estimatedFtp)}
+                onClick={() => setCP(estimatedCp)}
                 className="hidden lg:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
               >
                 <Zap className="w-3 h-3 text-orange-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
-                  Update FTP to {estimatedFtp}W?
+                  Update CP to {estimatedCp}W?
                 </span>
                 <ChevronRight className="w-3 h-3 text-orange-500 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
             <div className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
               <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">FTP:</span>
+              <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">CP:</span>
               <input 
                 type="number" 
-                value={ftp} 
-                onChange={(e) => setFtp(parseInt(e.target.value) || 0)}
+                value={cp} 
+                onChange={(e) => setCP(parseInt(e.target.value) || 0)}
                 className="bg-transparent w-8 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
               />
               <span className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest">W</span>
@@ -1447,8 +1450,9 @@ export default function App() {
                             setEditedName('');
                             setOriginalFile(item.file || null);
                             setCurrentActivityId(item.historyId || null);
-                            setCpWPrime(estimateCPWPrime(item.data!));
-                            setEstimatedFtp(estimateFTP(item.data!));
+                            const cpWPrimeResult = estimateCPWPrime(item.data!);
+                            setCpWPrime(cpWPrimeResult);
+                            setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
                             setActivePoint(null);
                             setIsPointLocked(false);
                             setShowUploadView(false);
@@ -1511,8 +1515,8 @@ export default function App() {
                       <Zap className="w-4 h-4 text-orange-500" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.normalizedPower || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">W (NP)</span>
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">W (xPower)</span>
                     </div>
                     <div className="mt-4 flex items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       <span>Avg: {Math.round(summary.avgPower || 0)}W | Max: {Math.round(summary.maxPower || 0)}W</span>
@@ -1535,11 +1539,11 @@ export default function App() {
                       <Activity className="w-4 h-4 text-blue-400" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.tss || 0)}</span>
-                      <span className="text-xs text-app-muted font-medium">TSS</span>
+                      <span className="text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
+                      <span className="text-xs text-app-muted font-medium">BikeScore</span>
                     </div>
                     <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      IF: {(summary.intensityFactor || 0).toFixed(2)}
+                      RI: {(summary.relativeIntensity || 0).toFixed(2)}
                     </div>
                   </div>
 
@@ -1615,7 +1619,7 @@ export default function App() {
                           summary.aerobicDecoupling < 5 ? "text-green-500" :
                           summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
                         )}>
-                          {summary.aerobicDecoupling.toFixed(1)}%
+                          {(summary.aerobicDecoupling || 0).toFixed(1)}%
                         </span>
                         <span className="text-xs text-app-muted font-medium">Pw:HR</span>
                       </div>
@@ -1633,7 +1637,7 @@ export default function App() {
                         <Thermometer className="w-4 h-4 text-orange-400" />
                       </div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature)}</span>
+                        <span className="text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
                         <span className="text-xs text-app-muted font-medium">°C</span>
                       </div>
                       <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
@@ -1648,11 +1652,11 @@ export default function App() {
                     <TrendingUp className="w-4 h-4 text-orange-500" />
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-light tracking-tighter">{Math.round(currentPMC.ctl)}</span>
-                    <span className="text-xs text-app-muted font-medium">CTL (Fitness)</span>
+                    <span className="text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
+                    <span className="text-xs text-app-muted font-medium">LTS (Fitness)</span>
                   </div>
                   <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                    ATL: {Math.round(currentPMC.atl)} | TSB: {Math.round(currentPMC.tsb)}
+                    STS: {Math.round(currentPMC.sts || 0)} | SB: {Math.round(currentPMC.sb || 0)}
                   </div>
                 </div>
               )}
@@ -1765,7 +1769,7 @@ export default function App() {
                           />
                           
                           {/* Zone Highlighting (only for primary metric if it's power or HR) */}
-                          {activeMetrics[0] === 'power' && getZonesFromDefinitions(powerZoneDefinitions, ftp).map((z) => (
+                          {activeMetrics[0] === 'power' && getZonesFromDefinitions(powerZoneDefinitions, cp).map((z) => (
                             <ReferenceAreaAny 
                               key={z.name} 
                               yAxisId="power"
@@ -2179,11 +2183,11 @@ export default function App() {
                               {Math.round(summary.totalAscent || 0)} m
                             </span>
                           </div>
-                          {estimatedFtp && (
+                          {estimatedCp && (
                             <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                              <span className="text-xs text-app-muted font-bold text-orange-500/60">Est. FTP (20m)</span>
+                              <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP</span>
                               <span className="text-xs font-bold text-orange-500">
-                                {estimatedFtp} W
+                                {estimatedCp} W
                               </span>
                             </div>
                           )}
@@ -2228,14 +2232,14 @@ export default function App() {
                                 Critical Power
                                 {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
                               </div>
-                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp)}W</div>
+                              <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
                             </div>
                             <div className="text-center">
                               <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
                                 W' Capacity
                                 {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
                               </div>
-                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime) / 1000)}kJ</div>
+                              <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
                             </div>
                           </div>
                         )}
@@ -2558,7 +2562,7 @@ export default function App() {
                                   {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
                                 </td>
                                 <td className="py-4 text-xs text-app-text/60">
-                                  {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature)}°C` : '-'}
+                                  {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature || 0)}°C` : '-'}
                                 </td>
                               </tr>
                             ))}
@@ -2584,46 +2588,46 @@ export default function App() {
                         <div 
                           className={cn(
                             "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'tss' ? "scale-110" : pmcFocus && pmcFocus !== 'tss' ? "opacity-30" : ""
+                            pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
                           )}
-                          onMouseEnter={() => setPmcFocus('tss')}
+                          onMouseEnter={() => setPmcFocus('bikeScore')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.tss || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">TSS</div>
+                          <div className="text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
+                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
                         </div>
                         <div 
                           className={cn(
                             "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'ctl' ? "scale-110" : pmcFocus && pmcFocus !== 'ctl' ? "opacity-30" : ""
+                            pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
                           )}
-                          onMouseEnter={() => setPmcFocus('ctl')}
+                          onMouseEnter={() => setPmcFocus('lts')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.ctl || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (CTL)</div>
+                          <div className="text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
+                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
                         </div>
                         <div 
                           className={cn(
                             "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'atl' ? "scale-110" : pmcFocus && pmcFocus !== 'atl' ? "opacity-30" : ""
+                            pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
                           )}
-                          onMouseEnter={() => setPmcFocus('atl')}
+                          onMouseEnter={() => setPmcFocus('sts')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.atl || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (ATL)</div>
+                          <div className="text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
+                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
                         </div>
                         <div 
                           className={cn(
                             "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'tsb' ? "scale-110" : pmcFocus && pmcFocus !== 'tsb' ? "opacity-30" : ""
+                            pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
                           )}
-                          onMouseEnter={() => setPmcFocus('tsb')}
+                          onMouseEnter={() => setPmcFocus('sb')}
                           onMouseLeave={() => setPmcFocus(null)}
                         >
-                          <div className="text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.tsb || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (TSB)</div>
+                          <div className="text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
+                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
                         </div>
                       </div>
                     </div>
@@ -2648,23 +2652,23 @@ export default function App() {
                             yAxisId="fitness" 
                             stroke="var(--app-muted)" 
                             fontSize={10} 
-                            hide={pmcFocus === 'tss' || pmcFocus === 'tsb'}
-                            label={pmcFocus === 'ctl' || pmcFocus === 'atl' ? { value: 'CTL/ATL', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                            hide={pmcFocus === 'bikeScore' || pmcFocus === 'sb'}
+                            label={pmcFocus === 'lts' || pmcFocus === 'sts' ? { value: 'LTS/STS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                           />
                           <YAxis 
-                            yAxisId="tss" 
+                            yAxisId="bikeScore" 
                             stroke="var(--app-muted)" 
                             fontSize={10} 
-                            hide={pmcFocus !== 'tss'}
-                            label={pmcFocus === 'tss' ? { value: 'TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                            hide={pmcFocus !== 'bikeScore'}
+                            label={pmcFocus === 'bikeScore' ? { value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                           />
                           <YAxis 
                             yAxisId="form" 
                             orientation="right" 
                             stroke="var(--app-muted)" 
                             fontSize={10} 
-                            hide={pmcFocus === 'tss' || pmcFocus === 'ctl' || pmcFocus === 'atl'}
-                            label={pmcFocus === 'tsb' ? { value: 'TSB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                            hide={pmcFocus === 'bikeScore' || pmcFocus === 'lts' || pmcFocus === 'sts'}
+                            label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                           />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
@@ -2678,41 +2682,41 @@ export default function App() {
                             onMouseLeave={() => setPmcFocus(null)}
                           />
                           <Bar 
-                            yAxisId={pmcFocus === 'tss' ? "tss" : "fitness"} 
-                            dataKey="tss" 
+                            yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
+                            dataKey="bikeScore" 
                             fill="#f97316" 
-                            opacity={pmcFocus === 'tss' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
-                            name="TSS" 
+                            opacity={pmcFocus === 'bikeScore' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
+                            name="BikeScore" 
                           />
                           <Line 
                             yAxisId="fitness" 
                             type="monotone" 
-                            dataKey="ctl" 
+                            dataKey="lts" 
                             stroke="#3b82f6" 
-                            strokeWidth={pmcFocus === 'ctl' ? 4 : 2} 
-                            opacity={pmcFocus === 'ctl' ? 1 : pmcFocus ? 0.2 : 1}
+                            strokeWidth={pmcFocus === 'lts' ? 4 : 2} 
+                            opacity={pmcFocus === 'lts' ? 1 : pmcFocus ? 0.2 : 1}
                             dot={false} 
-                            name="Fitness (CTL)" 
+                            name="Fitness (LTS)" 
                           />
                           <Line 
                             yAxisId="fitness" 
                             type="monotone" 
-                            dataKey="atl" 
+                            dataKey="sts" 
                             stroke="#ef4444" 
-                            strokeWidth={pmcFocus === 'atl' ? 4 : 2} 
-                            opacity={pmcFocus === 'atl' ? 1 : pmcFocus ? 0.2 : 1}
+                            strokeWidth={pmcFocus === 'sts' ? 4 : 2} 
+                            opacity={pmcFocus === 'sts' ? 1 : pmcFocus ? 0.2 : 1}
                             dot={false} 
-                            name="Fatigue (ATL)" 
+                            name="Fatigue (STS)" 
                           />
                           <Area 
                             yAxisId="form" 
                             type="monotone" 
-                            dataKey="tsb" 
+                            dataKey="sb" 
                             fill="#22c55e" 
                             stroke="#22c55e" 
-                            fillOpacity={pmcFocus === 'tsb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
-                            opacity={pmcFocus === 'tsb' ? 1 : pmcFocus ? 0.2 : 1}
-                            name="Form (TSB)" 
+                            fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
+                            opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
+                            name="Form (SB)" 
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
@@ -2743,21 +2747,21 @@ export default function App() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">CTL (Fitness)</h4>
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">LTS (Fitness)</h4>
                         <p className="text-[10px] text-app-muted leading-relaxed">
-                          Chronic Training Load is a 42-day weighted average of your daily TSS. It represents your long-term training load and overall fitness level.
+                          Long Term Stress is a 42-day weighted average of your daily BikeScore. It represents your long-term training load and overall fitness level.
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">ATL (Fatigue)</h4>
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">STS (Fatigue)</h4>
                         <p className="text-[10px] text-app-muted leading-relaxed">
-                          Acute Training Load is a 7-day weighted average of your daily TSS. It represents your short-term training load and current level of fatigue.
+                          Short Term Stress is a 7-day weighted average of your daily BikeScore. It represents your short-term training load and current level of fatigue.
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">TSB (Form)</h4>
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">SB (Form)</h4>
                         <p className="text-[10px] text-app-muted leading-relaxed">
-                          Training Stress Balance (CTL - ATL) represents your current form or freshness. A positive TSB suggests you are fresh and ready to perform.
+                          Stress Balance (LTS - STS) represents your current form or freshness. A positive SB suggests you are fresh and ready to perform.
                         </p>
                       </div>
                     </div>
@@ -2803,16 +2807,22 @@ export default function App() {
                             fontSize={10} 
                             tickFormatter={(str) => str}
                           />
-                          <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'TSS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
+                          <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
                             labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                            formatter={(value: any, name: string) => {
+                              if (name === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
+                              if (name === 'bikeScore') return [Math.round(value), 'BikeScore'];
+                              if (name === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
+                              return [value, name];
+                            }}
                           />
                           <Bar 
-                            dataKey="tss" 
+                            dataKey="bikeScore" 
                             fill="#f97316" 
                             radius={[6, 6, 0, 0]} 
-                            name="TSS"
+                            name="BikeScore"
                           />
                         </BarChart>
                       </ResponsiveContainer>
@@ -2820,19 +2830,19 @@ export default function App() {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
                       <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalTss)}</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total TSS</div>
+                        <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgTss)}</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg TSS / Period</div>
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
+                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork / 1000)}kJ</div>
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
                         <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalDuration / 3600)}h</div>
+                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
                         <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
                       </div>
                     </div>
@@ -2932,8 +2942,8 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-4">
                                 <div className="text-right">
-                                  <div className="text-xs font-bold text-orange-500">{Math.round(h.tss)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest">TSS</div>
+                                  <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest">BikeScore</div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button 
@@ -2998,31 +3008,31 @@ export default function App() {
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted border-b border-app-border/50 pb-2">Thresholds</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs text-app-text/60">Functional Threshold Power (FTP)</label>
+                    <label className="text-xs text-app-text/60">Critical Power (CP)</label>
                     <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
                       <Zap className="w-4 h-4 text-orange-500" />
                       <input 
                         type="number" 
-                        value={ftp} 
-                        onChange={(e) => setFtp(parseInt(e.target.value) || 0)}
+                        value={cp} 
+                        onChange={(e) => setCP(parseInt(e.target.value) || 0)}
                         className="bg-transparent w-full text-sm font-bold focus:outline-none"
                       />
                       <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
                     </div>
                     <div className="flex items-center gap-2 pt-1">
                       <button 
-                        onClick={() => setAutoUpdateFtp(!autoUpdateFtp)}
+                        onClick={() => setAutoUpdateCP(!autoUpdateCP)}
                         className={cn(
                           "w-8 h-4 rounded-full transition-all relative",
-                          autoUpdateFtp ? "bg-orange-500" : "bg-app-border"
+                          autoUpdateCP ? "bg-orange-500" : "bg-app-border"
                         )}
                       >
                         <div className={cn(
                           "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
-                          autoUpdateFtp ? "left-4.5" : "left-0.5"
+                          autoUpdateCP ? "left-4.5" : "left-0.5"
                         )} />
                       </button>
-                      <span className="text-[10px] text-app-muted font-medium">Auto-update FTP when new record is set</span>
+                      <span className="text-[10px] text-app-muted font-medium">Auto-update CP when new record is set</span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -3044,7 +3054,7 @@ export default function App() {
                       <Zap className="w-4 h-4 text-orange-500" />
                       <input 
                         type="number" 
-                        placeholder={cpWPrime?.cp ? Math.round(cpWPrime.cp).toString() : "Estimated"}
+                        placeholder={cpWPrime?.cp ? Math.round(cpWPrime.cp || 0).toString() : "Estimated"}
                         value={manualCP ?? ''} 
                         onChange={(e) => setManualCP(e.target.value ? parseInt(e.target.value) : null)}
                         className="bg-transparent w-full text-sm font-bold focus:outline-none"
@@ -3059,7 +3069,7 @@ export default function App() {
                       <Zap className="w-4 h-4 text-purple-500" />
                       <input 
                         type="number" 
-                        placeholder={cpWPrime?.wPrime ? Math.round(cpWPrime.wPrime).toString() : "Estimated"}
+                        placeholder={cpWPrime?.wPrime ? Math.round(cpWPrime.wPrime || 0).toString() : "Estimated"}
                         value={manualWPrime ?? ''} 
                         onChange={(e) => setManualWPrime(e.target.value ? parseInt(e.target.value) : null)}
                         className="bg-transparent w-full text-sm font-bold focus:outline-none"
@@ -3104,7 +3114,7 @@ export default function App() {
                         <span className="text-[10px] text-app-muted/50">%</span>
                       </div>
                       <div className="text-[10px] text-app-muted w-24 text-right">
-                        {Math.round((z.percentMin / 100) * ftp)} - {z.percentMax === 999 ? '∞' : Math.round((z.percentMax / 100) * ftp)}W
+                        {Math.round((z.percentMin / 100) * cp)} - {z.percentMax === 999 ? '∞' : Math.round((z.percentMax / 100) * cp)}W
                       </div>
                     </div>
                   ))}

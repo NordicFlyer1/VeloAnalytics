@@ -21,7 +21,7 @@ export interface Lap {
   distance: number; // meters
   avgPower?: number;
   maxPower?: number;
-  normalizedPower?: number;
+  xPower?: number;
   avgHeartRate?: number;
   maxHeartRate?: number;
   avgCadence?: number;
@@ -66,9 +66,9 @@ export interface ActivitySummary {
   distance: number; // meters
   avgPower?: number;
   maxPower?: number;
-  normalizedPower?: number;
-  intensityFactor?: number;
-  tss?: number;
+  xPower?: number;
+  relativeIntensity?: number;
+  bikeScore?: number;
   avgHeartRate?: number;
   maxHeartRate?: number;
   avgCadence?: number;
@@ -92,23 +92,23 @@ export interface PowerMetrics {
 
 export interface PMCDataPoint {
   date: string; // YYYY-MM-DD
-  tss: number;
-  ctl: number;
-  atl: number;
-  tsb: number;
+  bikeScore: number;
+  lts: number;
+  sts: number;
+  sb: number;
 }
 
 export interface HistoricalActivity {
   id: string;
   date: string;
   name: string;
-  tss: number;
+  bikeScore: number;
   duration: number;
   distance?: number;
   avgPower?: number;
   maxPower?: number;
-  normalizedPower?: number;
-  intensityFactor?: number;
+  xPower?: number;
+  relativeIntensity?: number;
   avgHeartRate?: number;
   maxHeartRate?: number;
   avgCadence?: number;
@@ -116,7 +116,7 @@ export interface HistoricalActivity {
   totalAscent?: number;
   work?: number;
   aerobicDecoupling?: number;
-  ftp?: number;
+  cp?: number;
   powerCurve?: PowerCurvePoint[];
   fullSummary?: ActivitySummary;
   fullData?: CyclingDataPoint[];
