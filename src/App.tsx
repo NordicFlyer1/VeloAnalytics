@@ -1561,10 +1561,10 @@ export default function App() {
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BS</span>
+                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
                     </div>
                     <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      RI: {(summary.relativeIntensity || 0).toFixed(2)}
+                      Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
                     </div>
                   </div>
 
@@ -1830,7 +1830,9 @@ export default function App() {
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>                  {/* Map Section */}
+                  </div>
+
+                  {/* Map Section */}
                   <div 
                     ref={mapContainerRef}
                     className={cn(
@@ -2192,7 +2194,7 @@ export default function App() {
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Start Time</span>
-                            <span className="text-xs font-medium">{format(summary.startTime, 'HH:mm:ss')}</span>
+                            <span className="text-xs font-medium">{format(summary.startTime, 'h:mm:ss a')}</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Duration</span>
@@ -2203,36 +2205,20 @@ export default function App() {
                             <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg Power</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} W</span>
+                            <span className="text-xs text-app-muted">Avg/Max Power</span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Max Power</span>
-                            <span className="text-xs font-medium">{Math.round(summary.maxPower || 0)} W</span>
+                            <span className="text-xs text-app-muted">Avg/Max Cadence</span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} rpm</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg Cadence</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} rpm</span>
+                            <span className="text-xs text-app-muted">Avg/Max Speed</span>
+                            <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} km/h</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Max Cadence</span>
-                            <span className="text-xs font-medium">{Math.round(summary.maxCadence || 0)} rpm</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg Speed</span>
-                            <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} km/h</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Max Speed</span>
-                            <span className="text-xs font-medium">{(summary.maxSpeed || 0).toFixed(1)} km/h</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg Heart Rate</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} bpm</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Max Heart Rate</span>
-                            <span className="text-xs font-medium">{Math.round(summary.maxHeartRate || 0)} bpm</span>
+                            <span className="text-xs text-app-muted">Avg/Max Heart Rate</span>
+                            <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} bpm</span>
                           </div>
                           <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                             <span className="text-xs text-app-muted">Elevation Gain</span>
