@@ -39,7 +39,12 @@ import {
   Expand,
   Table,
   LayoutList,
-  Pencil
+  Pencil,
+  ChevronUp,
+  ChevronDown,
+  Info,
+  Calendar,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -61,6 +66,50 @@ import {
 
 const ReferenceAreaAny = ReferenceArea as any;
 const ReferenceLineAny = ReferenceLine as any;
+
+const SectionHeader = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  isExpanded, 
+  onToggle, 
+  className 
+}: { 
+  icon: any, 
+  title: string, 
+  description?: string, 
+  isExpanded: boolean, 
+  onToggle: () => void,
+  className?: string
+}) => (
+  <div className={cn("flex items-center justify-between mb-6", className)}>
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-orange-500/10 rounded-xl">
+        <Icon className="w-5 h-5 text-orange-500" />
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold tracking-tight text-app-text">{title}</h3>
+        {description && <p className="text-xs text-app-muted font-medium">{description}</p>}
+      </div>
+    </div>
+    <button 
+      onClick={onToggle}
+      className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group"
+    >
+      {isExpanded ? (
+        <>
+          <span className="hidden sm:inline">Collapse</span>
+          <ChevronUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
+        </>
+      ) : (
+        <>
+          <span className="hidden sm:inline">Expand</span>
+          <ChevronDown className="w-3 h-3 group-hover:translate-y-0.5 transition-transform" />
+        </>
+      )}
+    </button>
+  </div>
+);
 
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
@@ -85,7 +134,7 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-function MapBounds({ points, data, activePoint, isMapExpanded }: { points: [number, number][], data: CyclingDataPoint[], activePoint: number | null, isMapExpanded: boolean }) {
+function MapBounds({ points, data, activePoint, isMapMaximized }: { points: [number, number][], data: CyclingDataPoint[], activePoint: number | null, isMapMaximized: boolean }) {
   const map = useLeafletMap();
   
   React.useEffect(() => {
@@ -119,7 +168,7 @@ function MapBounds({ points, data, activePoint, isMapExpanded }: { points: [numb
   return null;
 }
 
-function GoogleMapPolyline({ points, data, setActivePoint, setIsPointLocked, isMapExpanded }: { points: { lat: number; lng: number }[], data: CyclingDataPoint[], setActivePoint: (index: number | null) => void, setIsPointLocked: (locked: boolean) => void, isMapExpanded: boolean }) {
+function GoogleMapPolyline({ points, data, setActivePoint, setIsPointLocked, isMapMaximized }: { points: { lat: number; lng: number }[], data: CyclingDataPoint[], setActivePoint: (index: number | null) => void, setIsPointLocked: (locked: boolean) => void, isMapMaximized: boolean }) {
   const map = useGoogleMap();
   React.useEffect(() => {
     if (!map || points.length === 0) return;
@@ -191,7 +240,7 @@ function GoogleMapPolyline({ points, data, setActivePoint, setIsPointLocked, isM
       google.maps.event.removeListener(clickListener);
       observer.disconnect();
     };
-  }, [map, points, data, setActivePoint, setIsPointLocked, isMapExpanded]);
+  }, [map, points, data, setActivePoint, setIsPointLocked, isMapMaximized]);
 
   return null;
 }
@@ -924,8 +973,10 @@ export default function App() {
   const [showTraffic, setShowTraffic] = useState(false);
   const [showBicycling, setShowBicycling] = useState(false);
   const [showTransit, setShowTransit] = useState(false);
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
-  const [isMetricsExpanded, setIsMetricsExpanded] = useState(true);
+  const [isMapMaximized, setIsMapMaximized] = useState(false);
+  const [isMapExpanded, setIsMapExpanded] = useState(true);
+  const [isChartExpanded, setIsChartExpanded] = useState(true);
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
   const [isWPrimeExpanded, setIsWPrimeExpanded] = useState(true);
   const [isPowerCurveExpanded, setIsPowerCurveExpanded] = useState(true);
   const [isZonesExpanded, setIsZonesExpanded] = useState(true);
@@ -1742,12 +1793,24 @@ export default function App() {
                 <div className="space-y-8">
                   {/* Metrics Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-orange-500" />
-                        <h3 className="text-sm font-bold uppercase tracking-[0.2em]">Activity Metrics</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
+                    <SectionHeader 
+                      icon={Activity}
+                      title="Activity Metrics"
+                      description="Real-time performance data across the entire activity duration"
+                      isExpanded={isChartExpanded}
+                      onToggle={() => setIsChartExpanded(!isChartExpanded)}
+                    />
+                    
+                    <AnimatePresence>
+                      {isChartExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                            <div className="flex flex-wrap gap-2">
                         {Object.entries(metricsConfig).map(([key, config]) => (
                           <button
                             key={key}
@@ -1881,37 +1944,57 @@ export default function App() {
                           ))}
                         </AreaChart>
                       </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Map Section */}
-                  <div 
-                    ref={mapContainerRef}
-                    className={cn(
-                      "bg-app-card border border-app-border rounded-3xl p-4 relative overflow-hidden group transition-all duration-500",
-                      isMapExpanded ? "h-[750px] sm:h-[900px]" : "h-[500px] sm:h-[600px]"
+                        </div>
+                      </motion.div>
                     )}
-                  >
-                        <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 flex flex-col items-end gap-3">
-                          <div className="flex gap-2">
-                            <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
-                              <button 
-                                onClick={toggleFullScreen}
-                                className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                                title="Full Screen"
-                              >
-                                <Expand className="w-3 h-3" />
-                              </button>
-                              <button 
-                                onClick={() => setIsMapExpanded(!isMapExpanded)}
-                                className={cn(
-                                  "p-1 rounded-full transition-all",
-                                  isMapExpanded ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500"
-                                )}
-                                title={isMapExpanded ? "Collapse Map" : "Expand Map"}
-                              >
-                                <Maximize className="w-3 h-3" />
-                              </button>
+                  </AnimatePresence>
+                </div>
+
+                {/* Map Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={MapIcon}
+                    title="Activity Map"
+                    description="GPS track visualization with interactive data point inspection"
+                    isExpanded={isMapExpanded}
+                    onToggle={() => setIsMapExpanded(!isMapExpanded)}
+                  />
+
+                  <AnimatePresence>
+                    {isMapExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div 
+                          ref={mapContainerRef}
+                          className={cn(
+                            "bg-app-bg border border-app-border rounded-2xl relative overflow-hidden group transition-all duration-500",
+                            isMapMaximized ? "h-[750px] sm:h-[900px]" : "h-[500px] sm:h-[600px]"
+                          )}
+                        >
+                          <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 flex flex-col items-end gap-3">
+                            <div className="flex gap-2">
+                              <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+                                <button 
+                                  onClick={toggleFullScreen}
+                                  className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                                  title="Full Screen"
+                                >
+                                  <Expand className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  onClick={() => setIsMapMaximized(!isMapMaximized)}
+                                  className={cn(
+                                    "p-2 rounded-xl transition-all",
+                                    isMapMaximized ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500 hover:bg-orange-500/10"
+                                  )}
+                                  title={isMapMaximized ? "Minimize Map" : "Maximize Map"}
+                                >
+                                  <Maximize className="w-4 h-4" />
+                                </button>
                               <button 
                                 onClick={() => {
                                   setActivePoint(null);
@@ -2054,7 +2137,7 @@ export default function App() {
                                     fillOpacity={1} 
                                   />
                                 )}
-                                <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapExpanded={isMapExpanded} />
+                                <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapMaximized={isMapMaximized} />
                               </MapContainer>
                             </div>
                           ) : (
@@ -2140,7 +2223,7 @@ export default function App() {
                                       }
                                     }}
                                   >
-                                    <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapExpanded={isMapExpanded} />
+                                    <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapMaximized={isMapMaximized} />
                                     <GoogleMapTrafficLayer enabled={showTraffic} />
                                     <GoogleMapBicyclingLayer enabled={showBicycling} />
                                     <GoogleMapTransitLayer enabled={showTransit} />
@@ -2178,37 +2261,36 @@ export default function App() {
                             <span className="text-xs uppercase tracking-widest">No GPS Data</span>
                           </div>
                         )}
-                      </div>
-                      
-                      {/* Mobile Weather Info */}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Mobile Weather Info */}
                       <div className="sm:hidden mt-4">
                         <WeatherCard weather={weather} isLoading={isWeatherLoading} />
                       </div>
 
-                      {/* Activity Details Section */}
-                      <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                          <div className="flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-orange-500" />
-                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Activity Details</h3>
-                          </div>
-                          <button 
-                            onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
-                            className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                          >
-                            {isMetricsExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                          </button>
-                        </div>
-                        
-                        <AnimatePresence>
-                          {isMetricsExpanded && (
-                            <motion.div 
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="overflow-hidden"
-                            >
+                {/* Activity Details Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={Info}
+                    title="Activity Details"
+                    description="Key performance indicators and summary statistics"
+                    isExpanded={isDetailsExpanded}
+                    onToggle={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                  />
+                  
+                  <AnimatePresence>
+                    {isDetailsExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
                               <div className="space-y-4">
                                 <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                                   <span className="text-xs text-app-muted">Activity Name</span>
@@ -2330,30 +2412,24 @@ export default function App() {
                         </AnimatePresence>
                       </div>
 
-                  {/* W' Balance Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-purple-500" />
-                        <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
-                      </div>
-                      <button 
-                        onClick={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                      >
-                        {isWPrimeExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                      </button>
-                    </div>
+                  {/* W' Balance Analysis Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={TrendingUp}
+                    title="W' Balance Analysis"
+                    description="Anaerobic capacity utilization and recovery tracking"
+                    isExpanded={isWPrimeExpanded}
+                    onToggle={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
+                  />
 
-                    <AnimatePresence>
-                      {isWPrimeExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
+                  <AnimatePresence>
+                    {isWPrimeExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
                           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                               <div>
@@ -2492,30 +2568,25 @@ export default function App() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Power Curve Section */}
-                  <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-orange-500" />
-                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Mean Maximal Power Curve</span>
-                      </div>
-                      <button 
-                        onClick={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                      >
-                        {isPowerCurveExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                      </button>
-                    </div>
+                {/* Power Curve Section */}
+                <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={Zap}
+                    title="Power Curve"
+                    description="Peak power output across different time durations"
+                    isExpanded={isPowerCurveExpanded}
+                    onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
+                  />
 
-                    <AnimatePresence>
-                      {isPowerCurveExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
+                  <AnimatePresence>
+                    {isPowerCurveExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
                           <div className="space-y-6">
                             <div className="flex items-center justify-between">
                               {selectedHistoryIds.length >= 2 && (
@@ -2628,30 +2699,25 @@ export default function App() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Zones Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-orange-500" />
-                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Training Zones</h3>
-                      </div>
-                      <button 
-                        onClick={() => setIsZonesExpanded(!isZonesExpanded)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                      >
-                        {isZonesExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                      </button>
-                    </div>
+                {/* Training Zones Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={BarChart3}
+                    title="Training Zones"
+                    description="Time distribution across power and heart rate intensity levels"
+                    isExpanded={isZonesExpanded}
+                    onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
+                  />
 
-                    <AnimatePresence>
-                      {isZonesExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
+                  <AnimatePresence>
+                    {isZonesExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                             <div className="space-y-6">
                               <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
@@ -2703,23 +2769,28 @@ export default function App() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Laps Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <LayoutList className="w-4 h-4 text-orange-500" />
-                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap Breakdown</span>
-                          </div>
-                          <button 
-                            onClick={() => setIsLapsExpanded(!isLapsExpanded)}
-                            className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                          >
-                            {isLapsExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-xl border border-app-border">
+                {/* Lap Breakdown Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={LayoutList}
+                    title="Lap Breakdown"
+                    description="Detailed performance metrics for individual segments"
+                    isExpanded={isLapsExpanded}
+                    onToggle={() => setIsLapsExpanded(!isLapsExpanded)}
+                  />
+
+                  <AnimatePresence>
+                    {isLapsExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-xl border border-app-border">
                           {[
                             { id: 'file', label: 'File' },
                             { id: '1km', label: '1km' },
@@ -2745,15 +2816,6 @@ export default function App() {
                         </div>
                       </div>
                       
-                      <AnimatePresence>
-                        {isLapsExpanded && (
-                          <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden"
-                          >
                             <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                               {/* Desktop Table View */}
                               <table className="w-full text-left border-collapse hidden md:table">
@@ -2825,41 +2887,31 @@ export default function App() {
                                 ))}
                               </div>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
-                  {/* PMC Analysis Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-orange-500/10 rounded-2xl">
-                          <TrendingUp className="w-6 h-6 text-orange-500" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold">PMC Analysis</h3>
-                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Performance Management Chart (PMC)</p>
-                        </div>
-                        <button 
-                          onClick={() => setIsPmcExpanded(!isPmcExpanded)}
-                          className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors ml-4"
-                        >
-                          {isPmcExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                        </button>
-                      </div>
-                    </div>
+                {/* PMC Analysis Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={LineChartIcon}
+                    title="PMC Analysis"
+                    description="Performance Management Chart showing fitness, fatigue, and form"
+                    isExpanded={isPmcExpanded}
+                    onToggle={() => setIsPmcExpanded(!isPmcExpanded)}
+                  />
 
-                    <AnimatePresence>
-                      {isPmcExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
+                  <AnimatePresence>
+                    {isPmcExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
                           <div className="space-y-8">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                               <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
@@ -3049,35 +3101,25 @@ export default function App() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Training Load Summary Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-orange-500/10 rounded-2xl">
-                          <BarChart3 className="w-6 h-6 text-orange-500" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold">Training Load Summary</h3>
-                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Weekly/Monthly/Yearly Volume Analysis</p>
-                        </div>
-                        <button 
-                          onClick={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
-                          className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors ml-4"
-                        >
-                          {isTrainingLoadExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                        </button>
-                      </div>
-                    </div>
+                {/* Training Load Summary Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={Calendar}
+                    title="Training Load Summary"
+                    description="Weekly and monthly aggregation of training stress and volume"
+                    isExpanded={isTrainingLoadExpanded}
+                    onToggle={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
+                  />
 
-                    <AnimatePresence>
-                      {isTrainingLoadExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
+                  <AnimatePresence>
+                    {isTrainingLoadExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
                           <div className="space-y-8">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                               <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
@@ -3159,36 +3201,47 @@ export default function App() {
         )}
 
         {/* Activity History Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center justify-between sm:justify-start gap-4">
-                          <div className="flex items-center gap-4">
-                            <div 
-                              onClick={() => {
-                                if (selectedHistoryIds.length === history.length && history.length > 0) {
-                                  setSelectedHistoryIds([]);
-                                } else {
-                                  setSelectedHistoryIds(history.map(h => h.id));
-                                }
-                              }}
-                              className={cn(
-                                "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
-                                selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                              )}
-                              title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
-                            >
-                              {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
-                            </div>
-                            <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
-                            <button 
-                              onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-                              className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
-                            >
-                              {isHistoryExpanded ? '[ Collapse ]' : '[ Expand ]'}
-                            </button>
-                          </div>
-                        </div>
+        <div className="bg-app-card border border-app-border rounded-3xl p-8">
+          <SectionHeader 
+            icon={History}
+            title="Activity History"
+            description="Manage and compare your previously uploaded activities"
+            isExpanded={isHistoryExpanded}
+            onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
+          />
+                    
+                    <AnimatePresence>
+                      {isHistoryExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex items-center justify-between sm:justify-start gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div 
+                                    onClick={() => {
+                                      if (selectedHistoryIds.length === history.length && history.length > 0) {
+                                        setSelectedHistoryIds([]);
+                                      } else {
+                                        setSelectedHistoryIds(history.map(h => h.id));
+                                      }
+                                    }}
+                                    className={cn(
+                                      "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
+                                      selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                                    )}
+                                    title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
+                                  >
+                                    {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
+                                  </div>
+                                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Select All</span>
+                                </div>
+                              </div>
                         
                         <div className="flex flex-wrap items-center gap-2">
                           {selectedHistoryIds.length >= 2 && (
@@ -3221,16 +3274,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <AnimatePresence>
-                        {isHistoryExpanded && (
-                          <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                               {sortedHistory.length > 0 ? (
                                 sortedHistory.map(h => (
                                   <div 
@@ -3302,10 +3346,10 @@ export default function App() {
                                 </div>
                               )}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               )}
@@ -3620,3 +3664,4 @@ export default function App() {
     </div>
   );
 }
+
