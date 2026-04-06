@@ -836,6 +836,51 @@ export default function App() {
   const [isPointLocked, setIsPointLocked] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+  const [lapMode, setLapMode] = useState<'file' | '1km' | '5km' | '10km' | '1min' | '5min' | '10min'>('file');
+  const [isLapsExpanded, setIsLapsExpanded] = useState(true);
+
+  const currentLaps = React.useMemo(() => {
+    if (!summary || !data || data.length === 0) return [];
+    if (lapMode === 'file') return summary.laps || [];
+
+    const laps: Lap[] = [];
+    let currentLapPoints: CyclingDataPoint[] = [];
+    let lapId = 1;
+
+    if (lapMode.endsWith('km')) {
+      const distanceThreshold = parseInt(lapMode) * 1000;
+      let lastDistance = data[0].distance || 0;
+      
+      data.forEach((p, idx) => {
+        currentLapPoints.push(p);
+        const currentDistance = p.distance || 0;
+        if (currentDistance - lastDistance >= distanceThreshold || idx === data.length - 1) {
+          if (currentLapPoints.length > 0) {
+            laps.push(calculateLapSummary(currentLapPoints, lapId++));
+          }
+          currentLapPoints = [];
+          lastDistance = currentDistance;
+        }
+      });
+    } else if (lapMode.endsWith('min')) {
+      const timeThreshold = parseInt(lapMode) * 60;
+      let lapStartTime = data[0].timestamp.getTime();
+
+      data.forEach((p, idx) => {
+        currentLapPoints.push(p);
+        const currentTime = p.timestamp.getTime();
+        if ((currentTime - lapStartTime) / 1000 >= timeThreshold || idx === data.length - 1) {
+          if (currentLapPoints.length > 0) {
+            laps.push(calculateLapSummary(currentLapPoints, lapId++));
+          }
+          currentLapPoints = [];
+          lapStartTime = currentTime;
+        }
+      });
+    }
+
+    return laps;
+  }, [summary, data, lapMode]);
 
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
     const apiKey = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
@@ -880,6 +925,13 @@ export default function App() {
   const [showBicycling, setShowBicycling] = useState(false);
   const [showTransit, setShowTransit] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState(true);
+  const [isWPrimeExpanded, setIsWPrimeExpanded] = useState(true);
+  const [isPowerCurveExpanded, setIsPowerCurveExpanded] = useState(true);
+  const [isZonesExpanded, setIsZonesExpanded] = useState(true);
+  const [isPmcExpanded, setIsPmcExpanded] = useState(true);
+  const [isTrainingLoadExpanded, setIsTrainingLoadExpanded] = useState(true);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [showUploadView, setShowUploadView] = useState(false);
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -2135,522 +2187,653 @@ export default function App() {
 
                       {/* Activity Details Section */}
                       <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60 mb-6">Activity Details</h3>
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Activity Name</span>
-                            {isEditingName ? (
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="text" 
-                                  value={editedName}
-                                  onChange={(e) => setEditedName(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      if (currentActivityId) {
-                                        updateActivityName(currentActivityId, editedName);
-                                      }
-                                      setIsEditingName(false);
-                                    } else if (e.key === 'Escape') {
-                                      setIsEditingName(false);
-                                    }
-                                  }}
-                                  className="bg-app-bg border border-app-border rounded px-2 py-1 text-xs focus:border-orange-500 outline-none w-48"
-                                  autoFocus
-                                />
-                                <button 
-                                  onClick={() => {
-                                    if (currentActivityId) {
-                                      updateActivityName(currentActivityId, editedName);
-                                    }
-                                    setIsEditingName(false);
-                                  }}
-                                  className="p-1 hover:bg-orange-500/10 rounded text-orange-500"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </button>
-                                <button 
-                                  onClick={() => setIsEditingName(false)}
-                                  className="p-1 hover:bg-red-500/10 rounded text-red-500"
-                                >
-                                  <XCircle className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium">{summary.name}</span>
-                                <button 
-                                  onClick={() => {
-                                    setEditedName(summary.name);
-                                    setIsEditingName(true);
-                                  }}
-                                  className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors"
-                                  title="Edit Activity Name"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-orange-500" />
+                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Activity Details</h3>
                           </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Start Time</span>
-                            <span className="text-xs font-medium">{format(summary.startTime, 'h:mm:ss a')}</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Duration</span>
-                            <span className="text-xs font-medium">{formatNumericalDuration(summary.duration)}</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Distance</span>
-                            <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg/Max Power</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg/Max Cadence</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} rpm</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg/Max Speed</span>
-                            <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} km/h</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Avg/Max Heart Rate</span>
-                            <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} bpm</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                            <span className="text-xs text-app-muted">Elevation Gain</span>
-                            <span className="text-xs font-medium">
-                              {Math.round(summary.totalAscent || 0)} m
-                            </span>
-                          </div>
-                          {estimatedCp && (
-                            <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                              <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP</span>
-                              <span className="text-xs font-bold text-orange-500">
-                                {estimatedCp} W
-                              </span>
-                            </div>
-                          )}
+                          <button 
+                            onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
+                            className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                          >
+                            {isMetricsExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                          </button>
                         </div>
+                        
+                        <AnimatePresence>
+                          {isMetricsExpanded && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Activity Name</span>
+                                  {isEditingName ? (
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        type="text" 
+                                        value={editedName}
+                                        onChange={(e) => setEditedName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            if (currentActivityId) {
+                                              updateActivityName(currentActivityId, editedName);
+                                            }
+                                            setIsEditingName(false);
+                                          } else if (e.key === 'Escape') {
+                                            setIsEditingName(false);
+                                          }
+                                        }}
+                                        className="bg-app-bg border border-app-border rounded px-2 py-1 text-xs focus:border-orange-500 outline-none w-48"
+                                        autoFocus
+                                      />
+                                      <button 
+                                        onClick={() => {
+                                          if (currentActivityId) {
+                                            updateActivityName(currentActivityId, editedName);
+                                          }
+                                          setIsEditingName(false);
+                                        }}
+                                        className="p-1 hover:bg-orange-500/10 rounded text-orange-500"
+                                      >
+                                        <Check className="w-3 h-3" />
+                                      </button>
+                                      <button 
+                                        onClick={() => setIsEditingName(false)}
+                                        className="p-1 hover:bg-red-500/10 rounded text-red-500"
+                                      >
+                                        <XCircle className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-medium">{summary.name}</span>
+                                      <button 
+                                        onClick={() => {
+                                          setEditedName(summary.name);
+                                          setIsEditingName(true);
+                                        }}
+                                        className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors"
+                                        title="Edit Activity Name"
+                                      >
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Start Time</span>
+                                  <span className="text-xs font-medium">{format(summary.startTime, 'h:mm:ss a')}</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Duration</span>
+                                  <span className="text-xs font-medium">{formatNumericalDuration(summary.duration)}</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Distance</span>
+                                  <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Avg/Max Power</span>
+                                  <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Avg/Max Cadence</span>
+                                  <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} rpm</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Avg/Max Speed</span>
+                                  <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} km/h</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Avg/Max Heart Rate</span>
+                                  <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} bpm</span>
+                                </div>
+                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                  <span className="text-xs text-app-muted">Elevation Gain</span>
+                                  <span className="text-xs font-medium">
+                                    {Math.round(summary.totalAscent || 0)} m
+                                  </span>
+                                </div>
+                                {estimatedCp && (
+                                  <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                                    <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP</span>
+                                    <span className="text-xs font-bold text-orange-500">
+                                      {estimatedCp} W
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
 
-                        <div className="mt-8 grid grid-cols-2 gap-3">
-                          <button 
-                            onClick={exportOriginal}
-                            className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
-                          >
-                            <FileDown className="w-3 h-3 text-orange-500" />
-                            Original
-                          </button>
-                          <button 
-                            onClick={exportGPX}
-                            className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
-                          >
-                            <Download className="w-3 h-3 text-orange-500" />
-                            GPX
-                          </button>
-                        </div>
+                              <div className="mt-8 grid grid-cols-2 gap-3">
+                                <button 
+                                  onClick={exportOriginal}
+                                  className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                  <FileDown className="w-3 h-3 text-orange-500" />
+                                  Original
+                                </button>
+                                <button 
+                                  onClick={exportGPX}
+                                  className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                  <Download className="w-3 h-3 text-orange-500" />
+                                  GPX
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                   {/* W' Balance Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                          <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
-                          <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
-                        </div>
-                        {cpWPrime && (
-                          <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
-                            <div className="text-center">
-                              <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                Critical Power
-                                {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
-                              </div>
-                              <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                W' Capacity
-                                {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
-                              </div>
-                              <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
-                            </div>
-                          </div>
-                        )}
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-purple-500" />
+                        <h3 className="text-xl font-semibold">W' Balance Analysis</h3>
                       </div>
-
-                      <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={data}>
-                            <defs>
-                              <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="var(--app-muted)" 
-                              fontSize={10} 
-                              tickFormatter={(val) => {
-                                const d = new Date(val);
-                                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
-                              }}
-                            />
-                            <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
-                            <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                              labelFormatter={(val) => new Date(val).toLocaleTimeString()}
-                              formatter={(value: any, name: string) => {
-                                if (name === "W' Balance") return [`${Math.round(value)} J`, name];
-                                return [`${Math.round(value)} W`, name];
-                              }}
-                            />
-                            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
-                            
-                            {cpWPrime && (
-                              <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
-                            )}
-
-                            <Area 
-                              yAxisId="wbal"
-                              type="monotone" 
-                              dataKey="wPrimeBalance" 
-                              name="W' Balance" 
-                              stroke="#a855f7" 
-                              fillOpacity={1} 
-                              fill="url(#colorWBal)" 
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                            <Line 
-                              yAxisId="power"
-                              type="monotone" 
-                              dataKey="power" 
-                              name="Power" 
-                              stroke="#f97316" 
-                              strokeWidth={1} 
-                              dot={false}
-                              opacity={0.4}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* CP & W' Analysis */}
-                      <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                        <div className="flex items-center justify-between mb-8">
-                          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
-                          <Zap className="w-4 h-4 text-orange-500" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="flex flex-col gap-2">
-                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated CP</span>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
-                              <span className="text-sm text-app-muted">Watts</span>
-                            </div>
-                            <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                              Critical Power represents the highest power output you can maintain indefinitely without fatigue.
-                            </p>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
-                              <span className="text-sm text-app-muted">Joules</span>
-                            </div>
-                            <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                              W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-8 pt-8 border-t border-app-border/30">
-                          <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
-                            Model: 2-Parameter Linear Model (Work = CP × t + W')
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
-                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-purple-500" />
-                          What is W' Balance?
-                        </h4>
-                        <p className="text-xs text-app-muted leading-relaxed">
-                          W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
-                          The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
-                          When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
-                        </p>
-                      </div>
+                      <button 
+                        onClick={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
+                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                      >
+                        {isWPrimeExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                      </button>
                     </div>
+
+                    <AnimatePresence>
+                      {isWPrimeExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div>
+                                <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
+                              </div>
+                              {cpWPrime && (
+                                <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
+                                  <div className="text-center">
+                                    <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                      Critical Power
+                                      {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
+                                    </div>
+                                    <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                      W' Capacity
+                                      {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
+                                    </div>
+                                    <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="h-[400px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data}>
+                                  <defs>
+                                    <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                                    </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                                  <XAxis 
+                                    dataKey="timestamp" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    tickFormatter={(val) => {
+                                      const d = new Date(val);
+                                      return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+                                    }}
+                                  />
+                                  <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
+                                  <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    labelFormatter={(val) => new Date(val).toLocaleTimeString()}
+                                    formatter={(value: any, name: string) => {
+                                      if (name === "W' Balance") return [`${Math.round(value)} J`, name];
+                                      return [`${Math.round(value)} W`, name];
+                                    }}
+                                  />
+                                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
+                                  
+                                  {cpWPrime && (
+                                    <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
+                                  )}
+
+                                  <Area 
+                                    yAxisId="wbal"
+                                    type="monotone" 
+                                    dataKey="wPrimeBalance" 
+                                    name="W' Balance" 
+                                    stroke="#a855f7" 
+                                    fillOpacity={1} 
+                                    fill="url(#colorWBal)" 
+                                    strokeWidth={2}
+                                    dot={false}
+                                  />
+                                  <Line 
+                                    yAxisId="power"
+                                    type="monotone" 
+                                    dataKey="power" 
+                                    name="Power" 
+                                    stroke="#f97316" 
+                                    strokeWidth={1} 
+                                    dot={false}
+                                    opacity={0.4}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            {/* CP & W' Analysis */}
+                            <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                              <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
+                                <Zap className="w-4 h-4 text-orange-500" />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated CP</span>
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
+                                    <span className="text-sm text-app-muted">Watts</span>
+                                  </div>
+                                  <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
+                                    Critical Power represents the highest power output you can maintain indefinitely without fatigue.
+                                  </p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
+                                    <span className="text-sm text-app-muted">Joules</span>
+                                  </div>
+                                  <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
+                                    W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-8 pt-8 border-t border-app-border/30">
+                                <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
+                                  Model: 2-Parameter Linear Model (Work = CP × t + W')
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
+                              <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-purple-500" />
+                                What is W' Balance?
+                              </h4>
+                              <p className="text-xs text-app-muted leading-relaxed">
+                                W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
+                                The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
+                                When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Power Curve Section */}
                   <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-orange-500" />
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Mean Maximal Power Curve</span>
-                        </div>
-                        {selectedHistoryIds.length >= 2 && (
-                          <div className="flex items-center gap-4">
-                            <div className="text-[10px] text-app-muted uppercase tracking-widest">
-                              Overlaying {selectedHistoryIds.length} activities
-                            </div>
-                            <button 
-                              onClick={() => setSelectedHistoryIds([])}
-                              className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
-                            >
-                              Clear Comparison
-                            </button>
-                          </div>
-                        )}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-orange-500" />
+                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Mean Maximal Power Curve</span>
                       </div>
-                      
-                      <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={(() => {
-                            const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
-                            const comparisons = getComparisonCurves();
-                            return durations.map(d => {
-                              const point: any = { duration: d };
-                              const current = summary?.powerCurve?.find(p => p.duration === d);
-                              if (current) point.current = current.power;
-                              
-                              const allTime = allTimeBestCurve.find(p => p.duration === d);
-                              if (allTime) point.allTime = allTime.power;
-
-                              const ninetyDay = rolling90DayBestCurve.find(p => p.duration === d);
-                              if (ninetyDay) point.ninetyDay = ninetyDay.power;
-
-                              comparisons.forEach(comp => {
-                                const p = comp.curve.find(cp => cp.duration === d);
-                                if (p) point[comp.name] = p.power;
-                              });
-                              
-                              return point;
-                            });
-                          })()}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                            <XAxis 
-                              dataKey="duration" 
-                              type="number" 
-                              scale="log" 
-                              domain={[1, 3600]} 
-                              ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
-                              tickFormatter={(tick) => {
-                                if (tick < 60) return `${tick}s`;
-                                if (tick < 3600) return `${tick / 60}m`;
-                                return `${tick / 3600}h`;
-                              }}
-                              stroke="var(--app-muted)"
-                              fontSize={10}
-                            />
-                            <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                              labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                              labelFormatter={(label) => {
-                                const d = Number(label);
-                                if (d < 60) return `${d} seconds`;
-                                if (d < 3600) return `${d / 60} minutes`;
-                                return `${d / 3600} hours`;
-                              }}
-                            />
-                            <Legend 
-                              verticalAlign="top" 
-                              align="right" 
-                              iconType="circle"
-                              wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
-                            />
-                            <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                            <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                            <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
-                            {getComparisonCurves().map((comp, i) => (
-                              <Line 
-                                key={comp.name} 
-                                type="monotone" 
-                                dataKey={comp.name} 
-                                stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
-                                strokeWidth={1.5} 
-                                strokeDasharray="2 2"
-                                dot={false} 
-                              />
-                            ))}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
-                        {[5, 60, 300, 600, 1200, 1800, 3600].map(d => {
-                          const p = summary?.powerCurve?.find(cp => cp.duration === d);
-                          return (
-                            <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
-                              <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
-                                {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
-                              </div>
-                              <div className="text-sm font-bold text-app-text">
-                                {p ? `${p.power}W` : '-'}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <button 
+                        onClick={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
+                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                      >
+                        {isPowerCurveExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                      </button>
                     </div>
+
+                    <AnimatePresence>
+                      {isPowerCurveExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                              {selectedHistoryIds.length >= 2 && (
+                                <div className="flex items-center gap-4">
+                                  <div className="text-[10px] text-app-muted uppercase tracking-widest">
+                                    Overlaying {selectedHistoryIds.length} activities
+                                  </div>
+                                  <button 
+                                    onClick={() => setSelectedHistoryIds([])}
+                                    className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
+                                  >
+                                    Clear Comparison
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="h-[400px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={(() => {
+                                  const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
+                                  const comparisons = getComparisonCurves();
+                                  return durations.map(d => {
+                                    const point: any = { duration: d };
+                                    const current = summary?.powerCurve?.find(p => p.duration === d);
+                                    if (current) point.current = current.power;
+                                    
+                                    const allTime = allTimeBestCurve.find(p => p.duration === d);
+                                    if (allTime) point.allTime = allTime.power;
+
+                                    const ninetyDay = rolling90DayBestCurve.find(p => p.duration === d);
+                                    if (ninetyDay) point.ninetyDay = ninetyDay.power;
+
+                                    comparisons.forEach(comp => {
+                                      const p = comp.curve.find(cp => cp.duration === d);
+                                      if (p) point[comp.name] = p.power;
+                                    });
+                                    
+                                    return point;
+                                  });
+                                })()}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                                  <XAxis 
+                                    dataKey="duration" 
+                                    type="number" 
+                                    scale="log" 
+                                    domain={[1, 3600]} 
+                                    ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
+                                    tickFormatter={(tick) => {
+                                      if (tick < 60) return `${tick}s`;
+                                      if (tick < 3600) return `${tick / 60}m`;
+                                      return `${tick / 3600}h`;
+                                    }}
+                                    stroke="var(--app-muted)"
+                                    fontSize={10}
+                                  />
+                                  <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
+                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    labelFormatter={(label) => {
+                                      const d = Number(label);
+                                      if (d < 60) return `${d} seconds`;
+                                      if (d < 3600) return `${d / 60} minutes`;
+                                      return `${d / 3600} hours`;
+                                    }}
+                                  />
+                                  <Legend 
+                                    verticalAlign="top" 
+                                    align="right" 
+                                    iconType="circle"
+                                    wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
+                                  />
+                                  <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                  <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                                  <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                                  {getComparisonCurves().map((comp, i) => (
+                                    <Line 
+                                      key={comp.name} 
+                                      type="monotone" 
+                                      dataKey={comp.name} 
+                                      stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
+                                      strokeWidth={1.5} 
+                                      strokeDasharray="2 2"
+                                      dot={false} 
+                                    />
+                                  ))}
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
+                              {[5, 60, 300, 600, 1200, 1800, 3600].map(d => {
+                                const p = summary?.powerCurve?.find(cp => cp.duration === d);
+                                return (
+                                  <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
+                                    <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
+                                      {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
+                                    </div>
+                                    <div className="text-sm font-bold text-app-text">
+                                      {p ? `${p.power}W` : '-'}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Zones Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      <div className="space-y-6">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
-                        <div className="space-y-3">
-                          {summary?.powerZones?.map((z) => (
-                            <div key={z.name} className="space-y-1">
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-app-text/60">{z.name}</span>
-                                <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
-                              </div>
-                              <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full transition-all duration-1000" 
-                                  style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
-                                />
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-orange-500" />
+                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Training Zones</h3>
+                      </div>
+                      <button 
+                        onClick={() => setIsZonesExpanded(!isZonesExpanded)}
+                        className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                      >
+                        {isZonesExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {isZonesExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div className="space-y-6">
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
+                              <div className="space-y-3">
+                                {summary?.powerZones?.map((z) => (
+                                  <div key={z.name} className="space-y-1">
+                                    <div className="flex justify-between text-[10px]">
+                                      <span className="text-app-text/60">{z.name}</span>
+                                      <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full transition-all duration-1000" 
+                                        style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-6">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Heart Rate Zones</h4>
-                        {summary?.hrZones ? (
-                          <div className="space-y-3">
-                            {summary.hrZones.map((z) => (
-                              <div key={z.name} className="space-y-1">
-                                <div className="flex justify-between text-[10px]">
-                                  <span className="text-app-text/60">{z.name}</span>
-                                  <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
+                            <div className="space-y-6">
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Heart Rate Zones</h4>
+                              {summary?.hrZones ? (
+                                <div className="space-y-3">
+                                  {summary.hrZones.map((z) => (
+                                    <div key={z.name} className="space-y-1">
+                                      <div className="flex justify-between text-[10px]">
+                                        <span className="text-app-text/60">{z.name}</span>
+                                        <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
+                                      </div>
+                                      <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full transition-all duration-1000" 
+                                          style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                                <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full transition-all duration-1000" 
-                                    style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
-                                  />
+                              ) : (
+                                <div className="h-full flex items-center justify-center text-app-muted/50 text-xs uppercase tracking-widest border border-dashed border-app-border rounded-2xl">
+                                  No HR Data
                                 </div>
-                              </div>
-                            ))}
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="h-full flex items-center justify-center text-app-muted/50 text-xs uppercase tracking-widest border border-dashed border-app-border rounded-2xl">
-                            No HR Data
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Laps Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8">
                     <div className="space-y-6">
-                      <div className="flex items-center gap-2">
-                        <LayoutList className="w-4 h-4 text-orange-500" />
-                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap Breakdown</span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        {/* Desktop Table View */}
-                        <table className="w-full text-left border-collapse hidden md:table">
-                          <thead>
-                            <tr className="border-b border-app-border">
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
-                              <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Temp</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {summary?.laps?.map((lap) => (
-                              <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
-                                <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
-                                <td className="py-4 text-xs text-app-text/60">
-                                  {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
-                                </td>
-                                <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
-                                <td className="py-4 text-xs text-app-text/60 font-bold">
-                                  {Math.round(lap.avgPower || 0)}W / {Math.round(lap.maxPower || 0)}W
-                                </td>
-                                <td className="py-4 text-xs text-app-text/60">
-                                  {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
-                                </td>
-                                <td className="py-4 text-xs text-app-text/60">
-                                  {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
-                                </td>
-                                <td className="py-4 text-xs text-app-text/60">
-                                  {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
-                                </td>
-                                <td className="py-4 text-xs text-app-text/60">
-                                  {lap.avgTemperature !== undefined ? `${Math.round(lap.avgTemperature || 0)}°C` : '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-
-                        {/* Mobile Card View */}
-                        <div className="grid grid-cols-1 gap-4 md:hidden">
-                          {summary?.laps?.map((lap) => (
-                            <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
-                              <div className="flex justify-between items-center border-b border-app-border pb-3">
-                                <span className="text-sm font-bold text-orange-500">Lap #{lap.id}</span>
-                                <span className="text-xs font-medium text-app-text/60">
-                                  {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} km
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                                <div className="space-y-1">
-                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
-                                  <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)}W / {Math.round(lap.maxPower || 0)}W</div>
-                                </div>
-                                <div className="space-y-1">
-                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                                  <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm</div>
-                                </div>
-                                <div className="space-y-1">
-                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                                  <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm</div>
-                                </div>
-                                <div className="space-y-1">
-                                  <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                                  <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h</div>
-                                </div>
-                                {lap.avgTemperature !== undefined && (
-                                  <div className="space-y-1">
-                                    <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Temp</span>
-                                    <div className="text-xs text-app-text/80">{Math.round(lap.avgTemperature || 0)}°C</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <LayoutList className="w-4 h-4 text-orange-500" />
+                            <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap Breakdown</span>
+                          </div>
+                          <button 
+                            onClick={() => setIsLapsExpanded(!isLapsExpanded)}
+                            className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                          >
+                            {isLapsExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-xl border border-app-border">
+                          {[
+                            { id: 'file', label: 'File' },
+                            { id: '1km', label: '1km' },
+                            { id: '5km', label: '5km' },
+                            { id: '10km', label: '10km' },
+                            { id: '1min', label: '1min' },
+                            { id: '5min', label: '5min' },
+                            { id: '10min', label: '10min' }
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              onClick={() => setLapMode(mode.id as any)}
+                              className={cn(
+                                "px-2 py-1 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                                lapMode === mode.id 
+                                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                                  : "text-app-muted hover:text-app-text hover:bg-app-card"
+                              )}
+                            >
+                              {mode.label}
+                            </button>
                           ))}
                         </div>
                       </div>
+                      
+                      <AnimatePresence>
+                        {isLapsExpanded && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                              {/* Desktop Table View */}
+                              <table className="w-full text-left border-collapse hidden md:table">
+                                <thead className="sticky top-0 bg-app-card z-10">
+                                  <tr className="border-b border-app-border">
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
+                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {currentLaps.map((lap) => (
+                                    <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
+                                      <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
+                                      <td className="py-4 text-xs text-app-text/60">
+                                        {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
+                                      </td>
+                                      <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
+                                      <td className="py-4 text-xs text-app-text/60 font-bold">
+                                        {Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W
+                                      </td>
+                                      <td className="py-4 text-xs text-app-text/60">
+                                        {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
+                                      </td>
+                                      <td className="py-4 text-xs text-app-text/60">
+                                        {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
+                                      </td>
+                                      <td className="py-4 text-xs text-app-text/60">
+                                        {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+
+                              {/* Mobile Card View */}
+                              <div className="grid grid-cols-1 gap-4 md:hidden">
+                                {currentLaps.map((lap) => (
+                                  <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
+                                    <div className="flex justify-between items-center border-b border-app-border pb-3">
+                                      <span className="text-sm font-bold text-orange-500">Lap #{lap.id}</span>
+                                      <span className="text-xs font-medium text-app-text/60">
+                                        {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} km
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                                      <div className="space-y-1">
+                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
+                                        <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W</div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
+                                        <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm</div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
+                                        <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm</div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
+                                        <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
                   {/* PMC Analysis Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-orange-500/10 rounded-2xl">
                           <TrendingUp className="w-6 h-6 text-orange-500" />
@@ -2659,193 +2842,216 @@ export default function App() {
                           <h3 className="text-xl font-semibold">PMC Analysis</h3>
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Performance Management Chart (PMC)</p>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
-                        <div 
-                          className={cn(
-                            "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
-                          )}
-                          onMouseEnter={() => setPmcFocus('bikeScore')}
-                          onMouseLeave={() => setPmcFocus(null)}
+                        <button 
+                          onClick={() => setIsPmcExpanded(!isPmcExpanded)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors ml-4"
                         >
-                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
-                        </div>
-                        <div 
-                          className={cn(
-                            "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
-                          )}
-                          onMouseEnter={() => setPmcFocus('lts')}
-                          onMouseLeave={() => setPmcFocus(null)}
-                        >
-                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
-                        </div>
-                        <div 
-                          className={cn(
-                            "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
-                          )}
-                          onMouseEnter={() => setPmcFocus('sts')}
-                          onMouseLeave={() => setPmcFocus(null)}
-                        >
-                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
-                        </div>
-                        <div 
-                          className={cn(
-                            "text-center cursor-pointer transition-all duration-300",
-                            pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
-                          )}
-                          onMouseEnter={() => setPmcFocus('sb')}
-                          onMouseLeave={() => setPmcFocus(null)}
-                        >
-                          <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
-                          <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="h-[400px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={pmcData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                          <XAxis 
-                            dataKey="date" 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            tickFormatter={(str) => {
-                              const date = new Date(str);
-                              if (pmcDateRange === '6weeks' || pmcDateRange === '3months') {
-                                return format(date, 'MMM d');
-                              }
-                              return format(date, 'MMM yy');
-                            }}
-                          />
-                          <YAxis 
-                            yAxisId="fitness" 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            hide={pmcFocus === 'bikeScore' || pmcFocus === 'sb'}
-                            label={pmcFocus === 'lts' || pmcFocus === 'sts' ? { value: 'LTS/STS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                          />
-                          <YAxis 
-                            yAxisId="bikeScore" 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            hide={pmcFocus !== 'bikeScore'}
-                            label={pmcFocus === 'bikeScore' ? { value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                          />
-                          <YAxis 
-                            yAxisId="form" 
-                            orientation="right" 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            hide={pmcFocus === 'bikeScore' || pmcFocus === 'lts' || pmcFocus === 'sts'}
-                            label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                          />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
-                            labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                            labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
-                          />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={36}
-                            onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
-                            onMouseLeave={() => setPmcFocus(null)}
-                          />
-                          <Bar 
-                            yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
-                            dataKey="bikeScore" 
-                            fill="#f97316" 
-                            opacity={pmcFocus === 'bikeScore' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
-                            name="BikeScore" 
-                          />
-                          <Line 
-                            yAxisId="fitness" 
-                            type="monotone" 
-                            dataKey="lts" 
-                            stroke="#3b82f6" 
-                            strokeWidth={pmcFocus === 'lts' ? 4 : 2} 
-                            opacity={pmcFocus === 'lts' ? 1 : pmcFocus ? 0.2 : 1}
-                            dot={false} 
-                            name="Fitness (LTS)" 
-                          />
-                          <Line 
-                            yAxisId="fitness" 
-                            type="monotone" 
-                            dataKey="sts" 
-                            stroke="#ef4444" 
-                            strokeWidth={pmcFocus === 'sts' ? 4 : 2} 
-                            opacity={pmcFocus === 'sts' ? 1 : pmcFocus ? 0.2 : 1}
-                            dot={false} 
-                            name="Fatigue (STS)" 
-                          />
-                          <Area 
-                            yAxisId="form" 
-                            type="monotone" 
-                            dataKey="sb" 
-                            fill="#22c55e" 
-                            stroke="#22c55e" 
-                            fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
-                            opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
-                            name="Form (SB)" 
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-app-border/30">
-                      {[
-                        { id: 'all', label: 'All' },
-                        { id: '1year', label: 'One Year' },
-                        { id: '6months', label: 'Six Months' },
-                        { id: '3months', label: 'Three Months' },
-                        { id: '6weeks', label: 'Six Weeks' }
-                      ].map(range => (
-                        <button
-                          key={range.id}
-                          onClick={() => setPmcDateRange(range.id as any)}
-                          className={cn(
-                            "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
-                            pmcDateRange === range.id 
-                              ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                              : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                          )}
-                        >
-                          {range.label}
+                          {isPmcExpanded ? '[ Collapse ]' : '[ Expand ]'}
                         </button>
-                      ))}
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">LTS (Fitness)</h4>
-                        <p className="text-[10px] text-app-muted leading-relaxed">
-                          Long Term Stress is a 42-day weighted average of your daily BikeScore. It represents your long-term training load and overall fitness level.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">STS (Fatigue)</h4>
-                        <p className="text-[10px] text-app-muted leading-relaxed">
-                          Short Term Stress is a 7-day weighted average of your daily BikeScore. It represents your short-term training load and current level of fatigue.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">SB (Form)</h4>
-                        <p className="text-[10px] text-app-muted leading-relaxed">
-                          Stress Balance (LTS - STS) represents your current form or freshness. A positive SB suggests you are fresh and ready to perform.
-                        </p>
-                      </div>
-                    </div>
+                    <AnimatePresence>
+                      {isPmcExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
+                                <div 
+                                  className={cn(
+                                    "text-center cursor-pointer transition-all duration-300",
+                                    pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
+                                  )}
+                                  onMouseEnter={() => setPmcFocus('bikeScore')}
+                                  onMouseLeave={() => setPmcFocus(null)}
+                                >
+                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
+                                </div>
+                                <div 
+                                  className={cn(
+                                    "text-center cursor-pointer transition-all duration-300",
+                                    pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
+                                  )}
+                                  onMouseEnter={() => setPmcFocus('lts')}
+                                  onMouseLeave={() => setPmcFocus(null)}
+                                >
+                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
+                                </div>
+                                <div 
+                                  className={cn(
+                                    "text-center cursor-pointer transition-all duration-300",
+                                    pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
+                                  )}
+                                  onMouseEnter={() => setPmcFocus('sts')}
+                                  onMouseLeave={() => setPmcFocus(null)}
+                                >
+                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
+                                </div>
+                                <div 
+                                  className={cn(
+                                    "text-center cursor-pointer transition-all duration-300",
+                                    pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
+                                  )}
+                                  onMouseEnter={() => setPmcFocus('sb')}
+                                  onMouseLeave={() => setPmcFocus(null)}
+                                >
+                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
+                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="h-[400px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={pmcData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                                  <XAxis 
+                                    dataKey="date" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    tickFormatter={(str) => {
+                                      const date = new Date(str);
+                                      if (pmcDateRange === '6weeks' || pmcDateRange === '3months') {
+                                        return format(date, 'MMM d');
+                                      }
+                                      return format(date, 'MMM yy');
+                                    }}
+                                  />
+                                  <YAxis 
+                                    yAxisId="fitness" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    hide={pmcFocus === 'bikeScore' || pmcFocus === 'sb'}
+                                    label={pmcFocus === 'lts' || pmcFocus === 'sts' ? { value: 'LTS/STS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                                  />
+                                  <YAxis 
+                                    yAxisId="bikeScore" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    hide={pmcFocus !== 'bikeScore'}
+                                    label={pmcFocus === 'bikeScore' ? { value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                                  />
+                                  <YAxis 
+                                    yAxisId="form" 
+                                    orientation="right" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    hide={pmcFocus === 'bikeScore' || pmcFocus === 'lts' || pmcFocus === 'sts'}
+                                    label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
+                                  />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
+                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
+                                  />
+                                  <Legend 
+                                    verticalAlign="top" 
+                                    height={36}
+                                    onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
+                                    onMouseLeave={() => setPmcFocus(null)}
+                                  />
+                                  <Bar 
+                                    yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
+                                    dataKey="bikeScore" 
+                                    fill="#f97316" 
+                                    opacity={pmcFocus === 'bikeScore' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
+                                    name="BikeScore" 
+                                  />
+                                  <Line 
+                                    yAxisId="fitness" 
+                                    type="monotone" 
+                                    dataKey="lts" 
+                                    stroke="#3b82f6" 
+                                    strokeWidth={pmcFocus === 'lts' ? 4 : 2} 
+                                    opacity={pmcFocus === 'lts' ? 1 : pmcFocus ? 0.2 : 1}
+                                    dot={false} 
+                                    name="Fitness (LTS)" 
+                                  />
+                                  <Line 
+                                    yAxisId="fitness" 
+                                    type="monotone" 
+                                    dataKey="sts" 
+                                    stroke="#ef4444" 
+                                    strokeWidth={pmcFocus === 'sts' ? 4 : 2} 
+                                    opacity={pmcFocus === 'sts' ? 1 : pmcFocus ? 0.2 : 1}
+                                    dot={false} 
+                                    name="Fatigue (STS)" 
+                                  />
+                                  <Area 
+                                    yAxisId="form" 
+                                    type="monotone" 
+                                    dataKey="sb" 
+                                    fill="#22c55e" 
+                                    stroke="#22c55e" 
+                                    fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
+                                    opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
+                                    name="Form (SB)" 
+                                  />
+                                </ComposedChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-app-border/30">
+                              {[
+                                { id: 'all', label: 'All' },
+                                { id: '1year', label: 'One Year' },
+                                { id: '6months', label: 'Six Months' },
+                                { id: '3months', label: 'Three Months' },
+                                { id: '6weeks', label: 'Six Weeks' }
+                              ].map(range => (
+                                <button
+                                  key={range.id}
+                                  onClick={() => setPmcDateRange(range.id as any)}
+                                  className={cn(
+                                    "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
+                                    pmcDateRange === range.id 
+                                      ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                                      : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                                  )}
+                                >
+                                  {range.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
+                              <div className="space-y-2">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">LTS (Fitness)</h4>
+                                <p className="text-[10px] text-app-muted leading-relaxed">
+                                  Long Term Stress is a 42-day weighted average of your daily BikeScore. It represents your long-term training load and overall fitness level.
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">STS (Fatigue)</h4>
+                                <p className="text-[10px] text-app-muted leading-relaxed">
+                                  Short Term Stress is a 7-day weighted average of your daily BikeScore. It represents your short-term training load and current level of fatigue.
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">SB (Form)</h4>
+                                <p className="text-[10px] text-app-muted leading-relaxed">
+                                  Stress Balance (LTS - STS) represents your current form or freshness. A positive SB suggests you are fresh and ready to perform.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Training Load Summary Section */}
                   <div className="bg-app-card border border-app-border rounded-3xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-orange-500/10 rounded-2xl">
                           <BarChart3 className="w-6 h-6 text-orange-500" />
@@ -2854,74 +3060,97 @@ export default function App() {
                           <h3 className="text-xl font-semibold">Training Load Summary</h3>
                           <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Weekly/Monthly/Yearly Volume Analysis</p>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
-                        {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
-                          <button
-                            key={range}
-                            onClick={() => setTrainingLoadRange(range)}
-                            className={cn(
-                              "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
-                              trainingLoadRange === range 
-                                ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                                : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                            )}
-                          >
-                            {range}
-                          </button>
-                        ))}
+                        <button 
+                          onClick={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors ml-4"
+                        >
+                          {isTrainingLoadExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                        </button>
                       </div>
                     </div>
 
-                    <div className="h-[400px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trainingLoadData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                          <XAxis 
-                            dataKey="label" 
-                            stroke="var(--app-muted)" 
-                            fontSize={10} 
-                            tickFormatter={(str) => str}
-                          />
-                          <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
-                            labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
-                            formatter={(value: any, name: string) => {
-                              if (name === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
-                              if (name === 'bikeScore') return [Math.round(value), 'BikeScore'];
-                              if (name === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
-                              return [value, name];
-                            }}
-                          />
-                          <Bar 
-                            dataKey="bikeScore" 
-                            fill="#f97316" 
-                            radius={[6, 6, 0, 0]} 
-                            name="BikeScore"
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <AnimatePresence>
+                      {isTrainingLoadExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
+                                {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
+                                  <button
+                                    key={range}
+                                    onClick={() => setTrainingLoadRange(range)}
+                                    className={cn(
+                                      "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
+                                      trainingLoadRange === range 
+                                        ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                                        : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                                    )}
+                                  >
+                                    {range}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
-                      <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
-                        <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
-                      </div>
-                    </div>
+                            <div className="h-[400px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={trainingLoadData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                                  <XAxis 
+                                    dataKey="label" 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    tickFormatter={(str) => str}
+                                  />
+                                  <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
+                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    formatter={(value: any, name: string) => {
+                                      if (name === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
+                                      if (name === 'bikeScore') return [Math.round(value), 'BikeScore'];
+                                      if (name === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
+                                      return [value, name];
+                                    }}
+                                  />
+                                  <Bar 
+                                    dataKey="bikeScore" 
+                                    fill="#f97316" 
+                                    radius={[6, 6, 0, 0]} 
+                                    name="BikeScore"
+                                  />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
+                              <div className="text-center">
+                                <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
+                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
+                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
+                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
+                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>
@@ -2952,6 +3181,12 @@ export default function App() {
                               {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
                             </div>
                             <h3 className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Historical Activities</h3>
+                            <button 
+                              onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                              className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 transition-colors"
+                            >
+                              {isHistoryExpanded ? '[ Collapse ]' : '[ Expand ]'}
+                            </button>
                           </div>
                         </div>
                         
@@ -2986,78 +3221,90 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
-                        {sortedHistory.length > 0 ? (
-                          sortedHistory.map(h => (
-                            <div 
-                              key={h.id} 
-                              onClick={() => loadFromHistory(h.id)}
-                              className={cn(
-                                "bg-app-card border rounded-xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all",
-                                summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
-                              )}
-                            >
-                              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                <div 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedHistoryIds(prev => 
-                                      prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
-                                    );
-                                  }}
-                                  className={cn(
-                                    "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0",
-                                    selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                                  )}
-                                >
-                                  {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold truncate">{h.name}</div>
-                                  <div className="text-[10px] text-app-muted truncate">
-                                    {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
-                                    {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W avg`}
+                      <AnimatePresence>
+                        {isHistoryExpanded && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2">
+                              {sortedHistory.length > 0 ? (
+                                sortedHistory.map(h => (
+                                  <div 
+                                    key={h.id} 
+                                    onClick={() => loadFromHistory(h.id)}
+                                    className={cn(
+                                      "bg-app-card border rounded-xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all",
+                                      summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                      <div 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedHistoryIds(prev => 
+                                            prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
+                                          );
+                                        }}
+                                        className={cn(
+                                          "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0",
+                                          selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                                        )}
+                                      >
+                                        {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold truncate">{h.name}</div>
+                                        <div className="text-[10px] text-app-muted truncate">
+                                          {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
+                                          {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W avg`}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                                      <div className="text-right hidden sm:block">
+                                        <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
+                                        <div className="text-[8px] text-app-muted uppercase tracking-widest">BikeScore</div>
+                                      </div>
+                                      <div className="flex items-center gap-1 sm:gap-2">
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            loadFromHistory(h.id);
+                                          }}
+                                          className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
+                                        >
+                                          View
+                                        </button>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromHistory(h.id);
+                                          }}
+                                          className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
+                                ))
+                              ) : (
+                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
+                                  <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
+                                    <Activity className="w-6 h-6 text-app-muted" />
+                                  </div>
+                                  <p className="text-xs uppercase tracking-[0.2em] font-bold mb-2">No activities yet</p>
+                                  <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                                <div className="text-right hidden sm:block">
-                                  <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest">BikeScore</div>
-                                </div>
-                                <div className="flex items-center gap-1 sm:gap-2">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      loadFromHistory(h.id);
-                                    }}
-                                    className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
-                                  >
-                                    View
-                                  </button>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeFromHistory(h.id);
-                                    }}
-                                    className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                                  </button>
-                                </div>
-                              </div>
+                              )}
                             </div>
-                          ))
-                        ) : (
-                          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
-                            <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
-                              <Activity className="w-6 h-6 text-app-muted" />
-                            </div>
-                            <p className="text-xs uppercase tracking-[0.2em] font-bold mb-2">No activities yet</p>
-                            <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
-                          </div>
+                          </motion.div>
                         )}
-                      </div>
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
