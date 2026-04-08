@@ -983,6 +983,7 @@ export default function App() {
   const [isPmcExpanded, setIsPmcExpanded] = useState(true);
   const [isTrainingLoadExpanded, setIsTrainingLoadExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
+  const [isOverviewExpanded, setIsOverviewExpanded] = useState(true);
   const [showUploadView, setShowUploadView] = useState(false);
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -996,6 +997,22 @@ export default function App() {
       });
     }
   };
+
+  const toggleAllPanels = (expand: boolean) => {
+    setIsOverviewExpanded(expand);
+    setIsChartExpanded(expand);
+    setIsMapExpanded(expand);
+    setIsDetailsExpanded(expand);
+    setIsLapsExpanded(expand);
+    setIsWPrimeExpanded(expand);
+    setIsPowerCurveExpanded(expand);
+    setIsZonesExpanded(expand);
+    setIsPmcExpanded(expand);
+    setIsTrainingLoadExpanded(expand);
+    setIsHistoryExpanded(expand);
+  };
+
+  const areAllPanelsCollapsed = !isOverviewExpanded && !isChartExpanded && !isMapExpanded && !isDetailsExpanded && !isLapsExpanded && !isWPrimeExpanded && !isPowerCurveExpanded && !isZonesExpanded && !isPmcExpanded && !isTrainingLoadExpanded && !isHistoryExpanded;
 
   // Recalculate summary metrics when settings change
   React.useEffect(() => {
@@ -1490,6 +1507,17 @@ export default function App() {
                 <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
               </button>
               <button 
+                onClick={() => toggleAllPanels(areAllPanelsCollapsed)}
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
+                title={areAllPanelsCollapsed ? "Expand All Panels" : "Collapse All Panels"}
+              >
+                {areAllPanelsCollapsed ? (
+                  <LayoutList className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
+                ) : (
+                  <Table className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
+                )}
+              </button>
+              <button 
                 onClick={() => setShowSettings(true)}
                 className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
                 title="Training Settings"
@@ -1622,174 +1650,196 @@ export default function App() {
 
             {summary && (
               <>
-                {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Duration & Work</span>
-                      <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
-                    </div>
-                  </div>
+                {/* Overview Section */}
+                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                  <SectionHeader 
+                    icon={LayoutList}
+                    title="Activity Overview"
+                    description="High-level performance summary and key metrics"
+                    isExpanded={isOverviewExpanded}
+                    onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                  />
+                  
+                  <AnimatePresence>
+                    {isOverviewExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Duration & Work</span>
+                              <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power Metrics</span>
-                      <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
-                      <div className="flex gap-3">
-                        <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
-                        <span>Max: {Math.round(summary.maxPower || 0)}W</span>
-                      </div>
-                      {data.some(p => p.leftRightBalance !== undefined) && (
-                        <span>L/R: {(() => {
-                          const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
-                          if (balances.length === 0) return '50/50';
-                          const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
-                          return `${Math.round(avg)}/${100 - Math.round(avg)}`;
-                        })()}</span>
-                      )}
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power Metrics</span>
+                              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
+                              <div className="flex gap-3">
+                                <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
+                                <span>Max: {Math.round(summary.maxPower || 0)}W</span>
+                              </div>
+                              {data.some(p => p.leftRightBalance !== undefined) && (
+                                <span>L/R: {(() => {
+                                  const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
+                                  if (balances.length === 0) return '50/50';
+                                  const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
+                                  return `${Math.round(avg)}/${100 - Math.round(avg)}`;
+                                })()}</span>
+                              )}
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Training Stress</span>
-                      <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Training Stress</span>
+                              <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                      <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Max: {Math.round(summary.maxHeartRate || 0)} bpm
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
+                              <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Max: {Math.round(summary.maxHeartRate || 0)} bpm
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Elevation & Distance</span>
-                      <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Dist: {(summary.distance / 1000).toFixed(1)}km
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Elevation & Distance</span>
+                              <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Dist: {(summary.distance / 1000).toFixed(1)}km
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
+                              <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
+                            </div>
+                          </div>
 
-                  <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                    <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                      <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
-                    </div>
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
-                      <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
-                    </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                      Max: {Math.round(summary.maxCadence || 0)} rpm
-                    </div>
-                  </div>
+                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                            <div className="flex justify-between items-start mb-2 sm:mb-4">
+                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
+                              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1 sm:gap-2">
+                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
+                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
+                            </div>
+                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                              Max: {Math.round(summary.maxCadence || 0)} rpm
+                            </div>
+                          </div>
 
-                  {summary.aerobicDecoupling !== undefined && (
-                    <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                      <div className="flex justify-between items-start mb-2 sm:mb-4">
-                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Aerobic Decoupling</span>
-                        <TrendingUp className={cn(
-                          "w-3 h-3 sm:w-4 sm:h-4",
-                          summary.aerobicDecoupling < 5 ? "text-green-500" :
-                          summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
-                        )} />
-                      </div>
-                      <div className="flex items-baseline gap-1 sm:gap-2">
-                        <span className={cn(
-                          "text-3xl sm:text-4xl font-light tracking-tighter",
-                          summary.aerobicDecoupling < 5 ? "text-green-500" :
-                          summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
-                        )}>
-                          {(summary.aerobicDecoupling || 0).toFixed(1)}%
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
-                      </div>
-                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                        {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
-                         summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
-                      </div>
-                    </div>
-                  )}
+                          {summary.aerobicDecoupling !== undefined && (
+                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                              <div className="flex justify-between items-start mb-2 sm:mb-4">
+                                <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Aerobic Decoupling</span>
+                                <TrendingUp className={cn(
+                                  "w-3 h-3 sm:w-4 sm:h-4",
+                                  summary.aerobicDecoupling < 5 ? "text-green-500" :
+                                  summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
+                                )} />
+                              </div>
+                              <div className="flex items-baseline gap-1 sm:gap-2">
+                                <span className={cn(
+                                  "text-3xl sm:text-4xl font-light tracking-tighter",
+                                  summary.aerobicDecoupling < 5 ? "text-green-500" :
+                                  summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
+                                )}>
+                                  {(summary.aerobicDecoupling || 0).toFixed(1)}%
+                                </span>
+                                <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
+                              </div>
+                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                                {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
+                                 summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
+                              </div>
+                            </div>
+                          )}
 
-                  {summary.avgTemperature !== undefined && (
-                    <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                      <div className="flex justify-between items-start mb-2 sm:mb-4">
-                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Temperature</span>
-                        <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                      </div>
-                      <div className="flex items-baseline gap-1 sm:gap-2">
-                        <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
-                        <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
-                      </div>
-                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                        Avg Ambient
-                      </div>
-                    </div>
-                  )}
-              {history.length > 0 && currentPMC && (
-                <div className="bg-app-card border border-app-border rounded-2xl p-6 hover:bg-app-card/80 transition-colors animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Performance (PMC)</span>
-                    <TrendingUp className="w-4 h-4 text-orange-500" />
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
-                    <span className="text-xs text-app-muted font-medium">LTS (Fitness)</span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                    STS: {Math.round(currentPMC.sts || 0)} | SB: {Math.round(currentPMC.sb || 0)}
-                  </div>
+                          {summary.avgTemperature !== undefined && (
+                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                              <div className="flex justify-between items-start mb-2 sm:mb-4">
+                                <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Temperature</span>
+                                <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+                              </div>
+                              <div className="flex items-baseline gap-1 sm:gap-2">
+                                <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
+                                <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
+                              </div>
+                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                                Avg Ambient
+                              </div>
+                            </div>
+                          )}
+                          
+                          {history.length > 0 && currentPMC && (
+                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
+                              <div className="flex justify-between items-start mb-2 sm:mb-4">
+                                <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Performance (PMC)</span>
+                                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+                              </div>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
+                                <span className="text-[10px] text-app-muted font-medium uppercase tracking-widest">LTS</span>
+                              </div>
+                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                                STS: {Math.round(currentPMC.sts || 0)} | SB: {Math.round(currentPMC.sb || 0)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              )}
-            </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 gap-8">
