@@ -17,6 +17,7 @@
   --app-text: #1a1a1a;
   --app-border: rgba(0, 0, 0, 0.1);
   --app-card: #ffffff;
+  --app-tooltip-bg: rgba(255, 255, 255, 0.8);
   --app-muted: rgba(0, 0, 0, 0.5);
 }
 
@@ -25,6 +26,7 @@
   --app-text: #ffffff;
   --app-border: rgba(255, 255, 255, 0.1);
   --app-card: rgba(255, 255, 255, 0.05);
+  --app-tooltip-bg: rgba(10, 10, 10, 0.8);
   --app-muted: rgba(255, 255, 255, 0.4);
 }
 

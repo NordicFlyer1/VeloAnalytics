@@ -1890,8 +1890,17 @@ export default function App() {
                             />
                           ))}
                           <Tooltip 
-                            contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                            labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                            contentStyle={{ 
+                              backgroundColor: 'var(--app-tooltip-bg)', 
+                              backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)',
+                              border: '1px solid var(--app-border)', 
+                              borderRadius: '12px', 
+                              fontSize: '10px', 
+                              color: 'var(--app-text)',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                            }}
+                            labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                             formatter={(value: any, name: string) => {
                               const config = Object.values(metricsConfig).find(c => c.label === name);
                               return [`${value} ${config?.unit || ''}`, name];
@@ -2477,8 +2486,17 @@ export default function App() {
                                   <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
                                   <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
                                   <Tooltip 
-                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    contentStyle={{ 
+                                      backgroundColor: 'var(--app-tooltip-bg)', 
+                                      backdropFilter: 'blur(8px)',
+                                      WebkitBackdropFilter: 'blur(8px)',
+                                      border: '1px solid var(--app-border)', 
+                                      borderRadius: '12px', 
+                                      fontSize: '10px', 
+                                      color: 'var(--app-text)',
+                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     labelFormatter={(val) => new Date(val).toLocaleTimeString()}
                                     formatter={(value: any, name: string) => {
                                       if (name === "W' Balance") return [`${Math.round(value)} J`, name];
@@ -2645,8 +2663,17 @@ export default function App() {
                                   />
                                   <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" />
                                   <Tooltip 
-                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '10px', color: 'var(--app-text)' }}
-                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    contentStyle={{ 
+                                      backgroundColor: 'var(--app-tooltip-bg)', 
+                                      backdropFilter: 'blur(8px)',
+                                      WebkitBackdropFilter: 'blur(8px)',
+                                      border: '1px solid var(--app-border)', 
+                                      borderRadius: '12px', 
+                                      fontSize: '10px', 
+                                      color: 'var(--app-text)',
+                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     labelFormatter={(label) => {
                                       const d = Number(label);
                                       if (d < 60) return `${d} seconds`;
@@ -3001,8 +3028,17 @@ export default function App() {
                                     label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                                   />
                                   <Tooltip 
-                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
-                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    contentStyle={{ 
+                                      backgroundColor: 'var(--app-tooltip-bg)', 
+                                      backdropFilter: 'blur(8px)',
+                                      WebkitBackdropFilter: 'blur(8px)',
+                                      border: '1px solid var(--app-border)', 
+                                      borderRadius: '12px', 
+                                      fontSize: '12px', 
+                                      color: 'var(--app-text)',
+                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
                                   />
                                   <Legend 
@@ -3149,11 +3185,29 @@ export default function App() {
                                     stroke="var(--app-muted)" 
                                     fontSize={10} 
                                     tickFormatter={(str) => str}
+                                    axisLine={false}
+                                    tickLine={false}
                                   />
-                                  <YAxis stroke="var(--app-muted)" fontSize={10} label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} />
+                                  <YAxis 
+                                    stroke="var(--app-muted)" 
+                                    fontSize={10} 
+                                    axisLine={false}
+                                    tickLine={false}
+                                    label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} 
+                                  />
                                   <Tooltip 
-                                    contentStyle={{ backgroundColor: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', color: 'var(--app-text)' }}
-                                    labelStyle={{ color: 'var(--app-muted)', marginBottom: '4px' }}
+                                    cursor={false}
+                                    contentStyle={{ 
+                                      backgroundColor: 'var(--app-tooltip-bg)', 
+                                      backdropFilter: 'blur(8px)',
+                                      WebkitBackdropFilter: 'blur(8px)',
+                                      border: '1px solid var(--app-border)', 
+                                      borderRadius: '12px', 
+                                      fontSize: '12px', 
+                                      color: 'var(--app-text)',
+                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     formatter={(value: any, name: string) => {
                                       if (name === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
                                       if (name === 'bikeScore') return [Math.round(value), 'BikeScore'];
@@ -3166,6 +3220,7 @@ export default function App() {
                                     fill="#f97316" 
                                     radius={[6, 6, 0, 0]} 
                                     name="BikeScore"
+                                    activeBar={{ fill: "#fb923c" }}
                                   />
                                 </BarChart>
                               </ResponsiveContainer>
