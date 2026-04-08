@@ -1444,7 +1444,10 @@ export default function App() {
                 <ChevronRight className="w-3 h-3 text-orange-500 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
-            <div className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+            <div 
+              className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full"
+              title="Critical Power (Watts)"
+            >
               <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
               <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">CP:</span>
               <input 
@@ -1463,6 +1466,7 @@ export default function App() {
                   "flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-widest transition-all",
                   showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
                 )}
+                title={showUploadView ? "Cancel Upload" : "Upload Activity (.fit)"}
               >
                 <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{showUploadView ? 'Cancel' : 'Upload'}</span>
@@ -1488,6 +1492,7 @@ export default function App() {
               <button 
                 onClick={() => setShowSettings(true)}
                 className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
+                title="Training Settings"
               >
                 <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
               </button>
@@ -1621,27 +1626,27 @@ export default function App() {
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Duration & Work</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Duration & Work</span>
                       <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
                     </div>
                   </div>
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Power Metrics</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power Metrics</span>
                       <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
+                    <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
                       <div className="flex gap-3">
                         <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
                         <span>Max: {Math.round(summary.maxPower || 0)}W</span>
@@ -1659,70 +1664,70 @@ export default function App() {
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Training Stress</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Training Stress</span>
                       <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
                     </div>
                   </div>
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Heart Rate</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
                       <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {Math.round(summary.maxHeartRate || 0)} bpm
                     </div>
                   </div>
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Elevation & Distance</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Elevation & Distance</span>
                       <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Dist: {(summary.distance / 1000).toFixed(1)}km
                     </div>
                   </div>
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Speed</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
                       <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
                     </div>
                   </div>
 
                   <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Cadence</span>
+                      <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
                       <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                     </div>
                     <div className="flex items-baseline gap-1 sm:gap-2">
                       <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
                       <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
                     </div>
-                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                       Max: {Math.round(summary.maxCadence || 0)} rpm
                     </div>
                   </div>
@@ -1730,7 +1735,7 @@ export default function App() {
                   {summary.aerobicDecoupling !== undefined && (
                     <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                       <div className="flex justify-between items-start mb-2 sm:mb-4">
-                        <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Aerobic Decoupling</span>
+                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Aerobic Decoupling</span>
                         <TrendingUp className={cn(
                           "w-3 h-3 sm:w-4 sm:h-4",
                           summary.aerobicDecoupling < 5 ? "text-green-500" :
@@ -1747,7 +1752,7 @@ export default function App() {
                         </span>
                         <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
                       </div>
-                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                         {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
                          summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
                       </div>
@@ -1757,14 +1762,14 @@ export default function App() {
                   {summary.avgTemperature !== undefined && (
                     <div className="bg-app-card border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
                       <div className="flex justify-between items-start mb-2 sm:mb-4">
-                        <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Temperature</span>
+                        <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Temperature</span>
                         <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
                       </div>
                       <div className="flex items-baseline gap-1 sm:gap-2">
                         <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
                         <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
                       </div>
-                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[8px] sm:text-[10px] text-app-muted font-bold uppercase tracking-widest">
+                      <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
                         Avg Ambient
                       </div>
                     </div>
@@ -1864,7 +1869,7 @@ export default function App() {
                               </linearGradient>
                             ))}
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
                           <XAxis 
                             dataKey="timestamp" 
                             hide 
@@ -1882,7 +1887,7 @@ export default function App() {
                               key={`yaxis-${metric}`}
                               yAxisId={metric}
                               hide={index > 0} // Only show the first Y-axis to keep it clean, but each has its own scale
-                              stroke={metricsConfig[metric].color}
+                              stroke="var(--app-muted)"
                               fontSize={10}
                               tickLine={false}
                               axisLine={false}
@@ -1896,7 +1901,7 @@ export default function App() {
                               WebkitBackdropFilter: 'blur(8px)',
                               border: '1px solid var(--app-border)', 
                               borderRadius: '12px', 
-                              fontSize: '10px', 
+                              fontSize: '12px', 
                               color: 'var(--app-text)',
                               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                             }}
@@ -1910,7 +1915,7 @@ export default function App() {
                             verticalAlign="top" 
                             align="right" 
                             iconType="circle"
-                            wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '10px' }}
+                            wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
                           />
                           
                           {/* Zone Highlighting (only for primary metric if it's power or HR) */}
@@ -2049,14 +2054,14 @@ export default function App() {
                                     setIsPointLocked(false);
                                     setActivePoint(null);
                                   }}
-                                  className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
+                                  className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
                                   title="Clear Highlight"
                                 >
                                   <CheckCircle2 className="w-4 h-4 text-orange-500" />
                                 </button>
                               )}
                               <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                                <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
                                   {(['roadmap', 'terrain'] as const).map((t) => (
                                     <button
                                       key={t}
@@ -2160,14 +2165,14 @@ export default function App() {
                                         setIsPointLocked(false);
                                         setActivePoint(null);
                                       }}
-                                      className="absolute top-24 left-4 z-50 bg-app-card/80 hover:bg-app-card text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg"
+                                      className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
                                       title="Clear Highlight"
                                     >
                                       <CheckCircle2 className="w-4 h-4 text-orange-500" />
                                     </button>
                                   )}
                                   <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                    <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                                    <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
                                       {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
                                         <button
                                           key={t}
@@ -2181,7 +2186,7 @@ export default function App() {
                                         </button>
                                       ))}
                                     </div>
-                                    <div className="flex bg-app-card/80 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
+                                    <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
                                       <button
                                         onClick={() => setShowTraffic(!showTraffic)}
                                         className={cn(
@@ -2483,8 +2488,8 @@ export default function App() {
                                       return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
                                     }}
                                   />
-                                  <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" />
-                                  <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} />
+                                  <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" axisLine={false} tickLine={false} />
+                                  <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} axisLine={false} tickLine={false} />
                                   <Tooltip 
                                     contentStyle={{ 
                                       backgroundColor: 'var(--app-tooltip-bg)', 
@@ -2492,7 +2497,7 @@ export default function App() {
                                       WebkitBackdropFilter: 'blur(8px)',
                                       border: '1px solid var(--app-border)', 
                                       borderRadius: '12px', 
-                                      fontSize: '10px', 
+                                      fontSize: '12px', 
                                       color: 'var(--app-text)',
                                       boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                                     }}
@@ -2660,8 +2665,10 @@ export default function App() {
                                     }}
                                     stroke="var(--app-muted)"
                                     fontSize={10}
+                                    axisLine={false}
+                                    tickLine={false}
                                   />
-                                  <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" />
+                                  <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" axisLine={false} tickLine={false} />
                                   <Tooltip 
                                     contentStyle={{ 
                                       backgroundColor: 'var(--app-tooltip-bg)', 
@@ -2669,7 +2676,7 @@ export default function App() {
                                       WebkitBackdropFilter: 'blur(8px)',
                                       border: '1px solid var(--app-border)', 
                                       borderRadius: '12px', 
-                                      fontSize: '10px', 
+                                      fontSize: '12px', 
                                       color: 'var(--app-text)',
                                       boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                                     }}
@@ -2951,7 +2958,7 @@ export default function App() {
                                   onMouseLeave={() => setPmcFocus(null)}
                                 >
                                   <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
+                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
                                 </div>
                                 <div 
                                   className={cn(
@@ -2962,7 +2969,7 @@ export default function App() {
                                   onMouseLeave={() => setPmcFocus(null)}
                                 >
                                   <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
+                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
                                 </div>
                                 <div 
                                   className={cn(
@@ -2973,7 +2980,7 @@ export default function App() {
                                   onMouseLeave={() => setPmcFocus(null)}
                                 >
                                   <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
+                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
                                 </div>
                                 <div 
                                   className={cn(
@@ -2984,7 +2991,7 @@ export default function App() {
                                   onMouseLeave={() => setPmcFocus(null)}
                                 >
                                   <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
-                                  <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
+                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
                                 </div>
                               </div>
                             </div>
@@ -2997,6 +3004,8 @@ export default function App() {
                                     dataKey="date" 
                                     stroke="var(--app-muted)" 
                                     fontSize={10} 
+                                    axisLine={false}
+                                    tickLine={false}
                                     tickFormatter={(str) => {
                                       const date = new Date(str);
                                       if (pmcDateRange === '6weeks' || pmcDateRange === '3months') {
@@ -3009,6 +3018,8 @@ export default function App() {
                                     yAxisId="fitness" 
                                     stroke="var(--app-muted)" 
                                     fontSize={10} 
+                                    axisLine={false}
+                                    tickLine={false}
                                     hide={pmcFocus === 'bikeScore' || pmcFocus === 'sb'}
                                     label={pmcFocus === 'lts' || pmcFocus === 'sts' ? { value: 'LTS/STS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                                   />
@@ -3016,6 +3027,8 @@ export default function App() {
                                     yAxisId="bikeScore" 
                                     stroke="var(--app-muted)" 
                                     fontSize={10} 
+                                    axisLine={false}
+                                    tickLine={false}
                                     hide={pmcFocus !== 'bikeScore'}
                                     label={pmcFocus === 'bikeScore' ? { value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                                   />
@@ -3024,6 +3037,8 @@ export default function App() {
                                     orientation="right" 
                                     stroke="var(--app-muted)" 
                                     fontSize={10} 
+                                    axisLine={false}
+                                    tickLine={false}
                                     hide={pmcFocus === 'bikeScore' || pmcFocus === 'lts' || pmcFocus === 'sts'}
                                     label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
                                   />
@@ -3046,6 +3061,7 @@ export default function App() {
                                     height={36}
                                     onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
                                     onMouseLeave={() => setPmcFocus(null)}
+                                    wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--app-text)' }}
                                   />
                                   <Bar 
                                     yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
@@ -3229,19 +3245,19 @@ export default function App() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
                               <div className="text-center">
                                 <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
-                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
+                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
-                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
+                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
-                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
+                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
-                                <div className="text-[8px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
+                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
                               </div>
                             </div>
                           </div>
@@ -3366,7 +3382,7 @@ export default function App() {
                                     <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                                       <div className="text-right hidden sm:block">
                                         <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
-                                        <div className="text-[8px] text-app-muted uppercase tracking-widest">BikeScore</div>
+                                        <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
                                       </div>
                                       <div className="flex items-center gap-1 sm:gap-2">
                                         <button 
@@ -3396,7 +3412,7 @@ export default function App() {
                                   <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
                                     <Activity className="w-6 h-6 text-app-muted" />
                                   </div>
-                                  <p className="text-xs uppercase tracking-[0.2em] font-bold mb-2">No activities yet</p>
+                                  <p className="text-[10px] uppercase tracking-widest font-bold mb-2">No activities yet</p>
                                   <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
                                 </div>
                               )}
@@ -3604,7 +3620,7 @@ export default function App() {
                       />
                       <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
                     </div>
-                    <p className="text-[8px] text-app-muted uppercase tracking-widest">Leave empty to use estimated CP</p>
+                    <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Leave empty to use estimated CP</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs text-app-text/60">W' Capacity</label>
@@ -3619,7 +3635,7 @@ export default function App() {
                       />
                       <span className="text-[10px] text-app-muted uppercase tracking-widest">Joules</span>
                     </div>
-                    <p className="text-[8px] text-app-muted uppercase tracking-widest">Leave empty to use estimated W'</p>
+                    <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Leave empty to use estimated W'</p>
                   </div>
                 </div>
               </section>
