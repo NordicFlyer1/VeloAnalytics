@@ -1944,6 +1944,41 @@ export default function App() {
                               domain={['auto', 'auto']}
                             />
                           ))}
+                          
+                          {/* CP Reference Lines */}
+                          {estimatedCp && activeMetrics.includes('power') && (
+                            <ReferenceLineAny 
+                              yAxisId="power" 
+                              y={estimatedCp} 
+                              stroke="#ef4444" 
+                              strokeDasharray="3 3" 
+                              label={{ 
+                                value: '(eCP)', 
+                                position: 'right', 
+                                fill: '#ef4444', 
+                                fontSize: 10, 
+                                fontWeight: 'bold',
+                                dy: (manualCP !== null && Math.abs(estimatedCp - cp) < 15) ? -10 : 0
+                              }} 
+                            />
+                          )}
+                          {manualCP !== null && activeMetrics.includes('power') && (
+                            <ReferenceLineAny 
+                              yAxisId="power" 
+                              y={cp} 
+                              stroke="#3b82f6" 
+                              strokeDasharray="3 3" 
+                              label={{ 
+                                value: '(CP)', 
+                                position: 'right', 
+                                fill: '#3b82f6', 
+                                fontSize: 10, 
+                                fontWeight: 'bold',
+                                dy: (estimatedCp && Math.abs(estimatedCp - cp) < 15) ? 10 : 0
+                              }} 
+                            />
+                          )}
+
                           <Tooltip 
                             contentStyle={{ 
                               backgroundColor: 'var(--app-tooltip-bg)', 
@@ -2456,7 +2491,7 @@ export default function App() {
                                 </div>
                                 {estimatedCp && (
                                   <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                    <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP</span>
+                                    <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP (eCP)</span>
                                     <span className="text-xs font-bold text-orange-500">
                                       {estimatedCp} W
                                     </span>
@@ -2569,8 +2604,38 @@ export default function App() {
                                   />
                                   <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
                                   
+                                  {/* CP Reference Lines */}
                                   {cpWPrime && (
-                                    <ReferenceLineAny yAxisId="power" y={cpWPrime.cp} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'CP', position: 'right', fill: '#ef4444', fontSize: 10 }} />
+                                    <ReferenceLineAny 
+                                      yAxisId="power" 
+                                      y={cpWPrime.cp} 
+                                      stroke="#ef4444" 
+                                      strokeDasharray="3 3" 
+                                      label={{ 
+                                        value: '(eCP)', 
+                                        position: 'right', 
+                                        fill: '#ef4444', 
+                                        fontSize: 10, 
+                                        fontWeight: 'bold',
+                                        dy: (manualCP !== null && Math.abs(cpWPrime.cp - cp) < 15) ? -10 : 0
+                                      }} 
+                                    />
+                                  )}
+                                  {manualCP !== null && (
+                                    <ReferenceLineAny 
+                                      yAxisId="power" 
+                                      y={cp} 
+                                      stroke="#3b82f6" 
+                                      strokeDasharray="3 3" 
+                                      label={{ 
+                                        value: '(CP)', 
+                                        position: 'right', 
+                                        fill: '#3b82f6', 
+                                        fontSize: 10, 
+                                        fontWeight: 'bold',
+                                        dy: (cpWPrime && Math.abs(cpWPrime.cp - cp) < 15) ? 10 : 0
+                                      }} 
+                                    />
                                   )}
 
                                   <Area 
@@ -2601,12 +2666,12 @@ export default function App() {
                             {/* CP & W' Analysis */}
                             <div className="bg-app-card border border-app-border rounded-3xl p-8">
                               <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
+                                <h3 className="text-sm font-bold tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
                                 <Zap className="w-4 h-4 text-orange-500" />
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated CP</span>
+                                  <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated CP (eCP)</span>
                                   <div className="flex items-baseline gap-2">
                                     <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
                                     <span className="text-sm text-app-muted">Watts</span>
@@ -2616,7 +2681,7 @@ export default function App() {
                                   </p>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Estimated W'</span>
+                                  <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated W' (eW')</span>
                                   <div className="flex items-baseline gap-2">
                                     <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
                                     <span className="text-sm text-app-muted">Joules</span>
