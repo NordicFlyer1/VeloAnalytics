@@ -1958,7 +1958,16 @@ export default function App() {
                             labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                             formatter={(value: any, name: string) => {
                               const config = Object.values(metricsConfig).find(c => c.label === name);
-                              return [`${value} ${config?.unit || ''}`, name];
+                              const metricKey = Object.keys(metricsConfig).find(key => metricsConfig[key].label === name);
+                              
+                              let formattedValue = value;
+                              if (metricKey === 'speed' || metricKey === 'slope') {
+                                formattedValue = Number(value).toFixed(1);
+                              } else if (metricKey === 'power' || metricKey === 'heartRate' || metricKey === 'cadence' || metricKey === 'altitude') {
+                                formattedValue = Math.round(Number(value));
+                              }
+
+                              return [`${formattedValue} ${config?.unit || ''}`, name];
                             }}
                           />
                           <Legend 
@@ -2737,6 +2746,7 @@ export default function App() {
                                       if (d < 3600) return `${d / 60} minutes`;
                                       return `${d / 3600} hours`;
                                     }}
+                                    formatter={(value: any) => [`${Math.round(value)} W`, 'Power']}
                                   />
                                   <Legend 
                                     verticalAlign="top" 
@@ -3105,6 +3115,10 @@ export default function App() {
                                     }}
                                     labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
+                                    formatter={(value: any, name: string) => {
+                                      if (name === 'BikeScore') return [Math.round(value), name];
+                                      return [Number(value).toFixed(1), name];
+                                    }}
                                   />
                                   <Legend 
                                     verticalAlign="top" 
@@ -3275,10 +3289,10 @@ export default function App() {
                                     }}
                                     labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                                     formatter={(value: any, name: string) => {
-                                      if (name === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
-                                      if (name === 'bikeScore') return [Math.round(value), 'BikeScore'];
-                                      if (name === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
-                                      return [value, name];
+                                      if (name.toLowerCase() === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
+                                      if (name.toLowerCase() === 'bikescore') return [Math.round(value), 'BikeScore'];
+                                      if (name.toLowerCase() === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
+                                      return [typeof value === 'number' ? Math.round(value) : value, name];
                                     }}
                                   />
                                   <Bar 
