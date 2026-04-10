@@ -381,6 +381,10 @@ export default function App() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
+  const [smoothingWindow, setSmoothingWindow] = useState<number>(() => {
+    const saved = localStorage.getItem('veloanalytics_smoothing');
+    return saved ? parseInt(saved) : 1;
+  });
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -442,6 +446,52 @@ export default function App() {
       setCP(estimatedCp);
     }
   }, [autoUpdateCP, estimatedCp, cp]);
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_smoothing', smoothingWindow.toString());
+  }, [smoothingWindow]);
+
+  const smoothedData = React.useMemo(() => {
+    if (smoothingWindow <= 1 || data.length === 0) return data;
+
+    const result = new Array(data.length);
+    const halfWindow = Math.floor(smoothingWindow / 2);
+
+    for (let i = 0; i < data.length; i++) {
+      const start = Math.max(0, i - halfWindow);
+      const end = Math.min(data.length - 1, i + halfWindow);
+      const count = end - start + 1;
+
+      let sumPower = 0;
+      let sumHR = 0;
+      let sumCadence = 0;
+      let sumSpeed = 0;
+      let hrCount = 0;
+      let cadenceCount = 0;
+
+      for (let j = start; j <= end; j++) {
+        sumPower += data[j].power || 0;
+        sumSpeed += data[j].speed || 0;
+        if (data[j].heartRate) {
+          sumHR += data[j].heartRate!;
+          hrCount++;
+        }
+        if (data[j].cadence) {
+          sumCadence += data[j].cadence!;
+          cadenceCount++;
+        }
+      }
+
+      result[i] = {
+        ...data[i],
+        power: sumPower / count,
+        speed: sumSpeed / count,
+        heartRate: hrCount > 0 ? sumHR / hrCount : data[i].heartRate,
+        cadence: cadenceCount > 0 ? sumCadence / cadenceCount : data[i].cadence,
+      };
+    }
+    return result;
+  }, [data, smoothingWindow]);
 
   const getComparisonCurves = () => {
     return history
@@ -1866,51 +1916,71 @@ export default function App() {
                         >
                           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                             <div className="flex flex-wrap gap-2">
-                        {Object.entries(metricsConfig).map(([key, config]) => (
-                          <button
-                            key={key}
-                            onClick={() => {
-                              setActiveMetrics(prev => 
-                                prev.includes(key) 
-                                  ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
-                                  : [...prev, key]
-                              );
-                            }}
-                            className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
-                              activeMetrics.includes(key) 
-                                ? "bg-orange-500 text-black border-orange-500" 
-                                : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                            )}
-                          >
-                            {config.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                              {Object.entries(metricsConfig).map(([key, config]) => (
+                                <button
+                                  key={key}
+                                  onClick={() => {
+                                    setActiveMetrics(prev => 
+                                      prev.includes(key) 
+                                        ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
+                                        : [...prev, key]
+                                    );
+                                  }}
+                                  className={cn(
+                                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
+                                    activeMetrics.includes(key) 
+                                      ? "bg-orange-500 text-black border-orange-500" 
+                                      : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                                  )}
+                                >
+                                  {config.label}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
+                              <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
+                                {[1, 3, 10, 30].map((window) => (
+                                  <button
+                                    key={window}
+                                    onClick={() => setSmoothingWindow(window)}
+                                    className={cn(
+                                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                                      smoothingWindow === window 
+                                        ? "bg-orange-500 text-black shadow-lg" 
+                                        : "text-app-muted hover:text-app-text"
+                                    )}
+                                  >
+                                    {window === 1 ? 'Raw' : `${window}s`}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
 
-                    <div className="h-[400px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart 
-                          data={data}
-                          onMouseMove={(e) => {
-                            if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
-                              setActivePoint(e.activeTooltipIndex);
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (!isPointLocked) setActivePoint(null);
-                          }}
-                          onClick={(e) => {
-                            if (e && e.activeTooltipIndex !== undefined) {
-                              setActivePoint(e.activeTooltipIndex);
-                              setIsPointLocked(true);
-                            } else {
-                              setIsPointLocked(false);
-                              setActivePoint(null);
-                            }
-                          }}
-                        >
+                          <div className="h-[400px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart 
+                                data={smoothedData}
+                                onMouseMove={(e) => {
+                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  if (!isPointLocked) setActivePoint(null);
+                                }}
+                                onClick={(e) => {
+                                  if (e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                    setIsPointLocked(true);
+                                  } else {
+                                    setIsPointLocked(false);
+                                    setActivePoint(null);
+                                  }
+                                }}
+                              >
                           <defs>
                             {activeMetrics.map(metric => (
                               <linearGradient key={`grad-${metric}`} id={`color-${metric}`} x1="0" y1="0" x2="0" y2="1">
@@ -2565,7 +2635,7 @@ export default function App() {
 
                             <div className="h-[400px] w-full">
                               <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={data}>
+                                <AreaChart data={smoothedData}>
                                   <defs>
                                     <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
                                       <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
