@@ -2130,15 +2130,15 @@ export default function App() {
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                               <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
-                              <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
+                              <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-2xl sm:rounded-full border border-app-border">
                                 {[1, 3, 10, 30, 60].map((window) => (
                                   <button
                                     key={window}
                                     onClick={() => setSmoothingWindow(window)}
                                     className={cn(
-                                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                                      "px-2 sm:px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                                       smoothingWindow === window 
                                         ? "bg-orange-500 text-black shadow-lg" 
                                         : "text-app-muted hover:text-app-text"
