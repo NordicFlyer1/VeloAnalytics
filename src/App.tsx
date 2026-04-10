@@ -111,6 +111,186 @@ const SectionHeader = ({
   </div>
 );
 
+interface MetricLaneProps {
+  key?: string | number;
+  metric: string;
+  config: { label: string, color: string, unit: string };
+  data: any[];
+  activePoint: number | null;
+  onMouseMove: (e: any) => void;
+  onMouseLeave: () => void;
+  onClick: (e: any) => void;
+  isLast: boolean;
+  syncId: string;
+  height?: number;
+  estimatedCp?: number | null;
+  cp?: number;
+  manualCP?: number | null;
+  powerZoneDefinitions?: any;
+  hrZoneDefinitions?: any;
+  maxHR?: number;
+  showCP?: boolean;
+  showECP?: boolean;
+}
+
+const MetricLane = ({ 
+  metric, 
+  config, 
+  data, 
+  activePoint, 
+  onMouseMove, 
+  onMouseLeave, 
+  onClick,
+  isLast,
+  syncId,
+  height = 140,
+  estimatedCp,
+  cp,
+  manualCP,
+  powerZoneDefinitions,
+  hrZoneDefinitions,
+  maxHR,
+  showCP = true,
+  showECP = true
+}: MetricLaneProps) => {
+  const currentValue = activePoint !== null && data[activePoint] ? data[activePoint][metric] : null;
+
+  return (
+    <div className={cn(
+      "relative group transition-all duration-300",
+      !isLast && "border-b border-app-border/30"
+    )}>
+      {/* Lane Label & Value */}
+      <div className="absolute left-4 top-3 z-10 flex items-center gap-3 pointer-events-none">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-3 rounded-full" style={{ backgroundColor: config.color }} />
+          <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-app-muted group-hover:text-app-text transition-colors">
+            {config.label} <span className="opacity-40 ml-1">({config.unit})</span>
+          </span>
+        </div>
+        {currentValue !== null && (
+          <div className="flex items-baseline gap-1 animate-in fade-in zoom-in-95 duration-200">
+            <span className="text-sm font-mono font-bold text-app-text tabular-nums">
+              {metric === 'speed' || metric === 'slope' ? Number(currentValue).toFixed(1) : Math.round(currentValue)}
+            </span>
+            <span className="text-[8px] font-bold text-app-muted uppercase">{config.unit}</span>
+          </div>
+        )}
+      </div>
+
+      <div style={{ height }} className="w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart 
+            data={data}
+            syncId={syncId}
+            margin={{ top: 40, right: 30, left: 10, bottom: isLast ? 20 : 0 }}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            onClick={onClick}
+          >
+            <defs>
+              <linearGradient id={`color-${metric}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={config.color} stopOpacity={0.15}/>
+                <stop offset="95%" stopColor={config.color} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} opacity={0.2} />
+            <XAxis 
+              dataKey="timestamp" 
+              hide={!isLast}
+              stroke="var(--app-muted)" 
+              fontSize={9}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(val) => {
+                const d = new Date(val);
+                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+              }}
+            />
+            <YAxis 
+              yAxisId={metric}
+              stroke="var(--app-muted)"
+              fontSize={9}
+              tickLine={false}
+              axisLine={false}
+              domain={['auto', 'auto']}
+              width={45}
+              tickFormatter={(val) => Math.round(val).toString()}
+            />
+            
+            {activePoint !== null && data[activePoint] && (
+              <ReferenceLineAny 
+                x={data[activePoint].timestamp} 
+                stroke="var(--app-text)" 
+                strokeOpacity={0.15}
+                strokeDasharray="3 3" 
+              />
+            )}
+
+            {/* CP Reference Lines for Power lane */}
+            {metric === 'power' && estimatedCp && showECP && (
+              <ReferenceLineAny 
+                yAxisId="power" 
+                y={estimatedCp} 
+                stroke="#ef4444" 
+                strokeDasharray="3 3" 
+                strokeOpacity={0.3}
+              />
+            )}
+            {metric === 'power' && manualCP !== null && showCP && (
+              <ReferenceLineAny 
+                yAxisId="power" 
+                y={cp} 
+                stroke="#3b82f6" 
+                strokeDasharray="3 3" 
+                strokeOpacity={0.3}
+              />
+            )}
+
+            {/* Zone Highlighting */}
+            {metric === 'power' && powerZoneDefinitions && cp && getZonesFromDefinitions(powerZoneDefinitions, cp).map((z) => (
+              <ReferenceAreaAny 
+                key={z.name} 
+                yAxisId="power"
+                y1={z.min} 
+                y2={z.max >= 9999 ? 10000 : z.max} 
+                fill={z.color} 
+                fillOpacity={0.02} 
+                stroke="none"
+              />
+            ))}
+            {metric === 'heartRate' && hrZoneDefinitions && maxHR && getZonesFromDefinitions(hrZoneDefinitions, maxHR).map((z) => (
+              <ReferenceAreaAny 
+                key={z.name} 
+                yAxisId="heartRate"
+                y1={z.min} 
+                y2={z.max >= 9999 ? 1000 : z.max} 
+                fill={z.color} 
+                fillOpacity={0.02} 
+                stroke="none"
+              />
+            ))}
+
+            <Tooltip content={() => null} cursor={false} />
+
+            <Area 
+              yAxisId={metric}
+              type="monotone" 
+              dataKey={metric} 
+              stroke={config.color} 
+              strokeWidth={1.5}
+              fillOpacity={1} 
+              fill={`url(#color-${metric})`} 
+              connectNulls
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
 import FitParser from 'fit-file-parser';
@@ -385,6 +565,8 @@ export default function App() {
     const saved = localStorage.getItem('veloanalytics_smoothing');
     return saved ? parseInt(saved) : 1;
   });
+  const [showCP, setShowCP] = useState(true);
+  const [showECP, setShowECP] = useState(true);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -1915,33 +2097,43 @@ export default function App() {
                           transition={{ duration: 0.3 }}
                         >
                           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(metricsConfig).map(([key, config]) => (
-                                <button
-                                  key={key}
-                                  onClick={() => {
-                                    setActiveMetrics(prev => 
-                                      prev.includes(key) 
-                                        ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
-                                        : [...prev, key]
-                                    );
-                                  }}
-                                  className={cn(
-                                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
-                                    activeMetrics.includes(key) 
-                                      ? "bg-orange-500 text-black border-orange-500" 
-                                      : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                                  )}
-                                >
-                                  {config.label}
-                                </button>
-                              ))}
+                            <div className="flex flex-wrap gap-3 items-center">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Metrics</span>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(metricsConfig).map(([key, config]) => (
+                                  <button
+                                    key={key}
+                                    onClick={() => {
+                                      setActiveMetrics(prev => 
+                                        prev.includes(key) 
+                                          ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
+                                          : [...prev, key]
+                                      );
+                                    }}
+                                    className={cn(
+                                      "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
+                                      activeMetrics.includes(key) 
+                                        ? "bg-app-card text-app-text border-orange-500/50 shadow-lg shadow-orange-500/5" 
+                                        : "bg-app-card/50 text-app-muted border-app-border hover:border-app-muted/30"
+                                    )}
+                                  >
+                                    <div 
+                                      className={cn(
+                                        "w-2 h-2 rounded-full transition-all",
+                                        activeMetrics.includes(key) ? "scale-100 opacity-100" : "scale-50 opacity-30"
+                                      )} 
+                                      style={{ backgroundColor: config.color }} 
+                                    />
+                                    {config.label}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                             
                             <div className="flex items-center gap-3">
                               <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
                               <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
-                                {[1, 3, 10, 30].map((window) => (
+                                {[1, 3, 10, 30, 60].map((window) => (
                                   <button
                                     key={window}
                                     onClick={() => setSmoothingWindow(window)}
@@ -1959,10 +2151,14 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="h-[400px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart 
+                          <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
+                            {activeMetrics.map((metric, index) => (
+                              <MetricLane 
+                                key={metric}
+                                metric={metric}
+                                config={metricsConfig[metric]}
                                 data={smoothedData}
+                                activePoint={activePoint}
                                 onMouseMove={(e) => {
                                   if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
                                     setActivePoint(e.activeTooltipIndex);
@@ -1980,153 +2176,49 @@ export default function App() {
                                     setActivePoint(null);
                                   }
                                 }}
-                              >
-                          <defs>
-                            {activeMetrics.map(metric => (
-                              <linearGradient key={`grad-${metric}`} id={`color-${metric}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={metricsConfig[metric].color} stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor={metricsConfig[metric].color} stopOpacity={0}/>
-                              </linearGradient>
+                                isLast={index === activeMetrics.length - 1}
+                                syncId="activityMetrics"
+                                height={activeMetrics.length > 3 ? 120 : 160}
+                                estimatedCp={estimatedCp}
+                                cp={cp}
+                                manualCP={manualCP}
+                                powerZoneDefinitions={powerZoneDefinitions}
+                                hrZoneDefinitions={hrZoneDefinitions}
+                                maxHR={maxHR}
+                                showCP={showCP}
+                                showECP={showECP}
+                              />
                             ))}
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                          <XAxis 
-                            dataKey="timestamp" 
-                            hide 
-                          />
-                          {activePoint !== null && data[activePoint] && (
-                            <ReferenceLineAny 
-                              x={data[activePoint].timestamp} 
-                              stroke="#f97316" 
-                              strokeDasharray="3 3" 
-                              label={{ value: 'Active', position: 'top', fill: '#f97316', fontSize: 10 }}
-                            />
-                          )}
-                          {activeMetrics.map((metric, index) => (
-                            <YAxis 
-                              key={`yaxis-${metric}`}
-                              yAxisId={metric}
-                              hide={index > 0} // Only show the first Y-axis to keep it clean, but each has its own scale
-                              stroke="var(--app-muted)"
-                              fontSize={10}
-                              tickLine={false}
-                              axisLine={false}
-                              domain={['auto', 'auto']}
-                            />
-                          ))}
-                          
-                          {/* CP Reference Lines */}
-                          {estimatedCp && activeMetrics.includes('power') && (
-                            <ReferenceLineAny 
-                              yAxisId="power" 
-                              y={estimatedCp} 
-                              stroke="#ef4444" 
-                              strokeDasharray="3 3" 
-                              label={{ 
-                                value: '(eCP)', 
-                                position: 'right', 
-                                fill: '#ef4444', 
-                                fontSize: 10, 
-                                fontWeight: 'bold',
-                                dy: (manualCP !== null && Math.abs(estimatedCp - cp) < 15) ? -10 : 0
-                              }} 
-                            />
-                          )}
-                          {manualCP !== null && activeMetrics.includes('power') && (
-                            <ReferenceLineAny 
-                              yAxisId="power" 
-                              y={cp} 
-                              stroke="#3b82f6" 
-                              strokeDasharray="3 3" 
-                              label={{ 
-                                value: '(CP)', 
-                                position: 'right', 
-                                fill: '#3b82f6', 
-                                fontSize: 10, 
-                                fontWeight: 'bold',
-                                dy: (estimatedCp && Math.abs(estimatedCp - cp) < 15) ? 10 : 0
-                              }} 
-                            />
-                          )}
+                          </div>
 
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'var(--app-tooltip-bg)', 
-                              backdropFilter: 'blur(8px)',
-                              WebkitBackdropFilter: 'blur(8px)',
-                              border: '1px solid var(--app-border)', 
-                              borderRadius: '12px', 
-                              fontSize: '12px', 
-                              color: 'var(--app-text)',
-                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                            }}
-                            labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
-                            formatter={(value: any, name: string) => {
-                              const config = Object.values(metricsConfig).find(c => c.label === name);
-                              const metricKey = Object.keys(metricsConfig).find(key => metricsConfig[key].label === name);
-                              
-                              let formattedValue = value;
-                              if (metricKey === 'speed' || metricKey === 'slope') {
-                                formattedValue = Number(value).toFixed(1);
-                              } else if (metricKey === 'power' || metricKey === 'heartRate' || metricKey === 'cadence' || metricKey === 'altitude') {
-                                formattedValue = Math.round(Number(value));
-                              }
-
-                              return [`${formattedValue} ${config?.unit || ''}`, name];
-                            }}
-                          />
-                          <Legend 
-                            verticalAlign="top" 
-                            align="right" 
-                            iconType="circle"
-                            wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
-                          />
-                          
-                          {/* Zone Highlighting (only for primary metric if it's power or HR) */}
-                          {activeMetrics[0] === 'power' && getZonesFromDefinitions(powerZoneDefinitions, cp).map((z) => (
-                            <ReferenceAreaAny 
-                              key={z.name} 
-                              yAxisId="power"
-                              y1={z.min} 
-                              y2={z.max >= 9999 ? 10000 : z.max} 
-                              fill={z.color} 
-                              fillOpacity={0.05} 
-                              stroke="none"
-                            />
-                          ))}
-                          {activeMetrics[0] === 'heartRate' && getZonesFromDefinitions(hrZoneDefinitions, maxHR).map((z) => (
-                            <ReferenceAreaAny 
-                              key={z.name} 
-                              yAxisId="heartRate"
-                              y1={z.min} 
-                              y2={z.max >= 9999 ? 1000 : z.max} 
-                              fill={z.color} 
-                              fillOpacity={0.05} 
-                              stroke="none"
-                            />
-                          ))}
-
-                          {activeMetrics.map(metric => (
-                            <Area 
-                              key={metric}
-                              yAxisId={metric}
-                              type="monotone" 
-                              dataKey={metric} 
-                              name={metricsConfig[metric].label}
-                              stroke={metricsConfig[metric].color} 
-                              strokeWidth={2}
-                              fillOpacity={1} 
-                              fill={`url(#color-${metric})`} 
-                              connectNulls
-                            />
-                          ))}
-                        </AreaChart>
-                      </ResponsiveContainer>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                          {activeMetrics.includes('power') && (
+                            <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
+                              <button 
+                                onClick={() => setShowCP(!showCP)}
+                                className={cn(
+                                  "flex items-center gap-2 transition-all duration-300",
+                                  showCP ? "opacity-100" : "opacity-30 grayscale"
+                                )}
+                              >
+                                <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
+                              </button>
+                              <button 
+                                onClick={() => setShowECP(!showECP)}
+                                className={cn(
+                                  "flex items-center gap-2 transition-all duration-300",
+                                  showECP ? "opacity-100" : "opacity-30 grayscale"
+                                )}
+                              >
+                                <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
+                              </button>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                 {/* Map Section */}
                 <div className="bg-app-card border border-app-border rounded-3xl p-8">
@@ -2633,104 +2725,89 @@ export default function App() {
                               )}
                             </div>
 
-                            <div className="h-[400px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={smoothedData}>
-                                  <defs>
-                                    <linearGradient id="colorWBal" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                                    </linearGradient>
-                                  </defs>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                                  <XAxis 
-                                    dataKey="timestamp" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    tickFormatter={(val) => {
-                                      const d = new Date(val);
-                                      return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
-                                    }}
-                                  />
-                                  <YAxis yAxisId="power" stroke="var(--app-muted)" fontSize={10} unit="W" axisLine={false} tickLine={false} />
-                                  <YAxis yAxisId="wbal" orientation="right" stroke="var(--app-muted)" fontSize={10} unit="J" domain={[0, cpWPrime?.wPrime || 'auto']} axisLine={false} tickLine={false} />
-                                  <Tooltip 
-                                    contentStyle={{ 
-                                      backgroundColor: 'var(--app-tooltip-bg)', 
-                                      backdropFilter: 'blur(8px)',
-                                      WebkitBackdropFilter: 'blur(8px)',
-                                      border: '1px solid var(--app-border)', 
-                                      borderRadius: '12px', 
-                                      fontSize: '12px', 
-                                      color: 'var(--app-text)',
-                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
-                                    labelFormatter={(val) => new Date(val).toLocaleTimeString()}
-                                    formatter={(value: any, name: string) => {
-                                      if (name === "W' Balance") return [`${Math.round(value)} J`, name];
-                                      return [`${Math.round(value)} W`, name];
-                                    }}
-                                  />
-                                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }} />
-                                  
-                                  {/* CP Reference Lines */}
-                                  {cpWPrime && (
-                                    <ReferenceLineAny 
-                                      yAxisId="power" 
-                                      y={cpWPrime.cp} 
-                                      stroke="#ef4444" 
-                                      strokeDasharray="3 3" 
-                                      label={{ 
-                                        value: '(eCP)', 
-                                        position: 'right', 
-                                        fill: '#ef4444', 
-                                        fontSize: 10, 
-                                        fontWeight: 'bold',
-                                        dy: (manualCP !== null && Math.abs(cpWPrime.cp - cp) < 15) ? -10 : 0
-                                      }} 
-                                    />
-                                  )}
-                                  {manualCP !== null && (
-                                    <ReferenceLineAny 
-                                      yAxisId="power" 
-                                      y={cp} 
-                                      stroke="#3b82f6" 
-                                      strokeDasharray="3 3" 
-                                      label={{ 
-                                        value: '(CP)', 
-                                        position: 'right', 
-                                        fill: '#3b82f6', 
-                                        fontSize: 10, 
-                                        fontWeight: 'bold',
-                                        dy: (cpWPrime && Math.abs(cpWPrime.cp - cp) < 15) ? 10 : 0
-                                      }} 
-                                    />
-                                  )}
+                            <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
+                              {/* Power Lane */}
+                              <MetricLane 
+                                metric="power"
+                                config={{ label: 'Power', color: '#f97316', unit: 'W' }}
+                                data={smoothedData}
+                                activePoint={activePoint}
+                                onMouseMove={(e) => {
+                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  if (!isPointLocked) setActivePoint(null);
+                                }}
+                                onClick={(e) => {
+                                  if (e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                    setIsPointLocked(true);
+                                  } else {
+                                    setIsPointLocked(false);
+                                    setActivePoint(null);
+                                  }
+                                }}
+                                isLast={false}
+                                syncId="wPrimeAnalysis"
+                                height={160}
+                                estimatedCp={cpWPrime?.cp}
+                                cp={cp}
+                                manualCP={manualCP}
+                                showCP={showCP}
+                                showECP={showECP}
+                              />
+                              {/* W' Balance Lane */}
+                              <MetricLane 
+                                metric="wPrimeBalance"
+                                config={{ label: "W' Balance", color: '#a855f7', unit: 'J' }}
+                                data={smoothedData}
+                                activePoint={activePoint}
+                                onMouseMove={(e) => {
+                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  if (!isPointLocked) setActivePoint(null);
+                                }}
+                                onClick={(e) => {
+                                  if (e && e.activeTooltipIndex !== undefined) {
+                                    setActivePoint(e.activeTooltipIndex);
+                                    setIsPointLocked(true);
+                                  } else {
+                                    setIsPointLocked(false);
+                                    setActivePoint(null);
+                                  }
+                                }}
+                                isLast={true}
+                                syncId="wPrimeAnalysis"
+                                height={160}
+                              />
+                            </div>
 
-                                  <Area 
-                                    yAxisId="wbal"
-                                    type="monotone" 
-                                    dataKey="wPrimeBalance" 
-                                    name="W' Balance" 
-                                    stroke="#a855f7" 
-                                    fillOpacity={1} 
-                                    fill="url(#colorWBal)" 
-                                    strokeWidth={2}
-                                    dot={false}
-                                  />
-                                  <Line 
-                                    yAxisId="power"
-                                    type="monotone" 
-                                    dataKey="power" 
-                                    name="Power" 
-                                    stroke="#f97316" 
-                                    strokeWidth={1} 
-                                    dot={false}
-                                    opacity={0.4}
-                                  />
-                                </AreaChart>
-                              </ResponsiveContainer>
+                            <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
+                              <button 
+                                onClick={() => setShowCP(!showCP)}
+                                className={cn(
+                                  "flex items-center gap-2 transition-all duration-300",
+                                  showCP ? "opacity-100" : "opacity-30 grayscale"
+                                )}
+                              >
+                                <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
+                              </button>
+                              <button 
+                                onClick={() => setShowECP(!showECP)}
+                                className={cn(
+                                  "flex items-center gap-2 transition-all duration-300",
+                                  showECP ? "opacity-100" : "opacity-30 grayscale"
+                                )}
+                              >
+                                <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
+                              </button>
                             </div>
 
                             {/* CP & W' Analysis */}
