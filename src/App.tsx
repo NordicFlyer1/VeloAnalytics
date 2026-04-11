@@ -89,7 +89,20 @@ import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { cn, formatDuration, formatNumericalDuration } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus, WeatherData } from './types';
-import { calculateXPower, calculateRI, calculateBikeScore, estimateCPWPrime, calculateSlope, estimateCP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
+import { useMetricsWorker } from './hooks/useMetricsWorker';
+import { 
+  calculateXPower, 
+  calculateRI, 
+  calculateBikeScore, 
+  calculateSlope, 
+  estimateCP, 
+  calculateLapSummary, 
+  calculateZones, 
+  getZonesFromDefinitions, 
+  DEFAULT_POWER_ZONES, 
+  DEFAULT_HR_ZONES, 
+  calculateAerobicDecoupling 
+} from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
 // Fix for Leaflet icons in React
@@ -155,6 +168,13 @@ export default function App() {
   const handleCompare = () => {
     mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  const { 
+    calculatePowerCurve: workerCalculatePowerCurve, 
+    calculateWPrimeBalance: workerCalculateWPrimeBalance, 
+    calculatePMC: workerCalculatePMC, 
+    estimateCPWPrime: workerEstimateCPWPrime 
+  } = useMetricsWorker();
+
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
     return saved ? JSON.parse(saved) : [];
@@ -512,12 +532,12 @@ export default function App() {
       // Recalculate W' Balance if missing or if manual values are set
       let cpWPrimeResult = null;
       if (restoredData.length > 0) {
-        cpWPrimeResult = estimateCPWPrime(restoredData);
+        cpWPrimeResult = await workerEstimateCPWPrime(restoredData);
         const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
         const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
         
         if (effectiveCP > 0 && effectiveWPrime > 0) {
-          const wBal = calculateWPrimeBalance(restoredData, effectiveCP, effectiveWPrime);
+          const wBal = await workerCalculateWPrimeBalance(restoredData, effectiveCP, effectiveWPrime);
           restoredData.forEach((p, i) => {
             p.wPrimeBalance = wBal[i];
           });
@@ -872,7 +892,7 @@ export default function App() {
     }) : null);
   }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
 
-  const processData = useCallback((points: CyclingDataPoint[], fileName: string, lapData?: any[]) => {
+  const processData = useCallback(async (points: CyclingDataPoint[], fileName: string, lapData?: any[]) => {
     if (points.length === 0) return null;
 
     // Calculate slope for each point
@@ -940,15 +960,17 @@ export default function App() {
     // Zone Calculations
     const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, cp));
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
-    const powerCurve = calculatePowerCurve(points);
+    
+    // Heavy calculations moved to worker
+    const powerCurve = await workerCalculatePowerCurve(points);
 
     // Calculate W' Balance
-    const cpWPrimeResult = estimateCPWPrime(points);
+    const cpWPrimeResult = await workerEstimateCPWPrime(points);
     const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
     const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
     
     if (effectiveCP > 0 && effectiveWPrime > 0) {
-      const wBal = calculateWPrimeBalance(points, effectiveCP, effectiveWPrime);
+      const wBal = await workerCalculateWPrimeBalance(points, effectiveCP, effectiveWPrime);
       points.forEach((p, i) => {
         p.wPrimeBalance = wBal[i];
       });
@@ -1029,7 +1051,7 @@ export default function App() {
                 lengthUnit: 'm',
                 temperatureUnit: 'celsius',
               });
-              fitParser.parse(e.target?.result as ArrayBuffer, (error, fitData) => {
+              fitParser.parse(e.target?.result as ArrayBuffer, async (error, fitData) => {
                 if (error) reject(error);
                 else {
                   const parseTimestamp = (ts: any) => {
@@ -1067,7 +1089,7 @@ export default function App() {
                     start_time: parseTimestamp(l.start_time)
                   }));
 
-                  const summary = processData(points, file.name, processedLaps);
+                  const summary = await processData(points, file.name, processedLaps);
                   resolve({ summary, points });
                 }
               });
