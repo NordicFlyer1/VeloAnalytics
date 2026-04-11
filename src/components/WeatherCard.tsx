@@ -2,26 +2,63 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Thermometer, Wind, Droplets } from 'lucide-react';
 import { WeatherData } from '../types';
+import { cn } from '../lib/utils';
 
 interface WeatherCardProps {
   weather: WeatherData | null;
   isLoading: boolean;
+  variant?: 'default' | 'minimal';
 }
 
-export const WeatherCard = React.memo(({ weather, isLoading }: WeatherCardProps) => {
+export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default' }: WeatherCardProps) => {
   if (isLoading) {
     return (
-      <div className="bg-app-bg/80 backdrop-blur-md p-3 rounded-2xl border border-app-border flex items-center gap-3 animate-pulse">
+      <div className={cn(
+        "bg-app-bg/80 backdrop-blur-md border border-app-border flex items-center gap-3 animate-pulse",
+        variant === 'minimal' ? "p-1 border-none bg-transparent" : "p-3 rounded-2xl shadow-xl"
+      )}>
         <div className="w-8 h-8 bg-app-card rounded-full" />
         <div className="space-y-2">
           <div className="w-16 h-2 bg-app-card rounded" />
-          <div className="w-12 h-2 bg-app-card rounded" />
         </div>
       </div>
     );
   }
 
   if (!weather) return null;
+
+  if (variant === 'minimal') {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <img 
+            src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`} 
+            alt={weather.description}
+            className="w-8 h-8"
+            referrerPolicy="no-referrer"
+          />
+          <span className="text-sm font-bold tracking-tight">{Math.round(weather.temp)}°C</span>
+        </div>
+        <div className="h-4 w-px bg-app-border" />
+        <div className="hidden xs:flex flex-col">
+          <span className="text-[8px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[60px]">
+            {weather.locationName}
+          </span>
+        </div>
+        <div className="h-4 w-px bg-app-border" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Wind className="w-3 h-3 text-blue-400" />
+            <span className="text-[9px] font-medium">{Math.round(weather.windSpeed * 3.6)}k</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Droplets className="w-3 h-3 text-cyan-400" />
+            <span className="text-[9px] font-medium">{weather.humidity}%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div 

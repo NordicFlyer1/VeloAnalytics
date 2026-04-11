@@ -38,7 +38,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
   if (!summary) return null;
 
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8">
       <SectionHeader 
         icon={Info}
         title="Activity Details"

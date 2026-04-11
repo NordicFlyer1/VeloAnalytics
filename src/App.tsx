@@ -1380,7 +1380,7 @@ export default function App() {
                   />
 
                 <Suspense fallback={
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8 h-[600px] flex items-center justify-center">
+                  <div className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8 h-[450px] sm:h-[600px] flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Loading Map Engine...</span>
@@ -1417,11 +1417,6 @@ export default function App() {
                   />
                 </Suspense>
                 
-                {/* Mobile Weather Info */}
-                      <div className="sm:hidden mt-4">
-                        <WeatherCard weather={weather} isLoading={isWeatherLoading} />
-                      </div>
-
                 {/* Activity Details Section */}
                 <ActivityDetails 
                   isDetailsExpanded={isDetailsExpanded}

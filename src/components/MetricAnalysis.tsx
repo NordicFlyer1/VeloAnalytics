@@ -56,7 +56,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
   setShowECP
 }) => {
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Metric Analysis"

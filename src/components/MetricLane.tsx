@@ -138,7 +138,8 @@ export const MetricLane = React.memo(({
                 y={estimatedCp} 
                 stroke="#ef4444" 
                 strokeDasharray="3 3" 
-                strokeOpacity={0.3}
+                strokeOpacity={0.7}
+                strokeWidth={2}
               />
             )}
             {metric === 'power' && manualCP !== null && showCP && (
@@ -147,7 +148,8 @@ export const MetricLane = React.memo(({
                 y={cp} 
                 stroke="#3b82f6" 
                 strokeDasharray="3 3" 
-                strokeOpacity={0.3}
+                strokeOpacity={0.7}
+                strokeWidth={2}
               />
             )}
 

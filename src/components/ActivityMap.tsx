@@ -8,7 +8,7 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
-import { APIProvider, Map as GoogleMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
 import { cn } from '../lib/utils';
 import { WeatherData, CyclingDataPoint } from '../types';
 import { SectionHeader } from './SectionHeader';
@@ -100,18 +100,19 @@ export const ActivityMap = React.memo(({
               ref={mapContainerRef}
               className={cn(
                 "bg-app-bg border border-app-border rounded-2xl relative overflow-hidden group transition-all duration-500",
-                isMapMaximized ? "h-[750px] sm:h-[900px]" : "h-[500px] sm:h-[600px]"
+                isMapMaximized ? "h-[750px] sm:h-[900px]" : "h-[450px] sm:h-[600px]"
               )}
             >
-              <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 flex flex-col items-end gap-3">
-                <div className="flex gap-2">
-                  <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
+              {/* Unified Header Bar - Stacked Top Right */}
+              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+                <div className="pointer-events-auto flex items-center gap-2">
+                  <div className="bg-app-bg/90 backdrop-blur-md p-1 rounded-full border border-app-border flex items-center gap-1 shadow-lg">
                     <button 
                       onClick={toggleFullScreen}
-                      className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                      className="p-1.5 rounded-full text-app-muted hover:text-orange-500 transition-all"
                       title="Full Screen"
                     >
-                      <Expand className="w-3 h-3" />
+                      <Expand className="w-3.5 h-3.5" />
                     </button>
                     <button 
                       onClick={() => setIsMapMaximized(!isMapMaximized)}
@@ -128,35 +129,38 @@ export const ActivityMap = React.memo(({
                         setActivePoint(null);
                         setIsPointLocked(false);
                       }}
-                      className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
+                      className="p-1.5 rounded-full text-app-muted hover:text-orange-500 transition-all"
                       title="Fit to Course"
                     >
-                      <Navigation className="w-3 h-3" />
+                      <Navigation className="w-3.5 h-3.5" />
                     </button>
-                    <div className="w-px h-4 bg-app-border mx-0.5 self-center" />
-                    <button 
-                      onClick={() => setMapProvider('osm')}
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                        mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                      )}
-                    >
-                      OSM
-                    </button>
-                    <button 
-                      onClick={() => setMapProvider('google')}
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                        mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                      )}
-                    >
-                      Google
-                    </button>
+                    <div className="w-px h-4 bg-app-border mx-0.5 sm:mx-1 self-center" />
+                    <div className="flex gap-0.5">
+                      <button 
+                        onClick={() => setMapProvider('osm')}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-widest transition-all",
+                          mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        OSM
+                      </button>
+                      <button 
+                        onClick={() => setMapProvider('google')}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-widest transition-all",
+                          mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        Google
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="hidden sm:block">
-                <WeatherCard weather={weather} isLoading={isWeatherLoading} />
+
+                <div className="pointer-events-auto flex items-center gap-2 bg-app-bg/90 backdrop-blur-md p-1 px-2 sm:px-3 rounded-full border border-app-border shadow-lg">
+                  <WeatherCard weather={weather} isLoading={isWeatherLoading} variant="minimal" />
+                </div>
               </div>
               
               {gpsPoints.length > 0 ? (
@@ -341,7 +345,9 @@ export const ActivityMap = React.memo(({
                           mapTypeId={mapType}
                           disableDefaultUI={true}
                           zoomControl={true}
+                          zoomControlOptions={{ position: ControlPosition.RIGHT_BOTTOM }}
                           gestureHandling={'greedy'}
+                          controlSize={24}
                           styles={theme === 'dark' ? [
                             { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
                             { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
