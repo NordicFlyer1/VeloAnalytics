@@ -90,6 +90,15 @@ export interface PowerMetrics {
   wPrime: number;
 }
 
+export interface WeatherData {
+  temp: number;
+  description: string;
+  icon: string;
+  humidity: number;
+  windSpeed: number;
+  locationName: string;
+}
+
 export interface PMCDataPoint {
   date: string; // YYYY-MM-DD
   bikeScore: number;

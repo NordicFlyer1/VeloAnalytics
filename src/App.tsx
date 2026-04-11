@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -57,246 +57,38 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  ReferenceArea,
-  ReferenceLine,
   Legend,
   Bar,
   ComposedChart
 } from 'recharts';
 
-const ReferenceAreaAny = ReferenceArea as any;
-const ReferenceLineAny = ReferenceLine as any;
+import { Header } from './components/Header';
+import { MetricAnalysis } from './components/MetricAnalysis';
+import { ActivityDetails } from './components/ActivityDetails';
+import { WPrimeAnalysis } from './components/WPrimeAnalysis';
+import { PowerCurveAnalysis } from './components/PowerCurveAnalysis';
+import { ZonesAnalysis } from './components/ZonesAnalysis';
+import { LapBreakdown } from './components/LapBreakdown';
+import { PmcAnalysis } from './components/PmcAnalysis';
+import { TrainingLoadAnalysis } from './components/TrainingLoadAnalysis';
+import { AboutModal } from './components/AboutModal';
+import { SettingsModal } from './components/SettingsModal';
+import { UploadView } from './components/UploadView';
+import { EmptyHistoryView } from './components/EmptyHistoryView';
+import { WeatherCard } from './components/WeatherCard';
+import { SectionHeader } from './components/SectionHeader';
+import { MetricLane } from './components/MetricLane';
+import { SummaryCards } from './components/SummaryCards';
+import { HistorySidebar } from './components/HistorySidebar';
 
-const SectionHeader = ({ 
-  icon: Icon, 
-  title, 
-  description, 
-  isExpanded, 
-  onToggle, 
-  className 
-}: { 
-  icon: any, 
-  title: string, 
-  description?: string, 
-  isExpanded: boolean, 
-  onToggle: () => void,
-  className?: string
-}) => (
-  <div className={cn("flex items-center justify-between mb-6", className)}>
-    <div className="flex items-center gap-3">
-      <div className="p-2 bg-orange-500/10 rounded-xl">
-        <Icon className="w-5 h-5 text-orange-500" />
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight text-app-text">{title}</h3>
-        {description && <p className="text-xs text-app-muted font-medium">{description}</p>}
-      </div>
-    </div>
-    <button 
-      onClick={onToggle}
-      className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group"
-    >
-      {isExpanded ? (
-        <>
-          <span className="hidden sm:inline">Collapse</span>
-          <ChevronUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
-        </>
-      ) : (
-        <>
-          <span className="hidden sm:inline">Expand</span>
-          <ChevronDown className="w-3 h-3 group-hover:translate-y-0.5 transition-transform" />
-        </>
-      )}
-    </button>
-  </div>
-);
-
-interface MetricLaneProps {
-  key?: string | number;
-  metric: string;
-  config: { label: string, color: string, unit: string };
-  data: any[];
-  activePoint: number | null;
-  onMouseMove: (e: any) => void;
-  onMouseLeave: () => void;
-  onClick: (e: any) => void;
-  isLast: boolean;
-  syncId: string;
-  height?: number;
-  estimatedCp?: number | null;
-  cp?: number;
-  manualCP?: number | null;
-  powerZoneDefinitions?: any;
-  hrZoneDefinitions?: any;
-  maxHR?: number;
-  showCP?: boolean;
-  showECP?: boolean;
-}
-
-const MetricLane = ({ 
-  metric, 
-  config, 
-  data, 
-  activePoint, 
-  onMouseMove, 
-  onMouseLeave, 
-  onClick,
-  isLast,
-  syncId,
-  height = 140,
-  estimatedCp,
-  cp,
-  manualCP,
-  powerZoneDefinitions,
-  hrZoneDefinitions,
-  maxHR,
-  showCP = true,
-  showECP = true
-}: MetricLaneProps) => {
-  const currentValue = activePoint !== null && data[activePoint] ? data[activePoint][metric] : null;
-
-  return (
-    <div className={cn(
-      "relative group transition-all duration-300",
-      !isLast && "border-b border-app-border/30"
-    )}>
-      {/* Lane Label & Value */}
-      <div className="absolute left-4 top-3 z-10 flex items-center gap-3 pointer-events-none">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-3 rounded-full" style={{ backgroundColor: config.color }} />
-          <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-app-muted group-hover:text-app-text transition-colors">
-            {config.label} <span className="opacity-40 ml-1">({config.unit})</span>
-          </span>
-        </div>
-        {currentValue !== null && (
-          <div className="flex items-baseline gap-1 animate-in fade-in zoom-in-95 duration-200">
-            <span className="text-sm font-mono font-bold text-app-text tabular-nums">
-              {metric === 'speed' || metric === 'slope' ? Number(currentValue).toFixed(1) : Math.round(currentValue)}
-            </span>
-            <span className="text-[8px] font-bold text-app-muted uppercase">{config.unit}</span>
-          </div>
-        )}
-      </div>
-
-      <div style={{ height }} className="w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart 
-            data={data}
-            syncId={syncId}
-            margin={{ top: 40, right: 30, left: 10, bottom: isLast ? 20 : 0 }}
-            onMouseMove={onMouseMove}
-            onMouseLeave={onMouseLeave}
-            onClick={onClick}
-          >
-            <defs>
-              <linearGradient id={`color-${metric}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={config.color} stopOpacity={0.15}/>
-                <stop offset="95%" stopColor={config.color} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} opacity={0.2} />
-            <XAxis 
-              dataKey="timestamp" 
-              hide={!isLast}
-              stroke="var(--app-muted)" 
-              fontSize={9}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(val) => {
-                const d = new Date(val);
-                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
-              }}
-            />
-            <YAxis 
-              yAxisId={metric}
-              stroke="var(--app-muted)"
-              fontSize={9}
-              tickLine={false}
-              axisLine={false}
-              domain={['auto', 'auto']}
-              width={45}
-              tickFormatter={(val) => Math.round(val).toString()}
-            />
-            
-            {activePoint !== null && data[activePoint] && (
-              <ReferenceLineAny 
-                x={data[activePoint].timestamp} 
-                stroke="var(--app-text)" 
-                strokeOpacity={0.15}
-                strokeDasharray="3 3" 
-              />
-            )}
-
-            {/* CP Reference Lines for Power lane */}
-            {metric === 'power' && estimatedCp && showECP && (
-              <ReferenceLineAny 
-                yAxisId="power" 
-                y={estimatedCp} 
-                stroke="#ef4444" 
-                strokeDasharray="3 3" 
-                strokeOpacity={0.3}
-              />
-            )}
-            {metric === 'power' && manualCP !== null && showCP && (
-              <ReferenceLineAny 
-                yAxisId="power" 
-                y={cp} 
-                stroke="#3b82f6" 
-                strokeDasharray="3 3" 
-                strokeOpacity={0.3}
-              />
-            )}
-
-            {/* Zone Highlighting */}
-            {metric === 'power' && powerZoneDefinitions && cp && getZonesFromDefinitions(powerZoneDefinitions, cp).map((z) => (
-              <ReferenceAreaAny 
-                key={z.name} 
-                yAxisId="power"
-                y1={z.min} 
-                y2={z.max >= 9999 ? 10000 : z.max} 
-                fill={z.color} 
-                fillOpacity={0.02} 
-                stroke="none"
-              />
-            ))}
-            {metric === 'heartRate' && hrZoneDefinitions && maxHR && getZonesFromDefinitions(hrZoneDefinitions, maxHR).map((z) => (
-              <ReferenceAreaAny 
-                key={z.name} 
-                yAxisId="heartRate"
-                y1={z.min} 
-                y2={z.max >= 9999 ? 1000 : z.max} 
-                fill={z.color} 
-                fillOpacity={0.02} 
-                stroke="none"
-              />
-            ))}
-
-            <Tooltip content={() => null} cursor={false} />
-
-            <Area 
-              yAxisId={metric}
-              type="monotone" 
-              dataKey={metric} 
-              stroke={config.color} 
-              strokeWidth={1.5}
-              fillOpacity={1} 
-              fill={`url(#color-${metric})`} 
-              connectNulls
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
+const ActivityMap = React.lazy(() => import('./components/ActivityMap').then(m => ({ default: m.ActivityMap })));
 
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
 import FitParser from 'fit-file-parser';
 import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
-import { cn } from './lib/utils';
-import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus } from './types';
+import { cn, formatDuration, formatNumericalDuration } from './lib/utils';
+import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus, WeatherData } from './types';
 import { calculateXPower, calculateRI, calculateBikeScore, estimateCPWPrime, calculateSlope, estimateCP, calculateLapSummary, calculateZones, getZonesFromDefinitions, DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES, calculatePowerCurve, calculateWPrimeBalance, calculateAerobicDecoupling } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 
@@ -313,218 +105,6 @@ let DefaultIcon = L.icon({
     iconAnchor: [12, 41]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-function MapBounds({ points, data, activePoint, isMapMaximized }: { points: [number, number][], data: CyclingDataPoint[], activePoint: number | null, isMapMaximized: boolean }) {
-  const map = useLeafletMap();
-  
-  React.useEffect(() => {
-    if (points.length > 0 && activePoint === null) {
-      const bounds = L.latLngBounds(points);
-      const isMobile = window.innerWidth < 640;
-      map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
-    }
-  }, [points, map, activePoint]);
-
-  React.useEffect(() => {
-    const container = map.getContainer();
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
-      if (points.length > 0 && activePoint === null) {
-        const bounds = L.latLngBounds(points);
-        const isMobile = window.innerWidth < 640;
-        map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
-      }
-    });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [map, points, activePoint]);
-
-  React.useEffect(() => {
-    if (activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude) {
-      map.setView([data[activePoint].latitude!, data[activePoint].longitude!], map.getZoom());
-    }
-  }, [activePoint, data, map]);
-
-  return null;
-}
-
-function GoogleMapPolyline({ points, data, setActivePoint, setIsPointLocked, isMapMaximized }: { points: { lat: number; lng: number }[], data: CyclingDataPoint[], setActivePoint: (index: number | null) => void, setIsPointLocked: (locked: boolean) => void, isMapMaximized: boolean }) {
-  const map = useGoogleMap();
-  React.useEffect(() => {
-    if (!map || points.length === 0) return;
-
-    const polyline = new google.maps.Polyline({
-      path: points,
-      geodesic: true,
-      strokeColor: "#f97316",
-      strokeOpacity: 0.8,
-      strokeWeight: 4,
-    });
-
-    polyline.setMap(map);
-
-    const findClosestPointIndex = (lat: number, lng: number) => {
-      let minDistance = Infinity;
-      let closestIndex = -1;
-      
-      data.forEach((p, index) => {
-        if (p.latitude !== undefined && p.longitude !== undefined) {
-          const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-          if (d < minDistance) {
-            minDistance = d;
-            closestIndex = index;
-          }
-        }
-      });
-      
-      return closestIndex;
-    };
-
-    const mouseMoveListener = polyline.addListener('mousemove', (e: google.maps.PolyMouseEvent) => {
-      if (e.latLng) {
-        const index = findClosestPointIndex(e.latLng.lat(), e.latLng.lng());
-        if (index !== -1) setActivePoint(index);
-      }
-    });
-
-    const mouseOutListener = polyline.addListener('mouseout', () => {
-      setActivePoint(null);
-    });
-
-    const clickListener = polyline.addListener('click', (e: google.maps.PolyMouseEvent) => {
-      if (e.latLng) {
-        const index = findClosestPointIndex(e.latLng.lat(), e.latLng.lng());
-        if (index !== -1) {
-          setActivePoint(index);
-          setIsPointLocked(true);
-        }
-      }
-    });
-
-    const bounds = new google.maps.LatLngBounds();
-    points.forEach(p => bounds.extend(p));
-    const isMobile = window.innerWidth < 640;
-    map.fitBounds(bounds, isMobile ? { top: 150, bottom: 150, left: 50, right: 50 } : 100);
-
-    const observer = new ResizeObserver(() => {
-      google.maps.event.trigger(map, 'resize');
-      map.fitBounds(bounds, isMobile ? { top: 150, bottom: 150, left: 50, right: 50 } : 100);
-    });
-    const container = map.getDiv();
-    observer.observe(container);
-
-    return () => {
-      polyline.setMap(null);
-      google.maps.event.removeListener(mouseMoveListener);
-      google.maps.event.removeListener(mouseOutListener);
-      google.maps.event.removeListener(clickListener);
-      observer.disconnect();
-    };
-  }, [map, points, data, setActivePoint, setIsPointLocked, isMapMaximized]);
-
-  return null;
-}
-
-function GoogleMapTrafficLayer({ enabled }: { enabled: boolean }) {
-  const map = useGoogleMap();
-  React.useEffect(() => {
-    if (!map) return;
-    const layer = new google.maps.TrafficLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
-  }, [map, enabled]);
-  return null;
-}
-
-function GoogleMapBicyclingLayer({ enabled }: { enabled: boolean }) {
-  const map = useGoogleMap();
-  React.useEffect(() => {
-    if (!map) return;
-    const layer = new google.maps.BicyclingLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
-  }, [map, enabled]);
-  return null;
-}
-
-function GoogleMapTransitLayer({ enabled }: { enabled: boolean }) {
-  const map = useGoogleMap();
-  React.useEffect(() => {
-    if (!map) return;
-    const layer = new google.maps.TransitLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
-  }, [map, enabled]);
-  return null;
-}
-
-interface WeatherData {
-  temp: number;
-  description: string;
-  icon: string;
-  windSpeed: number;
-  humidity: number;
-  locationName: string;
-}
-
-const WeatherCard = ({ weather, isLoading }: { weather: WeatherData | null, isLoading: boolean }) => {
-  if (isLoading) {
-    return (
-      <div className="bg-app-bg/80 backdrop-blur-md p-3 rounded-2xl border border-app-border flex items-center gap-3 animate-pulse">
-        <div className="w-8 h-8 bg-app-card rounded-full" />
-        <div className="space-y-2">
-          <div className="w-16 h-2 bg-app-card rounded" />
-          <div className="w-12 h-2 bg-app-card rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!weather) return null;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-app-bg/80 backdrop-blur-md p-3 rounded-2xl border border-app-border flex items-center gap-4 shadow-xl"
-    >
-      <div className="flex flex-col items-center">
-        <img 
-          src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`} 
-          alt={weather.description}
-          className="w-10 h-10 -my-2"
-          referrerPolicy="no-referrer"
-        />
-        <span className="text-[8px] font-bold uppercase tracking-tighter text-app-muted">{weather.description}</span>
-      </div>
-      
-      <div className="h-8 w-px bg-app-border" />
-      
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1">
-          <Thermometer className="w-3 h-3 text-orange-500" />
-          <span className="text-sm font-bold tracking-tight">{Math.round(weather.temp)}°C</span>
-        </div>
-        <span className="text-[8px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[80px]">
-          {weather.locationName}
-        </span>
-      </div>
-
-      <div className="h-8 w-px bg-app-border" />
-
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-1.5">
-          <Wind className="w-3 h-3 text-blue-400" />
-          <span className="text-[10px] font-medium">{Math.round(weather.windSpeed * 3.6)} km/h</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Droplets className="w-3 h-3 text-cyan-400" />
-          <span className="text-[10px] font-medium">{weather.humidity}%</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 export default function App() {
   const [data, setData] = useState<CyclingDataPoint[]>([]);
@@ -570,6 +150,7 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<any>(null);
 
   const handleCompare = () => {
     mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -639,35 +220,69 @@ export default function App() {
     const result = new Array(data.length);
     const halfWindow = Math.floor(smoothingWindow / 2);
 
+    // Using a sliding window sum for O(N) performance
+    let sumPower = 0;
+    let sumSpeed = 0;
+    let sumHR = 0;
+    let sumCadence = 0;
+    let hrCount = 0;
+    let cadenceCount = 0;
+
+    // Initial window setup
+    const initialEnd = Math.min(data.length - 1, halfWindow);
+    for (let i = 0; i <= initialEnd; i++) {
+      sumPower += data[i].power || 0;
+      sumSpeed += data[i].speed || 0;
+      if (data[i].heartRate) {
+        sumHR += data[i].heartRate!;
+        hrCount++;
+      }
+      if (data[i].cadence) {
+        sumCadence += data[i].cadence!;
+        cadenceCount++;
+      }
+    }
+
     for (let i = 0; i < data.length; i++) {
-      const start = Math.max(0, i - halfWindow);
-      const end = Math.min(data.length - 1, i + halfWindow);
-      const count = end - start + 1;
+      const oldStart = i - halfWindow - 1;
+      const newEnd = i + halfWindow;
 
-      let sumPower = 0;
-      let sumHR = 0;
-      let sumCadence = 0;
-      let sumSpeed = 0;
-      let hrCount = 0;
-      let cadenceCount = 0;
+      // Remove point that just left the window
+      if (oldStart >= 0) {
+        sumPower -= data[oldStart].power || 0;
+        sumSpeed -= data[oldStart].speed || 0;
+        if (data[oldStart].heartRate) {
+          sumHR -= data[oldStart].heartRate!;
+          hrCount--;
+        }
+        if (data[oldStart].cadence) {
+          sumCadence -= data[oldStart].cadence!;
+          cadenceCount--;
+        }
+      }
 
-      for (let j = start; j <= end; j++) {
-        sumPower += data[j].power || 0;
-        sumSpeed += data[j].speed || 0;
-        if (data[j].heartRate) {
-          sumHR += data[j].heartRate!;
+      // Add point that just entered the window (if not already added in initial setup)
+      if (newEnd < data.length && newEnd > initialEnd) {
+        sumPower += data[newEnd].power || 0;
+        sumSpeed += data[newEnd].speed || 0;
+        if (data[newEnd].heartRate) {
+          sumHR += data[newEnd].heartRate!;
           hrCount++;
         }
-        if (data[j].cadence) {
-          sumCadence += data[j].cadence!;
+        if (data[newEnd].cadence) {
+          sumCadence += data[newEnd].cadence!;
           cadenceCount++;
         }
       }
 
+      const currentStart = Math.max(0, i - halfWindow);
+      const currentEnd = Math.min(data.length - 1, i + halfWindow);
+      const windowSize = currentEnd - currentStart + 1;
+
       result[i] = {
         ...data[i],
-        power: sumPower / count,
-        speed: sumSpeed / count,
+        power: sumPower / windowSize,
+        speed: sumSpeed / windowSize,
         heartRate: hrCount > 0 ? sumHR / hrCount : data[i].heartRate,
         cadence: cadenceCount > 0 ? sumCadence / cadenceCount : data[i].cadence,
       };
@@ -675,7 +290,7 @@ export default function App() {
     return result;
   }, [data, smoothingWindow]);
 
-  const getComparisonCurves = () => {
+  const getComparisonCurves = React.useCallback(() => {
     return history
       .filter(h => selectedHistoryIds.includes(h.id))
       .map(h => ({
@@ -683,7 +298,7 @@ export default function App() {
         curve: h.powerCurve || h.fullSummary?.powerCurve || []
       }))
       .filter(h => h.curve.length > 0);
-  };
+  }, [history, selectedHistoryIds]);
 
   const trainingLoadData = React.useMemo(() => {
     if (history.length === 0) return [];
@@ -1084,20 +699,6 @@ export default function App() {
     if (pmcData.length === 0) return null;
     return pmcData[pmcData.length - 1];
   }, [pmcData]);
-
-  const formatDuration = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h > 0 ? `${h}h ` : ''}${m}m ${s}s`;
-  };
-
-  const formatNumericalDuration = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   const [maxHR, setMaxHR] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_maxhr');
@@ -1616,18 +1217,18 @@ export default function App() {
     setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
   };
 
-  const gpsPoints = data
+  const gpsPoints = React.useMemo(() => data
     .filter(p => p.latitude && p.longitude)
-    .map(p => [p.latitude!, p.longitude!] as [number, number]);
+    .map(p => [p.latitude!, p.longitude!] as [number, number]), [data]);
 
-  const metricsConfig: Record<string, { label: string, color: string, unit: string }> = {
+  const metricsConfig = React.useMemo((): Record<string, { label: string, color: string, unit: string }> => ({
     power: { label: 'Power', color: '#f97316', unit: 'W' },
     heartRate: { label: 'Heart Rate', color: '#ef4444', unit: 'bpm' },
     cadence: { label: 'Cadence', color: '#a855f7', unit: 'rpm' },
     speed: { label: 'Speed', color: '#22c55e', unit: 'km/h' },
     altitude: { label: 'Altitude', color: '#3b82f6', unit: 'm' },
     slope: { label: 'Slope', color: '#eab308', unit: '%' },
-  };
+  }), []);
 
   return (
     <div className="min-h-screen bg-app-bg text-app-text font-sans selection:bg-orange-500/30 transition-colors duration-300">
@@ -1669,216 +1270,52 @@ export default function App() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="border-b border-app-border bg-app-bg/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
-              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
-            </div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-              VELO<span className="text-orange-500 hidden sm:inline">ANALYTICS</span>
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {estimatedCp && estimatedCp > cp && !autoUpdateCP && (
-              <button 
-                onClick={() => setCP(estimatedCp)}
-                className="hidden lg:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
-              >
-                <Zap className="w-3 h-3 text-orange-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
-                  Update CP to {estimatedCp}W?
-                </span>
-                <ChevronRight className="w-3 h-3 text-orange-500 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            )}
-            <div 
-              className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full"
-              title="Critical Power (Watts)"
-            >
-              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">CP:</span>
-              <input 
-                type="number" 
-                value={cp} 
-                onChange={(e) => setCP(parseInt(e.target.value) || 0)}
-                className="bg-transparent w-8 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
-              />
-              <span className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest">W</span>
-            </div>
-            
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button 
-                onClick={() => setShowUploadView(!showUploadView)}
-                className={cn(
-                  "flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-widest transition-all",
-                  showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
-                )}
-                title={showUploadView ? "Cancel Upload" : "Upload Activity (.fit)"}
-              >
-                <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{showUploadView ? 'Cancel' : 'Upload'}</span>
-              </button>
-              <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
-                ) : (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-                )}
-              </button>
-              <button 
-                onClick={() => setShowAboutModal(true)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title="About & Methodology"
-              >
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-              </button>
-              <button 
-                onClick={() => toggleAllPanels(areAllPanelsCollapsed)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title={areAllPanelsCollapsed ? "Expand All Panels" : "Collapse All Panels"}
-              >
-                {areAllPanelsCollapsed ? (
-                  <LayoutList className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-                ) : (
-                  <Table className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
-                )}
-              </button>
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title="Training Settings"
-              >
-                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header 
+        estimatedCp={estimatedCp}
+        cp={cp}
+        setCP={setCP}
+        autoUpdateCP={autoUpdateCP}
+        showUploadView={showUploadView}
+        setShowUploadView={setShowUploadView}
+        theme={theme}
+        setTheme={setTheme}
+        setShowAboutModal={setShowAboutModal}
+        areAllPanelsCollapsed={areAllPanelsCollapsed}
+        toggleAllPanels={toggleAllPanels}
+        setShowSettings={setShowSettings}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {(showUploadView || (!summary && history.length === 0)) ? (
-          <div 
-            className={cn(
-              "mt-12 border-2 border-dashed rounded-3xl p-20 flex flex-col items-center justify-center transition-all duration-300",
-              isDragging ? "border-orange-500 bg-orange-500/5 scale-[1.01]" : "border-white/10 bg-white/2 hover:bg-white/[0.04]"
-            )}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files); }}
-          >
-            <div className="w-20 h-20 bg-app-card rounded-full flex items-center justify-center mb-6">
-              <Upload className="w-10 h-10 text-app-muted" />
-            </div>
-            <h2 className="text-2xl font-semibold mb-2">Drop your activity files</h2>
-            <p className="text-app-muted mb-8 max-w-md text-center">
-              Support for Garmin <span className="text-app-text/60">.fit</span> files.
-            </p>
-            <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
-              Select Files
-              <input type="file" className="hidden" accept=".fit" multiple onChange={(e) => handleFileUpload(e.target.files)} />
-            </label>
-            
-            {uploadQueue.length > 0 && (
-              <div className="mt-12 w-full max-w-2xl bg-app-card border border-app-border rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="px-6 py-4 border-b border-app-border flex items-center justify-between bg-app-card/50">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Processing Queue</h3>
-                  </div>
-                  <button 
-                    onClick={() => setUploadQueue([])}
-                    className="text-[10px] font-bold uppercase tracking-widest text-app-muted/50 hover:text-app-muted transition-colors"
-                  >
-                    Clear All
-                  </button>
-                </div>
-                <div className="max-h-[300px] overflow-y-auto divide-y divide-app-border/50">
-                  {uploadQueue.map((item) => (
-                    <div key={item.id} className="px-6 py-4 flex items-center gap-4 group">
-                      <div className="w-8 h-8 rounded-full bg-app-card flex items-center justify-center shrink-0">
-                        {item.status === 'processing' ? (
-                          <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                        ) : item.status === 'completed' ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        ) : item.status === 'error' ? (
-                          <XCircle className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <Activity className="w-4 h-4 text-app-muted" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs font-medium truncate pr-4">{item.name}</span>
-                          <span className="text-[10px] text-app-muted font-mono">{item.progress}%</span>
-                        </div>
-                        <div className="h-1 w-full bg-app-card rounded-full overflow-hidden">
-                          <div 
-                            className={cn(
-                              "h-full transition-all duration-500",
-                              item.status === 'error' ? "bg-red-500" : "bg-orange-500"
-                            )}
-                            style={{ width: `${item.progress}%` }}
-                          />
-                        </div>
-                        {item.error && (
-                          <p className="text-[8px] text-red-400 mt-1 uppercase tracking-widest">{item.error}</p>
-                        )}
-                      </div>
-                      {item.status === 'completed' && (
-                        <button 
-                          onClick={() => {
-                            setSummary(item.summary!);
-                            setData(item.data!);
-                            setIsEditingName(false);
-                            setEditedName('');
-                            setOriginalFile(item.file || null);
-                            setCurrentActivityId(item.historyId || null);
-                            const cpWPrimeResult = estimateCPWPrime(item.data!);
-                            setCpWPrime(cpWPrimeResult);
-                            setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
-                            setActivePoint(null);
-                            setIsPointLocked(false);
-                            setShowUploadView(false);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="ml-4 px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all"
-                        >
-                          View
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="mt-12 flex gap-8 opacity-40">
-              <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> <span className="text-xs uppercase tracking-widest">FIT</span></div>
-            </div>
-          </div>
-        ) : (
+        <UploadView 
+          showUploadView={showUploadView}
+          setShowUploadView={setShowUploadView}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+          handleFileUpload={handleFileUpload}
+          uploadQueue={uploadQueue}
+          setUploadQueue={setUploadQueue}
+          setSummary={setSummary}
+          setData={setData}
+          setIsEditingName={setIsEditingName}
+          setEditedName={setEditedName}
+          setOriginalFile={setOriginalFile}
+          setCurrentActivityId={setCurrentActivityId}
+          setCpWPrime={setCpWPrime}
+          setEstimatedCp={setEstimatedCp}
+          setActivePoint={setActivePoint}
+          setIsPointLocked={setIsPointLocked}
+          history={history}
+          summary={summary}
+        />
+
+        {(!showUploadView && (summary || history.length > 0)) && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {!summary && history.length > 0 && selectedHistoryIds.length < 2 && (
-              <div 
-                onClick={() => {
-                  const latest = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                  if (latest) loadFromHistory(latest.id);
-                }}
-                className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in slide-in-from-bottom-8 duration-700 cursor-pointer group hover:bg-white/[0.02] rounded-3xl transition-all"
-              >
-                <div className="w-24 h-24 bg-app-card rounded-full flex items-center justify-center mb-8 shadow-2xl border border-app-border group-hover:border-orange-500/50 group-hover:scale-110 transition-all duration-500">
-                  <History className="w-10 h-10 text-orange-500" />
-                </div>
-                <h2 className="text-3xl font-bold mb-4 tracking-tight group-hover:text-orange-500 transition-colors">Select an Activity</h2>
-                <p className="text-app-muted mb-10 max-w-md leading-relaxed group-hover:text-app-text transition-colors">
-                  Your history is ready. Click here to view your latest activity, or select one from the history list below.
-                </p>
-              </div>
-            )}
+            <EmptyHistoryView 
+              summary={summary}
+              history={history}
+              selectedHistoryIds={selectedHistoryIds}
+              loadFromHistory={loadFromHistory}
+            />
 
             {summary && (
               <>
@@ -1900,174 +1337,12 @@ export default function App() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Duration & Work</span>
-                              <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power Metrics</span>
-                              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
-                              <div className="flex gap-3">
-                                <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
-                                <span>Max: {Math.round(summary.maxPower || 0)}W</span>
-                              </div>
-                              {data.some(p => p.leftRightBalance !== undefined) && (
-                                <span>L/R: {(() => {
-                                  const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
-                                  if (balances.length === 0) return '50/50';
-                                  const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
-                                  return `${Math.round(avg)}/${100 - Math.round(avg)}`;
-                                })()}</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Training Stress</span>
-                              <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                              <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Max: {Math.round(summary.maxHeartRate || 0)} bpm
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Elevation & Distance</span>
-                              <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Dist: {(summary.distance / 1000).toFixed(1)}km
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                              <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
-                            </div>
-                          </div>
-
-                          <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                            <div className="flex justify-between items-start mb-2 sm:mb-4">
-                              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
-                            </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
-                              <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
-                            </div>
-                            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                              Max: {Math.round(summary.maxCadence || 0)} rpm
-                            </div>
-                          </div>
-
-                          {summary.aerobicDecoupling !== undefined && (
-                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                              <div className="flex justify-between items-start mb-2 sm:mb-4">
-                                <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Aerobic Decoupling</span>
-                                <TrendingUp className={cn(
-                                  "w-3 h-3 sm:w-4 sm:h-4",
-                                  summary.aerobicDecoupling < 5 ? "text-green-500" :
-                                  summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
-                                )} />
-                              </div>
-                              <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className={cn(
-                                  "text-3xl sm:text-4xl font-light tracking-tighter",
-                                  summary.aerobicDecoupling < 5 ? "text-green-500" :
-                                  summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
-                                )}>
-                                  {(summary.aerobicDecoupling || 0).toFixed(1)}%
-                                </span>
-                                <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
-                              </div>
-                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                                {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
-                                 summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
-                              </div>
-                            </div>
-                          )}
-
-                          {summary.avgTemperature !== undefined && (
-                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                              <div className="flex justify-between items-start mb-2 sm:mb-4">
-                                <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Temperature</span>
-                                <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                              </div>
-                              <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
-                                <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
-                              </div>
-                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                                Avg Ambient
-                              </div>
-                            </div>
-                          )}
-                          
-                          {history.length > 0 && currentPMC && (
-                            <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-                              <div className="flex justify-between items-start mb-2 sm:mb-4">
-                                <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Performance (PMC)</span>
-                                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
-                                <span className="text-[10px] text-app-muted font-medium uppercase tracking-widest">LTS</span>
-                              </div>
-                              <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-                                STS: {Math.round(currentPMC.sts || 0)} | SB: {Math.round(currentPMC.sb || 0)}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <SummaryCards 
+                          summary={summary}
+                          data={data}
+                          currentPMC={currentPMC}
+                          history={history}
+                        />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -2079,463 +1354,68 @@ export default function App() {
               <div className="space-y-8">
                 <div className="space-y-8">
                   {/* Metrics Section */}
-                  <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                    <SectionHeader 
-                      icon={Activity}
-                      title="Activity Metrics"
-                      description="Real-time performance data across the entire activity duration"
-                      isExpanded={isChartExpanded}
-                      onToggle={() => setIsChartExpanded(!isChartExpanded)}
-                    />
-                    
-                    <AnimatePresence>
-                      {isChartExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                            <div className="flex flex-wrap gap-3 items-center">
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Metrics</span>
-                              <div className="flex flex-wrap gap-2">
-                                {Object.entries(metricsConfig).map(([key, config]) => (
-                                  <button
-                                    key={key}
-                                    onClick={() => {
-                                      setActiveMetrics(prev => 
-                                        prev.includes(key) 
-                                          ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
-                                          : [...prev, key]
-                                      );
-                                    }}
-                                    className={cn(
-                                      "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-                                      activeMetrics.includes(key) 
-                                        ? "bg-app-card text-app-text border-orange-500/50 shadow-lg shadow-orange-500/5" 
-                                        : "bg-app-card/50 text-app-muted border-app-border hover:border-app-muted/30"
-                                    )}
-                                  >
-                                    <div 
-                                      className={cn(
-                                        "w-2 h-2 rounded-full transition-all",
-                                        activeMetrics.includes(key) ? "scale-100 opacity-100" : "scale-50 opacity-30"
-                                      )} 
-                                      style={{ backgroundColor: config.color }} 
-                                    />
-                                    {config.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap items-center gap-3">
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
-                              <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-2xl sm:rounded-full border border-app-border">
-                                {[1, 3, 10, 30, 60].map((window) => (
-                                  <button
-                                    key={window}
-                                    onClick={() => setSmoothingWindow(window)}
-                                    className={cn(
-                                      "px-2 sm:px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                                      smoothingWindow === window 
-                                        ? "bg-orange-500 text-black shadow-lg" 
-                                        : "text-app-muted hover:text-app-text"
-                                    )}
-                                  >
-                                    {window === 1 ? 'Raw' : `${window}s`}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
-                            {activeMetrics.map((metric, index) => (
-                              <MetricLane 
-                                key={metric}
-                                metric={metric}
-                                config={metricsConfig[metric]}
-                                data={smoothedData}
-                                activePoint={activePoint}
-                                onMouseMove={(e) => {
-                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                  }
-                                }}
-                                onMouseLeave={() => {
-                                  if (!isPointLocked) setActivePoint(null);
-                                }}
-                                onClick={(e) => {
-                                  if (e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                    setIsPointLocked(true);
-                                  } else {
-                                    setIsPointLocked(false);
-                                    setActivePoint(null);
-                                  }
-                                }}
-                                isLast={index === activeMetrics.length - 1}
-                                syncId="activityMetrics"
-                                height={activeMetrics.length > 3 ? 120 : 160}
-                                estimatedCp={estimatedCp}
-                                cp={cp}
-                                manualCP={manualCP}
-                                powerZoneDefinitions={powerZoneDefinitions}
-                                hrZoneDefinitions={hrZoneDefinitions}
-                                maxHR={maxHR}
-                                showCP={showCP}
-                                showECP={showECP}
-                              />
-                            ))}
-                          </div>
-
-                          {activeMetrics.includes('power') && (
-                            <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
-                              <button 
-                                onClick={() => setShowCP(!showCP)}
-                                className={cn(
-                                  "flex items-center gap-2 transition-all duration-300",
-                                  showCP ? "opacity-100" : "opacity-30 grayscale"
-                                )}
-                              >
-                                <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
-                              </button>
-                              <button 
-                                onClick={() => setShowECP(!showECP)}
-                                className={cn(
-                                  "flex items-center gap-2 transition-all duration-300",
-                                  showECP ? "opacity-100" : "opacity-30 grayscale"
-                                )}
-                              >
-                                <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
-                              </button>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* Map Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={MapIcon}
-                    title="Activity Map"
-                    description="GPS track visualization with interactive data point inspection"
-                    isExpanded={isMapExpanded}
-                    onToggle={() => setIsMapExpanded(!isMapExpanded)}
+                  <MetricAnalysis 
+                    isChartExpanded={isChartExpanded}
+                    setIsChartExpanded={setIsChartExpanded}
+                    metricsConfig={metricsConfig}
+                    activeMetrics={activeMetrics}
+                    setActiveMetrics={setActiveMetrics}
+                    smoothingWindow={smoothingWindow}
+                    setSmoothingWindow={setSmoothingWindow}
+                    smoothedData={smoothedData}
+                    activePoint={activePoint}
+                    setActivePoint={setActivePoint}
+                    isPointLocked={isPointLocked}
+                    setIsPointLocked={setIsPointLocked}
+                    estimatedCp={estimatedCp}
+                    cp={cp}
+                    manualCP={manualCP}
+                    powerZoneDefinitions={powerZoneDefinitions}
+                    hrZoneDefinitions={hrZoneDefinitions}
+                    maxHR={maxHR}
+                    showCP={showCP}
+                    setShowCP={setShowCP}
+                    showECP={showECP}
+                    setShowECP={setShowECP}
                   />
 
-                  <AnimatePresence>
-                    {isMapExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div 
-                          ref={mapContainerRef}
-                          className={cn(
-                            "bg-app-bg border border-app-border rounded-2xl relative overflow-hidden group transition-all duration-500",
-                            isMapMaximized ? "h-[750px] sm:h-[900px]" : "h-[500px] sm:h-[600px]"
-                          )}
-                        >
-                          <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 flex flex-col items-end gap-3">
-                            <div className="flex gap-2">
-                              <div className="bg-app-bg/80 backdrop-blur-md p-1 rounded-full border border-app-border flex gap-1">
-                                <button 
-                                  onClick={toggleFullScreen}
-                                  className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                                  title="Full Screen"
-                                >
-                                  <Expand className="w-3 h-3" />
-                                </button>
-                                <button 
-                                  onClick={() => setIsMapMaximized(!isMapMaximized)}
-                                  className={cn(
-                                    "p-2 rounded-xl transition-all",
-                                    isMapMaximized ? "bg-orange-500 text-black" : "text-app-muted hover:text-orange-500 hover:bg-orange-500/10"
-                                  )}
-                                  title={isMapMaximized ? "Minimize Map" : "Maximize Map"}
-                                >
-                                  <Maximize className="w-4 h-4" />
-                                </button>
-                              <button 
-                                onClick={() => {
-                                  setActivePoint(null);
-                                  setIsPointLocked(false);
-                                }}
-                                className="p-1 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                                title="Fit to Course"
-                              >
-                                <Navigation className="w-3 h-3" />
-                              </button>
-                              <div className="w-px h-4 bg-app-border mx-0.5 self-center" />
-                              <button 
-                                onClick={() => setMapProvider('osm')}
-                                className={cn(
-                                  "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                  mapProvider === 'osm' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                )}
-                              >
-                                OSM
-                              </button>
-                              <button 
-                                onClick={() => setMapProvider('google')}
-                                className={cn(
-                                  "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                  mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                )}
-                              >
-                                Google
-                              </button>
-                            </div>
-                          </div>
-                          <div className="hidden sm:block">
-                            <WeatherCard weather={weather} isLoading={isWeatherLoading} />
-                          </div>
-                        </div>
-                        {gpsPoints.length > 0 ? (
-                          mapProvider === 'osm' ? (
-                            <div className="w-full h-full relative">
-                              {activePoint !== null && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsPointLocked(false);
-                                    setActivePoint(null);
-                                  }}
-                                  className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
-                                  title="Clear Highlight"
-                                >
-                                  <CheckCircle2 className="w-4 h-4 text-orange-500" />
-                                </button>
-                              )}
-                              <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
-                                  {(['roadmap', 'terrain'] as const).map((t) => (
-                                    <button
-                                      key={t}
-                                      onClick={() => setMapType(t as any)}
-                                      className={cn(
-                                        "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                        (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                      )}
-                                    >
-                                      {t === 'roadmap' ? 'Standard' : 'Terrain'}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
-                                <TileLayer
-                                  url={
-                                    mapType === 'terrain' 
-                                      ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
-                                      : theme === 'dark'
-                                        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                                        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                                  }
-                                  attribution={
-                                    mapType === 'terrain'
-                                      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-                                      : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                                  }
-                                  maxZoom={19}
-                                />
-                                <LeafletPolyline 
-                                  positions={gpsPoints} 
-                                  color="#f97316" 
-                                  weight={4} 
-                                  opacity={0.8} 
-                                  eventHandlers={{
-                                    mousemove: (e) => {
-                                      if (isPointLocked) return;
-                                      const { lat, lng } = e.latlng;
-                                      let minDistance = Infinity;
-                                      let closestIndex = -1;
-                                      
-                                      data.forEach((p, index) => {
-                                        if (p.latitude !== undefined && p.longitude !== undefined) {
-                                          const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                          if (d < minDistance) {
-                                            minDistance = d;
-                                            closestIndex = index;
-                                          }
-                                        }
-                                      });
-                                      
-                                      if (closestIndex !== -1) setActivePoint(closestIndex);
-                                    },
-                                    mouseout: () => {
-                                      if (!isPointLocked) setActivePoint(null);
-                                    },
-                                    click: (e) => {
-                                      const { lat, lng } = e.latlng;
-                                      let minDistance = Infinity;
-                                      let closestIndex = -1;
-                                      
-                                      data.forEach((p, index) => {
-                                        if (p.latitude !== undefined && p.longitude !== undefined) {
-                                          const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                          if (d < minDistance) {
-                                            minDistance = d;
-                                            closestIndex = index;
-                                          }
-                                        }
-                                      });
-                                      
-                                      if (closestIndex !== -1) {
-                                        setActivePoint(closestIndex);
-                                        setIsPointLocked(true);
-                                      }
-                                    }
-                                  }}
-                                />
-                                {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                                  <CircleMarker 
-                                    center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
-                                    radius={8} 
-                                    fillColor="#f97316" 
-                                    color="white" 
-                                    weight={3} 
-                                    fillOpacity={1} 
-                                  />
-                                )}
-                                <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isMapMaximized={isMapMaximized} />
-                              </MapContainer>
-                            </div>
-                          ) : (
-                            import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-                              <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                                <div className="w-full h-full relative">
-                                  {activePoint !== null && (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsPointLocked(false);
-                                        setActivePoint(null);
-                                      }}
-                                      className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
-                                      title="Clear Highlight"
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 text-orange-500" />
-                                    </button>
-                                  )}
-                                  <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                                    <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
-                                      {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
-                                        <button
-                                          key={t}
-                                          onClick={() => setMapType(t)}
-                                          className={cn(
-                                            "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all",
-                                            mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                          )}
-                                        >
-                                          {t}
-                                        </button>
-                                      ))}
-                                    </div>
-                                    <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
-                                      <button
-                                        onClick={() => setShowTraffic(!showTraffic)}
-                                        className={cn(
-                                          "p-2 rounded-full transition-all",
-                                          showTraffic ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                        )}
-                                        title="Toggle Traffic"
-                                      >
-                                        <TrafficCone className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => setShowBicycling(!showBicycling)}
-                                        className={cn(
-                                          "p-2 rounded-full transition-all",
-                                          showBicycling ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                        )}
-                                        title="Toggle Bicycling"
-                                      >
-                                        <Bike className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => setShowTransit(!showTransit)}
-                                        className={cn(
-                                          "p-2 rounded-full transition-all",
-                                          showTransit ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
-                                        )}
-                                        title="Toggle Transit"
-                                      >
-                                        <Bus className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <GoogleMap
-                                    defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
-                                    center={activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude ? { lat: data[activePoint].latitude!, lng: data[activePoint].longitude! } : undefined}
-                                    defaultZoom={13}
-                                    gestureHandling={'auto'}
-                                    disableDefaultUI={true}
-                                    mapTypeControl={false}
-                                    mapTypeId={mapType}
-                                    mapId={'bf51a910020fa25a'}
-                                    style={{ width: '100%', height: '100%' }}
-                                    colorScheme="DARK"
-                                    onClick={() => {
-                                      if (isPointLocked) {
-                                        setIsPointLocked(false);
-                                        setActivePoint(null);
-                                      }
-                                    }}
-                                  >
-                                    <GoogleMapPolyline points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} data={data} setActivePoint={setActivePoint} setIsPointLocked={setIsPointLocked} isMapMaximized={isMapMaximized} />
-                                    <GoogleMapTrafficLayer enabled={showTraffic} />
-                                    <GoogleMapBicyclingLayer enabled={showBicycling} />
-                                    <GoogleMapTransitLayer enabled={showTransit} />
-                                    {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
-                                      <div 
-                                        style={{ 
-                                          position: 'absolute', 
-                                          left: '50%', 
-                                          top: '50%', 
-                                          transform: 'translate(-50%, -50%)',
-                                          width: '16px',
-                                          height: '16px',
-                                          backgroundColor: '#f97316',
-                                          borderRadius: '50%',
-                                          border: '3px solid white',
-                                          boxShadow: '0 0 15px rgba(249, 115, 22, 0.5)',
-                                          zIndex: 100
-                                        }}
-                                      />
-                                    )}
-                                  </GoogleMap>
-                                </div>
-                              </APIProvider>
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20 p-8 text-center">
-                                <MapIcon className="w-12 h-12 mb-4" />
-                                <span className="text-xs uppercase tracking-widest mb-2 font-bold">Google Maps API Key Missing</span>
-                                <p className="text-[10px] leading-relaxed">Please add VITE_GOOGLE_MAPS_API_KEY to your environment variables to enable Google Maps.</p>
-                              </div>
-                            )
-                          )
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-app-muted/20">
-                            <MapIcon className="w-12 h-12 mb-4" />
-                            <span className="text-xs uppercase tracking-widest">No GPS Data</span>
-                          </div>
-                        )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <Suspense fallback={
+                  <div className="bg-app-card border border-app-border rounded-3xl p-8 h-[600px] flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Loading Map Engine...</span>
+                    </div>
+                  </div>
+                }>
+                  <ActivityMap 
+                    isMapExpanded={isMapExpanded}
+                    setIsMapExpanded={setIsMapExpanded}
+                    mapContainerRef={mapContainerRef}
+                    isMapMaximized={isMapMaximized}
+                    setIsMapMaximized={setIsMapMaximized}
+                    toggleFullScreen={toggleFullScreen}
+                    setActivePoint={setActivePoint}
+                    setIsPointLocked={setIsPointLocked}
+                    mapProvider={mapProvider}
+                    setMapProvider={setMapProvider}
+                    weather={weather}
+                    isWeatherLoading={isWeatherLoading}
+                    gpsPoints={gpsPoints}
+                    activePoint={activePoint}
+                    isPointLocked={isPointLocked}
+                    mapType={mapType}
+                    setMapType={setMapType}
+                    theme={theme}
+                    data={data}
+                    showTraffic={showTraffic}
+                    setShowTraffic={setShowTraffic}
+                    showBicycling={showBicycling}
+                    setShowBicycling={setShowBicycling}
+                    showTransit={showTransit}
+                    setShowTransit={setShowTransit}
+                    googleMapRef={googleMapRef}
+                  />
+                </Suspense>
                 
                 {/* Mobile Weather Info */}
                       <div className="sm:hidden mt-4">
@@ -2543,1004 +1423,85 @@ export default function App() {
                       </div>
 
                 {/* Activity Details Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={Info}
-                    title="Activity Details"
-                    description="Key performance indicators and summary statistics"
-                    isExpanded={isDetailsExpanded}
-                    onToggle={() => setIsDetailsExpanded(!isDetailsExpanded)}
-                  />
-                  
-                  <AnimatePresence>
-                    {isDetailsExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                              <div className="space-y-4">
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Activity Name</span>
-                                  {isEditingName ? (
-                                    <div className="flex items-center gap-2">
-                                      <input 
-                                        type="text" 
-                                        value={editedName}
-                                        onChange={(e) => setEditedName(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            if (currentActivityId) {
-                                              updateActivityName(currentActivityId, editedName);
-                                            }
-                                            setIsEditingName(false);
-                                          } else if (e.key === 'Escape') {
-                                            setIsEditingName(false);
-                                          }
-                                        }}
-                                        className="bg-app-bg border border-app-border rounded px-2 py-1 text-xs focus:border-orange-500 outline-none w-48"
-                                        autoFocus
-                                      />
-                                      <button 
-                                        onClick={() => {
-                                          if (currentActivityId) {
-                                            updateActivityName(currentActivityId, editedName);
-                                          }
-                                          setIsEditingName(false);
-                                        }}
-                                        className="p-1 hover:bg-orange-500/10 rounded text-orange-500"
-                                      >
-                                        <Check className="w-3 h-3" />
-                                      </button>
-                                      <button 
-                                        onClick={() => setIsEditingName(false)}
-                                        className="p-1 hover:bg-red-500/10 rounded text-red-500"
-                                      >
-                                        <XCircle className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-medium">{summary.name}</span>
-                                      <button 
-                                        onClick={() => {
-                                          setEditedName(summary.name);
-                                          setIsEditingName(true);
-                                        }}
-                                        className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors"
-                                        title="Edit Activity Name"
-                                      >
-                                        <Pencil className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Start Time</span>
-                                  <span className="text-xs font-medium">{format(summary.startTime, 'h:mm:ss a')}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Duration</span>
-                                  <span className="text-xs font-medium">{formatNumericalDuration(summary.duration)}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Distance</span>
-                                  <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Avg/Max Power</span>
-                                  <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Avg/Max Cadence</span>
-                                  <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} rpm</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Avg/Max Speed</span>
-                                  <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} km/h</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Avg/Max Heart Rate</span>
-                                  <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} bpm</span>
-                                </div>
-                                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                  <span className="text-xs text-app-muted">Elevation Gain</span>
-                                  <span className="text-xs font-medium">
-                                    {Math.round(summary.totalAscent || 0)} m
-                                  </span>
-                                </div>
-                                {estimatedCp && (
-                                  <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                                    <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP (eCP)</span>
-                                    <span className="text-xs font-bold text-orange-500">
-                                      {estimatedCp} W
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                <ActivityDetails 
+                  isDetailsExpanded={isDetailsExpanded}
+                  setIsDetailsExpanded={setIsDetailsExpanded}
+                  summary={summary}
+                  isEditingName={isEditingName}
+                  setIsEditingName={setIsEditingName}
+                  editedName={editedName}
+                  setEditedName={setEditedName}
+                  updateActivityName={updateActivityName}
+                  currentActivityId={currentActivityId}
+                  estimatedCp={estimatedCp}
+                  exportOriginal={exportOriginal}
+                  exportGPX={exportGPX}
+                />
 
-                              <div className="mt-8 grid grid-cols-2 gap-3">
-                                <button 
-                                  onClick={exportOriginal}
-                                  className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
-                                >
-                                  <FileDown className="w-3 h-3 text-orange-500" />
-                                  Original
-                                </button>
-                                <button 
-                                  onClick={exportGPX}
-                                  className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
-                                >
-                                  <Download className="w-3 h-3 text-orange-500" />
-                                  GPX
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                <WPrimeAnalysis 
+                  isWPrimeExpanded={isWPrimeExpanded}
+                  setIsWPrimeExpanded={setIsWPrimeExpanded}
+                  cpWPrime={cpWPrime}
+                  manualCP={manualCP}
+                  manualWPrime={manualWPrime}
+                  smoothedData={smoothedData}
+                  activePoint={activePoint}
+                  setActivePoint={setActivePoint}
+                  isPointLocked={isPointLocked}
+                  setIsPointLocked={setIsPointLocked}
+                  cp={cp}
+                  showCP={showCP}
+                  setShowCP={setShowCP}
+                  showECP={showECP}
+                  setShowECP={setShowECP}
+                />
 
-                  {/* W' Balance Analysis Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={TrendingUp}
-                    title="W' Balance Analysis"
-                    description="Anaerobic capacity utilization and recovery tracking"
-                    isExpanded={isWPrimeExpanded}
-                    onToggle={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
-                  />
+                <PowerCurveAnalysis 
+                  isPowerCurveExpanded={isPowerCurveExpanded}
+                  setIsPowerCurveExpanded={setIsPowerCurveExpanded}
+                  selectedHistoryIds={selectedHistoryIds}
+                  setSelectedHistoryIds={setSelectedHistoryIds}
+                  summary={summary}
+                  allTimeBestCurve={allTimeBestCurve}
+                  rolling90DayBestCurve={rolling90DayBestCurve}
+                  getComparisonCurves={getComparisonCurves}
+                  mmpCurveRef={mmpCurveRef}
+                  theme={theme}
+                />
 
-                  <AnimatePresence>
-                    {isWPrimeExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                              <div>
-                                <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
-                              </div>
-                              {cpWPrime && (
-                                <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
-                                  <div className="text-center">
-                                    <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                      Critical Power
-                                      {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
-                                    </div>
-                                    <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                                      W' Capacity
-                                      {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
-                                    </div>
-                                    <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                <ZonesAnalysis 
+                  isZonesExpanded={isZonesExpanded}
+                  setIsZonesExpanded={setIsZonesExpanded}
+                  summary={summary}
+                />
 
-                            <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
-                              {/* Power Lane */}
-                              <MetricLane 
-                                metric="power"
-                                config={{ label: 'Power', color: '#f97316', unit: 'W' }}
-                                data={smoothedData}
-                                activePoint={activePoint}
-                                onMouseMove={(e) => {
-                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                  }
-                                }}
-                                onMouseLeave={() => {
-                                  if (!isPointLocked) setActivePoint(null);
-                                }}
-                                onClick={(e) => {
-                                  if (e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                    setIsPointLocked(true);
-                                  } else {
-                                    setIsPointLocked(false);
-                                    setActivePoint(null);
-                                  }
-                                }}
-                                isLast={false}
-                                syncId="wPrimeAnalysis"
-                                height={160}
-                                estimatedCp={cpWPrime?.cp}
-                                cp={cp}
-                                manualCP={manualCP}
-                                showCP={showCP}
-                                showECP={showECP}
-                              />
-                              {/* W' Balance Lane */}
-                              <MetricLane 
-                                metric="wPrimeBalance"
-                                config={{ label: "W' Balance", color: '#a855f7', unit: 'J' }}
-                                data={smoothedData}
-                                activePoint={activePoint}
-                                onMouseMove={(e) => {
-                                  if (!isPointLocked && e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                  }
-                                }}
-                                onMouseLeave={() => {
-                                  if (!isPointLocked) setActivePoint(null);
-                                }}
-                                onClick={(e) => {
-                                  if (e && e.activeTooltipIndex !== undefined) {
-                                    setActivePoint(e.activeTooltipIndex);
-                                    setIsPointLocked(true);
-                                  } else {
-                                    setIsPointLocked(false);
-                                    setActivePoint(null);
-                                  }
-                                }}
-                                isLast={true}
-                                syncId="wPrimeAnalysis"
-                                height={160}
-                              />
-                            </div>
+                <LapBreakdown 
+                  isLapsExpanded={isLapsExpanded}
+                  setIsLapsExpanded={setIsLapsExpanded}
+                  currentLaps={currentLaps}
+                  lapMode={lapMode}
+                  setLapMode={setLapMode}
+                />
 
-                            <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
-                              <button 
-                                onClick={() => setShowCP(!showCP)}
-                                className={cn(
-                                  "flex items-center gap-2 transition-all duration-300",
-                                  showCP ? "opacity-100" : "opacity-30 grayscale"
-                                )}
-                              >
-                                <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
-                              </button>
-                              <button 
-                                onClick={() => setShowECP(!showECP)}
-                                className={cn(
-                                  "flex items-center gap-2 transition-all duration-300",
-                                  showECP ? "opacity-100" : "opacity-30 grayscale"
-                                )}
-                              >
-                                <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
-                              </button>
-                            </div>
+                <PmcAnalysis 
+                  isPmcExpanded={isPmcExpanded}
+                  setIsPmcExpanded={setIsPmcExpanded}
+                  currentPMC={currentPMC}
+                  pmcData={pmcData}
+                  pmcFocus={pmcFocus}
+                  setPmcFocus={setPmcFocus}
+                  pmcDateRange={pmcDateRange}
+                  setPmcDateRange={setPmcDateRange}
+                />
 
-                            {/* CP & W' Analysis */}
-                            <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                              <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-sm font-bold tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
-                                <Zap className="w-4 h-4 text-orange-500" />
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated CP (eCP)</span>
-                                  <div className="flex items-baseline gap-2">
-                                    <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
-                                    <span className="text-sm text-app-muted">Watts</span>
-                                  </div>
-                                  <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                                    Critical Power represents the highest power output you can maintain indefinitely without fatigue.
-                                  </p>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated W' (eW')</span>
-                                  <div className="flex items-baseline gap-2">
-                                    <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
-                                    <span className="text-sm text-app-muted">Joules</span>
-                                  </div>
-                                  <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                                    W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="mt-8 pt-8 border-t border-app-border/30">
-                                <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
-                                  Model: 2-Parameter Linear Model (Work = CP × t + W')
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
-                              <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-purple-500" />
-                                What is W' Balance?
-                              </h4>
-                              <p className="text-xs text-app-muted leading-relaxed">
-                                W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
-                                The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
-                                When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
-                              </p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* Power Curve Section */}
-                <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={Zap}
-                    title="Power Curve"
-                    description="Peak power output across different time durations"
-                    isExpanded={isPowerCurveExpanded}
-                    onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
-                  />
-
-                  <AnimatePresence>
-                    {isPowerCurveExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                          <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                              {selectedHistoryIds.length >= 2 && (
-                                <div className="flex items-center gap-4">
-                                  <div className="text-[10px] text-app-muted uppercase tracking-widest">
-                                    Overlaying {selectedHistoryIds.length} activities
-                                  </div>
-                                  <button 
-                                    onClick={() => setSelectedHistoryIds([])}
-                                    className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
-                                  >
-                                    Clear Comparison
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="h-[400px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={(() => {
-                                  const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
-                                  const comparisons = getComparisonCurves();
-                                  return durations.map(d => {
-                                    const point: any = { duration: d };
-                                    const current = summary?.powerCurve?.find(p => p.duration === d);
-                                    if (current) point.current = current.power;
-                                    
-                                    const allTime = allTimeBestCurve.find(p => p.duration === d);
-                                    if (allTime) point.allTime = allTime.power;
-
-                                    const ninetyDay = rolling90DayBestCurve.find(p => p.duration === d);
-                                    if (ninetyDay) point.ninetyDay = ninetyDay.power;
-
-                                    comparisons.forEach(comp => {
-                                      const p = comp.curve.find(cp => cp.duration === d);
-                                      if (p) point[comp.name] = p.power;
-                                    });
-                                    
-                                    return point;
-                                  });
-                                })()}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                                  <XAxis 
-                                    dataKey="duration" 
-                                    type="number" 
-                                    scale="log" 
-                                    domain={[1, 3600]} 
-                                    ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
-                                    tickFormatter={(tick) => {
-                                      if (tick < 60) return `${tick}s`;
-                                      if (tick < 3600) return `${tick / 60}m`;
-                                      return `${tick / 3600}h`;
-                                    }}
-                                    stroke="var(--app-muted)"
-                                    fontSize={10}
-                                    axisLine={false}
-                                    tickLine={false}
-                                  />
-                                  <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" axisLine={false} tickLine={false} />
-                                  <Tooltip 
-                                    contentStyle={{ 
-                                      backgroundColor: 'var(--app-tooltip-bg)', 
-                                      backdropFilter: 'blur(8px)',
-                                      WebkitBackdropFilter: 'blur(8px)',
-                                      border: '1px solid var(--app-border)', 
-                                      borderRadius: '12px', 
-                                      fontSize: '12px', 
-                                      color: 'var(--app-text)',
-                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
-                                    labelFormatter={(label) => {
-                                      const d = Number(label);
-                                      if (d < 60) return `${d} seconds`;
-                                      if (d < 3600) return `${d / 60} minutes`;
-                                      return `${d / 3600} hours`;
-                                    }}
-                                    formatter={(value: any) => [`${Math.round(value)} W`, 'Power']}
-                                  />
-                                  <Legend 
-                                    verticalAlign="top" 
-                                    align="right" 
-                                    iconType="circle"
-                                    wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
-                                  />
-                                  <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                                  <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                                  <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
-                                  {getComparisonCurves().map((comp, i) => (
-                                    <Line 
-                                      key={comp.name} 
-                                      type="monotone" 
-                                      dataKey={comp.name} 
-                                      stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
-                                      strokeWidth={1.5} 
-                                      strokeDasharray="2 2"
-                                      dot={false} 
-                                    />
-                                  ))}
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
-                              {[5, 60, 300, 600, 1200, 1800, 3600].map(d => {
-                                const p = summary?.powerCurve?.find(cp => cp.duration === d);
-                                return (
-                                  <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
-                                    <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
-                                      {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
-                                    </div>
-                                    <div className="text-sm font-bold text-app-text">
-                                      {p ? `${p.power}W` : '-'}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* Training Zones Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={BarChart3}
-                    title="Training Zones"
-                    description="Time distribution across power and heart rate intensity levels"
-                    isExpanded={isZonesExpanded}
-                    onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
-                  />
-
-                  <AnimatePresence>
-                    {isZonesExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                            <div className="space-y-6">
-                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
-                              <div className="space-y-3">
-                                {summary?.powerZones?.map((z) => (
-                                  <div key={z.name} className="space-y-1">
-                                    <div className="flex justify-between text-[10px]">
-                                      <span className="text-app-text/60">{z.name}</span>
-                                      <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                                      <div 
-                                        className="h-full transition-all duration-1000" 
-                                        style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="space-y-6">
-                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Heart Rate Zones</h4>
-                              {summary?.hrZones ? (
-                                <div className="space-y-3">
-                                  {summary.hrZones.map((z) => (
-                                    <div key={z.name} className="space-y-1">
-                                      <div className="flex justify-between text-[10px]">
-                                        <span className="text-app-text/60">{z.name}</span>
-                                        <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
-                                      </div>
-                                      <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                                        <div 
-                                          className="h-full transition-all duration-1000" 
-                                          style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
-                                        />
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="h-full flex items-center justify-center text-app-muted/50 text-xs uppercase tracking-widest border border-dashed border-app-border rounded-2xl">
-                                  No HR Data
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* Lap Breakdown Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={LayoutList}
-                    title="Lap Breakdown"
-                    description="Detailed performance metrics for individual segments"
-                    isExpanded={isLapsExpanded}
-                    onToggle={() => setIsLapsExpanded(!isLapsExpanded)}
-                  />
-
-                  <AnimatePresence>
-                    {isLapsExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="space-y-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-xl border border-app-border">
-                          {[
-                            { id: 'file', label: 'File' },
-                            { id: '1km', label: '1km' },
-                            { id: '5km', label: '5km' },
-                            { id: '10km', label: '10km' },
-                            { id: '1min', label: '1min' },
-                            { id: '5min', label: '5min' },
-                            { id: '10min', label: '10min' }
-                          ].map((mode) => (
-                            <button
-                              key={mode.id}
-                              onClick={() => setLapMode(mode.id as any)}
-                              className={cn(
-                                "px-2 py-1 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all",
-                                lapMode === mode.id 
-                                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
-                                  : "text-app-muted hover:text-app-text hover:bg-app-card"
-                              )}
-                            >
-                              {mode.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      
-                            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                              {/* Desktop Table View */}
-                              <table className="w-full text-left border-collapse hidden md:table">
-                                <thead className="sticky top-0 bg-app-card z-10">
-                                  <tr className="border-b border-app-border">
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
-                                    <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {currentLaps.map((lap) => (
-                                    <tr key={lap.id} className="border-b border-app-border/50 hover:bg-app-card transition-colors group">
-                                      <td className="py-4 text-xs font-medium text-orange-500">#{lap.id}</td>
-                                      <td className="py-4 text-xs text-app-text/60">
-                                        {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
-                                      </td>
-                                      <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
-                                      <td className="py-4 text-xs text-app-text/60 font-bold">
-                                        {Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W
-                                      </td>
-                                      <td className="py-4 text-xs text-app-text/60">
-                                        {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
-                                      </td>
-                                      <td className="py-4 text-xs text-app-text/60">
-                                        {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
-                                      </td>
-                                      <td className="py-4 text-xs text-app-text/60">
-                                        {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-
-                              {/* Mobile Card View */}
-                              <div className="grid grid-cols-1 gap-4 md:hidden">
-                                {currentLaps.map((lap) => (
-                                  <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
-                                    <div className="flex justify-between items-center border-b border-app-border pb-3">
-                                      <span className="text-sm font-bold text-orange-500">Lap #{lap.id}</span>
-                                      <span className="text-xs font-medium text-app-text/60">
-                                        {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} km
-                                      </span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                                      <div className="space-y-1">
-                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
-                                        <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W</div>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                                        <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm</div>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                                        <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm</div>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                                        <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h</div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* PMC Analysis Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={LineChartIcon}
-                    title="PMC Analysis"
-                    description="Performance Management Chart showing fitness, fatigue, and form"
-                    isExpanded={isPmcExpanded}
-                    onToggle={() => setIsPmcExpanded(!isPmcExpanded)}
-                  />
-
-                  <AnimatePresence>
-                    {isPmcExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                          <div className="space-y-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                              <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
-                                <div 
-                                  className={cn(
-                                    "text-center cursor-pointer transition-all duration-300",
-                                    pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
-                                  )}
-                                  onMouseEnter={() => setPmcFocus('bikeScore')}
-                                  onMouseLeave={() => setPmcFocus(null)}
-                                >
-                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
-                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
-                                </div>
-                                <div 
-                                  className={cn(
-                                    "text-center cursor-pointer transition-all duration-300",
-                                    pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
-                                  )}
-                                  onMouseEnter={() => setPmcFocus('lts')}
-                                  onMouseLeave={() => setPmcFocus(null)}
-                                >
-                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
-                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
-                                </div>
-                                <div 
-                                  className={cn(
-                                    "text-center cursor-pointer transition-all duration-300",
-                                    pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
-                                  )}
-                                  onMouseEnter={() => setPmcFocus('sts')}
-                                  onMouseLeave={() => setPmcFocus(null)}
-                                >
-                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
-                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
-                                </div>
-                                <div 
-                                  className={cn(
-                                    "text-center cursor-pointer transition-all duration-300",
-                                    pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
-                                  )}
-                                  onMouseEnter={() => setPmcFocus('sb')}
-                                  onMouseLeave={() => setPmcFocus(null)}
-                                >
-                                  <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
-                                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="h-[400px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={pmcData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                                  <XAxis 
-                                    dataKey="date" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tickFormatter={(str) => {
-                                      const date = new Date(str);
-                                      if (pmcDateRange === '6weeks' || pmcDateRange === '3months') {
-                                        return format(date, 'MMM d');
-                                      }
-                                      return format(date, 'MMM yy');
-                                    }}
-                                  />
-                                  <YAxis 
-                                    yAxisId="fitness" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    axisLine={false}
-                                    tickLine={false}
-                                    hide={pmcFocus === 'bikeScore' || pmcFocus === 'sb'}
-                                    label={pmcFocus === 'lts' || pmcFocus === 'sts' ? { value: 'LTS/STS', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                                  />
-                                  <YAxis 
-                                    yAxisId="bikeScore" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    axisLine={false}
-                                    tickLine={false}
-                                    hide={pmcFocus !== 'bikeScore'}
-                                    label={pmcFocus === 'bikeScore' ? { value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                                  />
-                                  <YAxis 
-                                    yAxisId="form" 
-                                    orientation="right" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    axisLine={false}
-                                    tickLine={false}
-                                    hide={pmcFocus === 'bikeScore' || pmcFocus === 'lts' || pmcFocus === 'sts'}
-                                    label={pmcFocus === 'sb' ? { value: 'SB', angle: 90, position: 'insideRight', style: { fill: 'var(--app-muted)', fontSize: '10px' } } : undefined}
-                                  />
-                                  <Tooltip 
-                                    contentStyle={{ 
-                                      backgroundColor: 'var(--app-tooltip-bg)', 
-                                      backdropFilter: 'blur(8px)',
-                                      WebkitBackdropFilter: 'blur(8px)',
-                                      border: '1px solid var(--app-border)', 
-                                      borderRadius: '12px', 
-                                      fontSize: '12px', 
-                                      color: 'var(--app-text)',
-                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
-                                    labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
-                                    formatter={(value: any, name: string) => {
-                                      if (name === 'BikeScore') return [Math.round(value), name];
-                                      return [Number(value).toFixed(1), name];
-                                    }}
-                                  />
-                                  <Legend 
-                                    verticalAlign="top" 
-                                    height={36}
-                                    onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
-                                    onMouseLeave={() => setPmcFocus(null)}
-                                    wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--app-text)' }}
-                                  />
-                                  <Bar 
-                                    yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
-                                    dataKey="bikeScore" 
-                                    fill="#f97316" 
-                                    opacity={pmcFocus === 'bikeScore' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
-                                    name="BikeScore" 
-                                  />
-                                  <Line 
-                                    yAxisId="fitness" 
-                                    type="monotone" 
-                                    dataKey="lts" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth={pmcFocus === 'lts' ? 4 : 2} 
-                                    opacity={pmcFocus === 'lts' ? 1 : pmcFocus ? 0.2 : 1}
-                                    dot={false} 
-                                    name="Fitness (LTS)" 
-                                  />
-                                  <Line 
-                                    yAxisId="fitness" 
-                                    type="monotone" 
-                                    dataKey="sts" 
-                                    stroke="#ef4444" 
-                                    strokeWidth={pmcFocus === 'sts' ? 4 : 2} 
-                                    opacity={pmcFocus === 'sts' ? 1 : pmcFocus ? 0.2 : 1}
-                                    dot={false} 
-                                    name="Fatigue (STS)" 
-                                  />
-                                  <Area 
-                                    yAxisId="form" 
-                                    type="monotone" 
-                                    dataKey="sb" 
-                                    fill="#22c55e" 
-                                    stroke="#22c55e" 
-                                    fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
-                                    opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
-                                    name="Form (SB)" 
-                                  />
-                                </ComposedChart>
-                              </ResponsiveContainer>
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-app-border/30">
-                              {[
-                                { id: 'all', label: 'All' },
-                                { id: '1year', label: 'One Year' },
-                                { id: '6months', label: 'Six Months' },
-                                { id: '3months', label: 'Three Months' },
-                                { id: '6weeks', label: 'Six Weeks' }
-                              ].map(range => (
-                                <button
-                                  key={range.id}
-                                  onClick={() => setPmcDateRange(range.id as any)}
-                                  className={cn(
-                                    "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
-                                    pmcDateRange === range.id 
-                                      ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                                      : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                                  )}
-                                >
-                                  {range.label}
-                                </button>
-                              ))}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
-                              <div className="space-y-2">
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">LTS (Fitness)</h4>
-                                <p className="text-[10px] text-app-muted leading-relaxed">
-                                  Long Term Stress is a 42-day weighted average of your daily BikeScore. It represents your long-term training load and overall fitness level.
-                                </p>
-                              </div>
-                              <div className="space-y-2">
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">STS (Fatigue)</h4>
-                                <p className="text-[10px] text-app-muted leading-relaxed">
-                                  Short Term Stress is a 7-day weighted average of your daily BikeScore. It represents your short-term training load and current level of fatigue.
-                                </p>
-                              </div>
-                              <div className="space-y-2">
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">SB (Form)</h4>
-                                <p className="text-[10px] text-app-muted leading-relaxed">
-                                  Stress Balance (LTS - STS) represents your current form or freshness. A positive SB suggests you are fresh and ready to perform.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                {/* Training Load Summary Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                  <SectionHeader 
-                    icon={Calendar}
-                    title="Training Load Summary"
-                    description="Weekly and monthly aggregation of training stress and volume"
-                    isExpanded={isTrainingLoadExpanded}
-                    onToggle={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
-                  />
-
-                  <AnimatePresence>
-                    {isTrainingLoadExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                          <div className="space-y-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                              <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
-                                {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
-                                  <button
-                                    key={range}
-                                    onClick={() => setTrainingLoadRange(range)}
-                                    className={cn(
-                                      "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
-                                      trainingLoadRange === range 
-                                        ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                                        : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                                    )}
-                                  >
-                                    {range}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="h-[400px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={trainingLoadData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-                                  <XAxis 
-                                    dataKey="label" 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    tickFormatter={(str) => str}
-                                    axisLine={false}
-                                    tickLine={false}
-                                  />
-                                  <YAxis 
-                                    stroke="var(--app-muted)" 
-                                    fontSize={10} 
-                                    axisLine={false}
-                                    tickLine={false}
-                                    label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} 
-                                  />
-                                  <Tooltip 
-                                    cursor={false}
-                                    contentStyle={{ 
-                                      backgroundColor: 'var(--app-tooltip-bg)', 
-                                      backdropFilter: 'blur(8px)',
-                                      WebkitBackdropFilter: 'blur(8px)',
-                                      border: '1px solid var(--app-border)', 
-                                      borderRadius: '12px', 
-                                      fontSize: '12px', 
-                                      color: 'var(--app-text)',
-                                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                    labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
-                                    formatter={(value: any, name: string) => {
-                                      if (name.toLowerCase() === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
-                                      if (name.toLowerCase() === 'bikescore') return [Math.round(value), 'BikeScore'];
-                                      if (name.toLowerCase() === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
-                                      return [typeof value === 'number' ? Math.round(value) : value, name];
-                                    }}
-                                  />
-                                  <Bar 
-                                    dataKey="bikeScore" 
-                                    fill="#f97316" 
-                                    radius={[6, 6, 0, 0]} 
-                                    name="BikeScore"
-                                    activeBar={{ fill: "#fb923c" }}
-                                  />
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
-                              <div className="text-center">
-                                <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
-                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
-                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
-                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
-                                <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                <TrainingLoadAnalysis 
+                  isTrainingLoadExpanded={isTrainingLoadExpanded}
+                  setIsTrainingLoadExpanded={setIsTrainingLoadExpanded}
+                  trainingLoadRange={trainingLoadRange}
+                  setTrainingLoadRange={setTrainingLoadRange}
+                  trainingLoadData={trainingLoadData}
+                  trainingLoadStats={trainingLoadStats}
+                />
                 </div>
               </div>
             </div>
@@ -3548,466 +1509,48 @@ export default function App() {
         )}
 
         {/* Activity History Section */}
-        <div className="bg-app-card border border-app-border rounded-3xl p-8">
-          <SectionHeader 
-            icon={History}
-            title="Activity History"
-            description="Manage and compare your previously uploaded activities"
-            isExpanded={isHistoryExpanded}
-            onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
-          />
-                    
-                    <AnimatePresence>
-                      {isHistoryExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <div className="flex items-center justify-between sm:justify-start gap-4">
-                                <div className="flex items-center gap-4">
-                                  <div 
-                                    onClick={() => {
-                                      if (selectedHistoryIds.length === history.length && history.length > 0) {
-                                        setSelectedHistoryIds([]);
-                                      } else {
-                                        setSelectedHistoryIds(history.map(h => h.id));
-                                      }
-                                    }}
-                                    className={cn(
-                                      "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
-                                      selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                                    )}
-                                    title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
-                                  >
-                                    {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
-                                  </div>
-                                  <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Select All</span>
-                                </div>
-                              </div>
-                        
-                        <div className="flex flex-wrap items-center gap-2">
-                          {selectedHistoryIds.length >= 2 && (
-                            <button 
-                              onClick={handleCompare}
-                              className="bg-orange-500 text-black px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                            >
-                              <TrendingUp className="w-3 h-3" />
-                              Compare {selectedHistoryIds.length}
-                            </button>
-                          )}
-                          {selectedHistoryIds.length > 0 && (
-                            <button 
-                              onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete {selectedHistoryIds.length}
-                            </button>
-                          )}
-                          {history.length > 0 && (
-                            <button 
-                              onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                              className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                              title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
-                            >
-                              <ArrowUpDown className="w-3 h-3" />
-                              {historySortOrder === 'newest' ? 'Newest' : 'Oldest'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                              {sortedHistory.length > 0 ? (
-                                sortedHistory.map(h => (
-                                  <div 
-                                    key={h.id} 
-                                    onClick={() => loadFromHistory(h.id)}
-                                    className={cn(
-                                      "bg-app-card border rounded-xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all",
-                                      summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                      <div 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedHistoryIds(prev => 
-                                            prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
-                                          );
-                                        }}
-                                        className={cn(
-                                          "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0",
-                                          selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                                        )}
-                                      >
-                                        {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
-                                      </div>
-                                      <div className="min-w-0">
-                                        <div className="text-xs font-bold truncate">{h.name}</div>
-                                        <div className="text-[10px] text-app-muted truncate">
-                                          {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
-                                          {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W avg`}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                                      <div className="text-right hidden sm:block">
-                                        <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
-                                        <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
-                                      </div>
-                                      <div className="flex items-center gap-1 sm:gap-2">
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            loadFromHistory(h.id);
-                                          }}
-                                          className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
-                                        >
-                                          View
-                                        </button>
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeFromHistory(h.id);
-                                          }}
-                                          className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
-                                  <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
-                                    <Activity className="w-6 h-6 text-app-muted" />
-                                  </div>
-                                  <p className="text-[10px] uppercase tracking-widest font-bold mb-2">No activities yet</p>
-                                  <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+        <HistorySidebar 
+          isHistoryExpanded={isHistoryExpanded}
+          setIsHistoryExpanded={setIsHistoryExpanded}
+          selectedHistoryIds={selectedHistoryIds}
+          setSelectedHistoryIds={setSelectedHistoryIds}
+          history={history}
+          sortedHistory={sortedHistory}
+          summary={summary}
+          historySortOrder={historySortOrder}
+          setHistorySortOrder={setHistorySortOrder}
+          handleCompare={handleCompare}
+          loadFromHistory={loadFromHistory}
+          removeFromHistory={removeFromHistory}
+          removeMultipleFromHistory={removeMultipleFromHistory}
+        />
                 </div>
               )}
             </main>
 
       {/* About Modal */}
-      <AnimatePresence>
-        {showAboutModal && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center px-4 sm:px-6"
-          >
-            <div 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-              onClick={() => setShowAboutModal(false)}
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-app-card border border-app-border rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
-            >
-              <div className="p-8 border-b border-app-border flex items-center justify-between bg-app-card/50 backdrop-blur-md">
-                <h2 className="text-xl font-bold tracking-tight flex items-center gap-3">
-                  <BookOpen className="w-6 h-6 text-orange-500" />
-                  About & Methodology
-                </h2>
-                <button 
-                  onClick={() => setShowAboutModal(false)}
-                  className="text-app-muted hover:text-app-text transition-colors text-xs font-bold uppercase tracking-widest"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-                <section className="space-y-4">
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Mission</h3>
-                  <p className="text-sm text-app-text/80 leading-relaxed">
-                    VeloAnalytics is built on the principle of <span className="text-app-text font-semibold">algorithmic transparency</span>. 
-                    Most cycling platforms hide their calculations behind proprietary trademarks. We believe that athletes should own their data 
-                    and understand the math that defines their fitness.
-                  </p>
-                </section>
-
-                <section className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Core Metrics</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                      <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
-                        <Zap className="w-3 h-3 text-orange-500" />
-                        Critical Power (CP)
-                      </h4>
-                      <p className="text-[11px] text-app-muted leading-relaxed">
-                        The highest power output maintainable without fatigue. We use the Monod & Scherrer 2-parameter linear model 
-                        to estimate this from your best efforts.
-                      </p>
-                    </div>
-                    <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                      <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
-                        <TrendingUp className="w-3 h-3 text-purple-500" />
-                        xPower & BikeScore
-                      </h4>
-                      <p className="text-[11px] text-app-muted leading-relaxed">
-                        Developed by Dr. Philip Skiba. xPower uses a 25s EWMA to reflect physiological strain, while BikeScore 
-                        quantifies the total "dose" of the workout.
-                      </p>
-                    </div>
-                    <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                      <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
-                        <Activity className="w-3 h-3 text-blue-500" />
-                        LTS / STS / SB
-                      </h4>
-                      <p className="text-[11px] text-app-muted leading-relaxed">
-                        Based on the Banister model. LTS (42-day) represents Fitness, STS (7-day) represents Fatigue, 
-                        and SB is the balance (Form) between them.
-                      </p>
-                    </div>
-                    <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                      <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
-                        <Zap className="w-3 h-3 text-cyan-500" />
-                        W' Balance
-                      </h4>
-                      <p className="text-[11px] text-app-muted leading-relaxed">
-                        A real-time model of your anaerobic reserve. It tracks depletion above CP and exponential 
-                        recovery below CP.
-                      </p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="space-y-4">
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Attribution</h3>
-                  <div className="space-y-4 text-[11px] text-app-muted">
-                    <p>
-                      <span className="text-app-text font-semibold">Dr. Philip Friere Skiba (PhysFarm)</span>: 
-                      Creator of the BikeScore™, xPower, and W' Balance algorithms.
-                    </p>
-                    <p>
-                      <span className="text-app-text font-semibold">Dr. Eric Banister</span>: 
-                      Developer of the original TRIMP model, the mathematical ancestor of modern training load metrics.
-                    </p>
-                    <p>
-                      <span className="text-app-text font-semibold">GoldenCheetah Project</span>: 
-                      For their leadership in open-source cycling analytics standards.
-                    </p>
-                  </div>
-                </section>
-
-                <div className="pt-8 border-t border-app-border/50">
-                  <p className="text-[10px] text-app-muted text-center italic">
-                    For a full technical breakdown, see the METHODOLOGY.md file in the project root.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />
 
       {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowSettings(false)} />
-          <div className="relative bg-app-card border border-app-border rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold tracking-tight flex items-center gap-3">
-                <Settings className="w-6 h-6 text-orange-500" />
-                Training Settings
-              </h2>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="text-app-muted hover:text-app-text transition-colors"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-12">
-              {/* Thresholds */}
-              <section className="space-y-6">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted border-b border-app-border/50 pb-2">Thresholds</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs text-app-text/60">Critical Power (CP)</label>
-                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
-                      <Zap className="w-4 h-4 text-orange-500" />
-                      <input 
-                        type="number" 
-                        value={cp} 
-                        onChange={(e) => setCP(parseInt(e.target.value) || 0)}
-                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                      />
-                      <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
-                    </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button 
-                        onClick={() => setAutoUpdateCP(!autoUpdateCP)}
-                        className={cn(
-                          "w-8 h-4 rounded-full transition-all relative",
-                          autoUpdateCP ? "bg-orange-500" : "bg-app-border"
-                        )}
-                      >
-                        <div className={cn(
-                          "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
-                          autoUpdateCP ? "left-4.5" : "left-0.5"
-                        )} />
-                      </button>
-                      <span className="text-[10px] text-app-muted font-medium">Auto-update CP when new record is set</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs text-app-text/60">Maximum Heart Rate (Max HR)</label>
-                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
-                      <Activity className="w-4 h-4 text-red-500" />
-                      <input 
-                        type="number" 
-                        value={maxHR} 
-                        onChange={(e) => setMaxHR(parseInt(e.target.value) || 0)}
-                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                      />
-                      <span className="text-[10px] text-app-muted uppercase tracking-widest">BPM</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs text-app-text/60">Critical Power (CP)</label>
-                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
-                      <Zap className="w-4 h-4 text-orange-500" />
-                      <input 
-                        type="number" 
-                        placeholder={cpWPrime?.cp ? Math.round(cpWPrime.cp || 0).toString() : "Estimated"}
-                        value={manualCP ?? ''} 
-                        onChange={(e) => setManualCP(e.target.value ? parseInt(e.target.value) : null)}
-                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                      />
-                      <span className="text-[10px] text-app-muted uppercase tracking-widest">Watts</span>
-                    </div>
-                    <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Leave empty to use estimated CP</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs text-app-text/60">W' Capacity</label>
-                    <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
-                      <Zap className="w-4 h-4 text-purple-500" />
-                      <input 
-                        type="number" 
-                        placeholder={cpWPrime?.wPrime ? Math.round(cpWPrime.wPrime || 0).toString() : "Estimated"}
-                        value={manualWPrime ?? ''} 
-                        onChange={(e) => setManualWPrime(e.target.value ? parseInt(e.target.value) : null)}
-                        className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                      />
-                      <span className="text-[10px] text-app-muted uppercase tracking-widest">Joules</span>
-                    </div>
-                    <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Leave empty to use estimated W'</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Power Zones */}
-              <section className="space-y-6">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted border-b border-app-border/50 pb-2">Power Zones (%)</h3>
-                <div className="space-y-4">
-                  {powerZoneDefinitions.map((z, i) => (
-                    <div key={z.name} className="flex items-center gap-4">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: z.color }} />
-                      <span className="text-xs text-app-text/60 w-40 shrink-0">{z.name}</span>
-                      <div className="flex items-center gap-2 flex-1">
-                        <input 
-                          type="number" 
-                          value={z.percentMin} 
-                          onChange={(e) => {
-                            const newZones = [...powerZoneDefinitions];
-                            newZones[i].percentMin = parseInt(e.target.value) || 0;
-                            setPowerZoneDefinitions(newZones);
-                          }}
-                          className="bg-app-card border border-app-border rounded-lg px-2 py-1 w-16 text-xs text-center"
-                        />
-                        <span className="text-[10px] text-app-muted/50">-</span>
-                        <input 
-                          type="number" 
-                          value={z.percentMax} 
-                          onChange={(e) => {
-                            const newZones = [...powerZoneDefinitions];
-                            newZones[i].percentMax = parseInt(e.target.value) || 0;
-                            setPowerZoneDefinitions(newZones);
-                          }}
-                          className="bg-app-card border border-app-border rounded-lg px-2 py-1 w-16 text-xs text-center"
-                        />
-                        <span className="text-[10px] text-app-muted/50">%</span>
-                      </div>
-                      <div className="text-[10px] text-app-muted w-24 text-right">
-                        {Math.round((z.percentMin / 100) * cp)} - {z.percentMax === 999 ? '∞' : Math.round((z.percentMax / 100) * cp)}W
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* HR Zones */}
-              <section className="space-y-6">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted border-b border-app-border/50 pb-2">Heart Rate Zones (%)</h3>
-                <div className="space-y-4">
-                  {hrZoneDefinitions.map((z, i) => (
-                    <div key={z.name} className="flex items-center gap-4">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: z.color }} />
-                      <span className="text-xs text-app-text/60 w-40 shrink-0">{z.name}</span>
-                      <div className="flex items-center gap-2 flex-1">
-                        <input 
-                          type="number" 
-                          value={z.percentMin} 
-                          onChange={(e) => {
-                            const newZones = [...hrZoneDefinitions];
-                            newZones[i].percentMin = parseInt(e.target.value) || 0;
-                            setHrZoneDefinitions(newZones);
-                          }}
-                          className="bg-app-card border border-app-border rounded-lg px-2 py-1 w-16 text-xs text-center"
-                        />
-                        <span className="text-[10px] text-app-muted/50">-</span>
-                        <input 
-                          type="number" 
-                          value={z.percentMax} 
-                          onChange={(e) => {
-                            const newZones = [...hrZoneDefinitions];
-                            newZones[i].percentMax = parseInt(e.target.value) || 0;
-                            setHrZoneDefinitions(newZones);
-                          }}
-                          className="bg-app-card border border-app-border rounded-lg px-2 py-1 w-16 text-xs text-center"
-                        />
-                        <span className="text-[10px] text-app-muted/50">%</span>
-                      </div>
-                      <div className="text-[10px] text-app-muted w-24 text-right">
-                        {Math.round((z.percentMin / 100) * maxHR)} - {z.percentMax === 999 ? '∞' : Math.round((z.percentMax / 100) * maxHR)}bpm
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-            
-            <div className="mt-12 pt-8 border-t border-app-border/50 flex justify-end">
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all shadow-xl shadow-orange-500/20 active:scale-95"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SettingsModal 
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        cp={cp}
+        setCP={setCP}
+        autoUpdateCP={autoUpdateCP}
+        setAutoUpdateCP={setAutoUpdateCP}
+        maxHR={maxHR}
+        setMaxHR={setMaxHR}
+        manualCP={manualCP}
+        setManualCP={setManualCP}
+        manualWPrime={manualWPrime}
+        setManualWPrime={setManualWPrime}
+        cpWPrime={cpWPrime}
+        powerZoneDefinitions={powerZoneDefinitions}
+        setPowerZoneDefinitions={setPowerZoneDefinitions}
+        hrZoneDefinitions={hrZoneDefinitions}
+        setHrZoneDefinitions={setHrZoneDefinitions}
+      />
     </div>
   );
 }

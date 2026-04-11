@@ -1,0 +1,187 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Zap } from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  CartesianGrid, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Legend, 
+  Line 
+} from 'recharts';
+import { SectionHeader } from './SectionHeader';
+import { ActivitySummary, PowerCurvePoint } from '../types';
+
+interface PowerCurveAnalysisProps {
+  isPowerCurveExpanded: boolean;
+  setIsPowerCurveExpanded: (expanded: boolean) => void;
+  selectedHistoryIds: string[];
+  setSelectedHistoryIds: (ids: string[]) => void;
+  summary: ActivitySummary | null;
+  allTimeBestCurve: PowerCurvePoint[];
+  rolling90DayBestCurve: PowerCurvePoint[];
+  getComparisonCurves: () => { name: string, curve: PowerCurvePoint[] }[];
+  mmpCurveRef: React.RefObject<HTMLDivElement>;
+  theme: 'light' | 'dark';
+}
+
+export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
+  isPowerCurveExpanded,
+  setIsPowerCurveExpanded,
+  selectedHistoryIds,
+  setSelectedHistoryIds,
+  summary,
+  allTimeBestCurve,
+  rolling90DayBestCurve,
+  getComparisonCurves,
+  mmpCurveRef,
+  theme
+}) => {
+  return (
+    <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
+      <SectionHeader 
+        icon={Zap}
+        title="Power Curve"
+        description="Peak power output across different time durations"
+        isExpanded={isPowerCurveExpanded}
+        onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
+      />
+
+      <AnimatePresence>
+        {isPowerCurveExpanded && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                {selectedHistoryIds.length >= 2 && (
+                  <div className="flex items-center gap-4">
+                    <div className="text-[10px] text-app-muted uppercase tracking-widest">
+                      Overlaying {selectedHistoryIds.length} activities
+                    </div>
+                    <button 
+                      onClick={() => setSelectedHistoryIds([])}
+                      className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
+                    >
+                      Clear Comparison
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={(() => {
+                    const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
+                    const comparisons = getComparisonCurves();
+                    return durations.map(d => {
+                      const point: any = { duration: d };
+                      const current = summary?.powerCurve?.find(p => p.duration === d);
+                      if (current) point.current = current.power;
+                      
+                      const allTime = allTimeBestCurve.find(p => p.duration === d);
+                      if (allTime) point.allTime = allTime.power;
+
+                      const ninetyDay = rolling90DayBestCurve.find(p => p.duration === d);
+                      if (ninetyDay) point.ninetyDay = ninetyDay.power;
+
+                      comparisons.forEach(comp => {
+                        const p = comp.curve.find(cp => cp.duration === d);
+                        if (p) point[comp.name] = p.power;
+                      });
+                      
+                      return point;
+                    });
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+                    <XAxis 
+                      dataKey="duration" 
+                      type="number" 
+                      scale="log" 
+                      domain={[1, 3600]} 
+                      ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
+                      tickFormatter={(tick) => {
+                        if (tick < 60) return `${tick}s`;
+                        if (tick < 3600) return `${tick / 60}m`;
+                        return `${tick / 3600}h`;
+                      }}
+                      stroke="var(--app-muted)"
+                      fontSize={10}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis stroke="var(--app-muted)" fontSize={10} unit="W" axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'var(--app-tooltip-bg)', 
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        border: '1px solid var(--app-border)', 
+                        borderRadius: '12px', 
+                        fontSize: '12px', 
+                        color: 'var(--app-text)',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }}
+                      labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
+                      labelFormatter={(label) => {
+                        const d = Number(label);
+                        if (d < 60) return `${d} seconds`;
+                        if (d < 3600) return `${d / 60} minutes`;
+                        return `${d / 3600} hours`;
+                      }}
+                      formatter={(value: any) => [`${Math.round(value)} W`, 'Power']}
+                    />
+                    <Legend 
+                      verticalAlign="top" 
+                      align="right" 
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
+                    />
+                    <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                    <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                    
+                    {getComparisonCurves().map((comp, i) => (
+                      <Line 
+                        key={comp.name}
+                        type="monotone" 
+                        dataKey={comp.name} 
+                        name={comp.name} 
+                        stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
+                        strokeWidth={1.5} 
+                        strokeDasharray="2 2"
+                        dot={false} 
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
+                {[5, 60, 300, 600, 1200, 1800, 3600].map(d => {
+                  const p = summary?.powerCurve?.find(cp => cp.duration === d);
+                  return (
+                    <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
+                      <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
+                        {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
+                      </div>
+                      <div className="text-sm font-bold text-app-text">
+                        {p ? `${p.power}W` : '-'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
