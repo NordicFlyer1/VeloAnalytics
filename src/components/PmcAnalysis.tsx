@@ -59,51 +59,28 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
           >
             <div className="space-y-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="grid grid-cols-2 sm:flex sm:gap-8 gap-y-6 gap-x-4">
-                  <div 
-                    className={cn(
-                      "text-center cursor-pointer transition-all duration-300",
-                      pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
-                    )}
-                    onMouseEnter={() => setPmcFocus('bikeScore')}
-                    onMouseLeave={() => setPmcFocus(null)}
-                  >
-                    <div className="text-2xl sm:text-3xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
-                    <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
-                  </div>
-                  <div 
-                    className={cn(
-                      "text-center cursor-pointer transition-all duration-300",
-                      pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
-                    )}
-                    onMouseEnter={() => setPmcFocus('lts')}
-                    onMouseLeave={() => setPmcFocus(null)}
-                  >
-                    <div className="text-2xl sm:text-3xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
-                    <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
-                  </div>
-                  <div 
-                    className={cn(
-                      "text-center cursor-pointer transition-all duration-300",
-                      pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
-                    )}
-                    onMouseEnter={() => setPmcFocus('sts')}
-                    onMouseLeave={() => setPmcFocus(null)}
-                  >
-                    <div className="text-2xl sm:text-3xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
-                    <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
-                  </div>
-                  <div 
-                    className={cn(
-                      "text-center cursor-pointer transition-all duration-300",
-                      pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
-                    )}
-                    onMouseEnter={() => setPmcFocus('sb')}
-                    onMouseLeave={() => setPmcFocus(null)}
-                  >
-                    <div className="text-2xl sm:text-3xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
-                    <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
-                  </div>
+                {/* Range Selector - Aligned under Title (Top Left) */}
+                <div className="grid grid-cols-3 sm:flex sm:w-auto gap-2">
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: '1year', label: '1 Year' },
+                    { id: '6months', label: '6 Months' },
+                    { id: '3months', label: '3 Months' },
+                    { id: '6weeks', label: '6 Weeks' }
+                  ].map(range => (
+                    <button
+                      key={range.id}
+                      onClick={() => setPmcDateRange(range.id as any)}
+                      className={cn(
+                        "px-2 md:px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border text-center",
+                        pmcDateRange === range.id 
+                          ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
+                          : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                      )}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -199,6 +176,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                       dataKey="sb" 
                       fill="#22c55e" 
                       stroke="#22c55e" 
+                      strokeWidth={pmcFocus === 'sb' ? 3 : 1}
                       fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
                       opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
                       name="Form (SB)" 
@@ -207,27 +185,52 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                 </ResponsiveContainer>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-app-border/30">
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: '1year', label: 'One Year' },
-                  { id: '6months', label: 'Six Months' },
-                  { id: '3months', label: 'Three Months' },
-                  { id: '6weeks', label: 'Six Weeks' }
-                ].map(range => (
-                  <button
-                    key={range.id}
-                    onClick={() => setPmcDateRange(range.id as any)}
-                    className={cn(
-                      "px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border",
-                      pmcDateRange === range.id 
-                        ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                        : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
-                    )}
-                  >
-                    {range.label}
-                  </button>
-                ))}
+              {/* Summary Metrics - Moved below the chart */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
+                <div 
+                  className={cn(
+                    "text-center cursor-pointer transition-all duration-300",
+                    pmcFocus === 'bikeScore' ? "scale-110" : pmcFocus && pmcFocus !== 'bikeScore' ? "opacity-30" : ""
+                  )}
+                  onMouseEnter={() => setPmcFocus('bikeScore')}
+                  onMouseLeave={() => setPmcFocus(null)}
+                >
+                  <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
+                </div>
+                <div 
+                  className={cn(
+                    "text-center cursor-pointer transition-all duration-300",
+                    pmcFocus === 'lts' ? "scale-110" : pmcFocus && pmcFocus !== 'lts' ? "opacity-30" : ""
+                  )}
+                  onMouseEnter={() => setPmcFocus('lts')}
+                  onMouseLeave={() => setPmcFocus(null)}
+                >
+                  <div className="text-2xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
+                </div>
+                <div 
+                  className={cn(
+                    "text-center cursor-pointer transition-all duration-300",
+                    pmcFocus === 'sts' ? "scale-110" : pmcFocus && pmcFocus !== 'sts' ? "opacity-30" : ""
+                  )}
+                  onMouseEnter={() => setPmcFocus('sts')}
+                  onMouseLeave={() => setPmcFocus(null)}
+                >
+                  <div className="text-2xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
+                </div>
+                <div 
+                  className={cn(
+                    "text-center cursor-pointer transition-all duration-300",
+                    pmcFocus === 'sb' ? "scale-110" : pmcFocus && pmcFocus !== 'sb' ? "opacity-30" : ""
+                  )}
+                  onMouseEnter={() => setPmcFocus('sb')}
+                  onMouseLeave={() => setPmcFocus(null)}
+                >
+                  <div className="text-2xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
