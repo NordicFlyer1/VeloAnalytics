@@ -15,6 +15,10 @@ interface SettingsModalProps {
   setManualCP: (cp: number | null) => void;
   manualWPrime: number | null;
   setManualWPrime: (w: number | null) => void;
+  userWeight: number | null;
+  setUserWeight: (w: number | null) => void;
+  weightUnit: 'kg' | 'lbs';
+  setWeightUnit: (u: 'kg' | 'lbs') => void;
   cpWPrime: any;
   powerZoneDefinitions: any[];
   setPowerZoneDefinitions: (zones: any[]) => void;
@@ -35,6 +39,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setManualCP,
   manualWPrime,
   setManualWPrime,
+  userWeight,
+  setUserWeight,
+  weightUnit,
+  setWeightUnit,
   cpWPrime,
   powerZoneDefinitions,
   setPowerZoneDefinitions,
@@ -135,6 +143,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span className="text-[10px] text-app-muted uppercase tracking-widest">Joules</span>
                 </div>
                 <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Leave empty to use estimated W'</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-app-text/60">Body Weight</label>
+                <div className="flex items-center gap-3 bg-app-card border border-app-border rounded-xl px-4 py-3">
+                  <Activity className="w-4 h-4 text-blue-500" />
+                  <input 
+                    type="number"
+                    step="0.1"
+                    placeholder="Enter weight"
+                    value={userWeight ?? ''} 
+                    onChange={(e) => setUserWeight(e.target.value ? parseFloat(e.target.value) : null)}
+                    className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                  />
+                  <div className="flex bg-app-bg/50 p-1 rounded-lg border border-app-border">
+                    {(['kg', 'lbs'] as const).map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => setWeightUnit(u)}
+                        className={cn(
+                          "px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded transition-all",
+                          weightUnit === u 
+                            ? "bg-orange-500 text-black" 
+                            : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-app-muted uppercase tracking-widest font-medium">Used for Power-to-Weight (W/kg) calculations</p>
               </div>
             </div>
           </section>

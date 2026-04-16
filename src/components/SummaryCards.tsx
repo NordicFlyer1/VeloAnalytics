@@ -19,13 +19,17 @@ interface SummaryCardsProps {
   data: any[];
   currentPMC: PMCDataPoint | null;
   history: HistoricalActivity[];
+  userWeight?: number | null;
+  weightUnit?: 'kg' | 'lbs';
 }
 
 export const SummaryCards = React.memo(({ 
   summary, 
   data, 
   currentPMC, 
-  history 
+  history,
+  userWeight,
+  weightUnit
 }: SummaryCardsProps) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -51,18 +55,32 @@ export const SummaryCards = React.memo(({
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
           <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest whitespace-nowrap">W xPower</span>
         </div>
-        <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
-          <div className="flex gap-3">
+        <div className="mt-2 sm:mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
+          <div className="flex gap-3 shrink-0">
             <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
             <span>Max: {Math.round(summary.maxPower || 0)}W</span>
           </div>
+          {userWeight && (
+            <div className="flex gap-3 text-orange-500/80 shrink-0">
+              <span>Avg: {(() => {
+                const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
+                return ((summary.avgPower || 0) / weightKg).toFixed(1);
+              })()} W/kg</span>
+              <span>Max: {(() => {
+                const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
+                return ((summary.maxPower || 0) / weightKg).toFixed(1);
+              })()} W/kg</span>
+            </div>
+          )}
           {data.some(p => p.leftRightBalance !== undefined) && (
-            <span>L/R: {(() => {
-              const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
-              if (balances.length === 0) return '50/50';
-              const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
-              return `${Math.round(avg)}/${100 - Math.round(avg)}`;
-            })()}</span>
+            <div className="shrink-0">
+              <span>L/R: {(() => {
+                const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
+                if (balances.length === 0) return '50/50';
+                const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
+                return `${Math.round(avg)}/${100 - Math.round(avg)}`;
+              })()}</span>
+            </div>
           )}
         </div>
       </div>

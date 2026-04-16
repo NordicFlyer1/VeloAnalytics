@@ -150,6 +150,14 @@ export default function App() {
     const saved = localStorage.getItem('veloanalytics_manual_wprime');
     return saved ? parseInt(saved) : null;
   });
+  const [userWeight, setUserWeight] = useState<number | null>(() => {
+    const saved = localStorage.getItem('veloanalytics_user_weight');
+    return saved ? parseFloat(saved) : null;
+  });
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(() => {
+    const saved = localStorage.getItem('veloanalytics_weight_unit');
+    return (saved === 'kg' || saved === 'lbs') ? saved : 'kg';
+  });
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -225,6 +233,15 @@ export default function App() {
     if (manualWPrime !== null) localStorage.setItem('veloanalytics_manual_wprime', manualWPrime.toString());
     else localStorage.removeItem('veloanalytics_manual_wprime');
   }, [manualWPrime]);
+
+  React.useEffect(() => {
+    if (userWeight !== null) localStorage.setItem('veloanalytics_user_weight', userWeight.toString());
+    else localStorage.removeItem('veloanalytics_user_weight');
+  }, [userWeight]);
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_weight_unit', weightUnit);
+  }, [weightUnit]);
 
   React.useEffect(() => {
     if (autoUpdateCP && estimatedCp && estimatedCp > cp) {
@@ -1421,6 +1438,8 @@ export default function App() {
                           data={data}
                           currentPMC={currentPMC}
                           history={history}
+                          userWeight={userWeight}
+                          weightUnit={weightUnit}
                         />
                       </motion.div>
                     )}
@@ -1613,26 +1632,29 @@ export default function App() {
       {/* About Modal */}
       <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />
 
-      {/* Settings Modal */}
-      <SettingsModal 
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        cp={cp}
-        setCP={setCP}
-        autoUpdateCP={autoUpdateCP}
-        setAutoUpdateCP={setAutoUpdateCP}
-        maxHR={maxHR}
-        setMaxHR={setMaxHR}
-        manualCP={manualCP}
-        setManualCP={setManualCP}
-        manualWPrime={manualWPrime}
-        setManualWPrime={setManualWPrime}
-        cpWPrime={cpWPrime}
-        powerZoneDefinitions={powerZoneDefinitions}
-        setPowerZoneDefinitions={setPowerZoneDefinitions}
-        hrZoneDefinitions={hrZoneDefinitions}
-        setHrZoneDefinitions={setHrZoneDefinitions}
-      />
+        <SettingsModal 
+          showSettings={showSettings}
+          setShowSettings={setShowSettings}
+          cp={cp}
+          setCP={setCP}
+          autoUpdateCP={autoUpdateCP}
+          setAutoUpdateCP={setAutoUpdateCP}
+          maxHR={maxHR}
+          setMaxHR={setMaxHR}
+          manualCP={manualCP}
+          setManualCP={setManualCP}
+          manualWPrime={manualWPrime}
+          setManualWPrime={setManualWPrime}
+          userWeight={userWeight}
+          setUserWeight={setUserWeight}
+          weightUnit={weightUnit}
+          setWeightUnit={setWeightUnit}
+          cpWPrime={cpWPrime}
+          powerZoneDefinitions={powerZoneDefinitions}
+          setPowerZoneDefinitions={setPowerZoneDefinitions}
+          hrZoneDefinitions={hrZoneDefinitions}
+          setHrZoneDefinitions={setHrZoneDefinitions}
+        />
     </div>
   );
 }
