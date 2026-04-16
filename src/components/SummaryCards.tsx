@@ -55,13 +55,13 @@ export const SummaryCards = React.memo(({
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
           <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest whitespace-nowrap">W xPower</span>
         </div>
-        <div className="mt-2 sm:mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
-          <div className="flex gap-3 shrink-0">
+        <div className="mt-2 sm:mt-4 flex flex-wrap items-start sm:items-center gap-x-3 sm:gap-x-6 gap-y-2 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
+          <div className="flex gap-2 sm:gap-3">
             <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
             <span>Max: {Math.round(summary.maxPower || 0)}W</span>
           </div>
           {userWeight && (
-            <div className="flex gap-3 text-orange-500/80 shrink-0">
+            <div className="flex gap-2 sm:gap-3 text-orange-500/80">
               <span>Avg: {(() => {
                 const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
                 return ((summary.avgPower || 0) / weightKg).toFixed(1);
@@ -73,7 +73,7 @@ export const SummaryCards = React.memo(({
             </div>
           )}
           {data.some(p => p.leftRightBalance !== undefined) && (
-            <div className="shrink-0">
+            <div>
               <span>L/R: {(() => {
                 const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
                 if (balances.length === 0) return '50/50';
@@ -115,15 +115,15 @@ export const SummaryCards = React.memo(({
 
       <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
-          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Elevation & Distance</span>
+          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Distance & Elevation</span>
           <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
-          <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.totalAscent || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">M</span>
+          <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.distance / 1000).toFixed(1)}</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Dist: {(summary.distance / 1000).toFixed(1)}km
+          Ascent: {Math.round(summary.totalAscent || 0)}m
         </div>
       </div>
 
