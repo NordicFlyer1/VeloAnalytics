@@ -70,6 +70,7 @@ import { PowerCurveAnalysis } from './components/PowerCurveAnalysis';
 import { ZonesAnalysis } from './components/ZonesAnalysis';
 import { LapBreakdown } from './components/LapBreakdown';
 import { PmcAnalysis } from './components/PmcAnalysis';
+import { VolumeTrendsAnalysis } from './components/VolumeTrendsAnalysis';
 import { TrainingLoadAnalysis } from './components/TrainingLoadAnalysis';
 import { AboutModal } from './components/AboutModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -86,7 +87,7 @@ const ActivityMap = React.lazy(() => import('./components/ActivityMap').then(m =
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap as useLeafletMap, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, useMap as useGoogleMap } from '@vis.gl/react-google-maps';
 import FitParser from 'fit-file-parser';
-import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, endOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { cn, formatDuration, formatNumericalDuration } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus, WeatherData } from './types';
 import { useMetricsWorker } from './hooks/useMetricsWorker';
@@ -180,6 +181,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [trainingLoadRange, setTrainingLoadRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [volumeTrendsRange, setVolumeTrendsRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('veloanalytics_theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -319,6 +321,63 @@ export default function App() {
       }))
       .filter(h => h.curve.length > 0);
   }, [history, selectedHistoryIds]);
+
+  const volumeTrendsData = React.useMemo(() => {
+    if (history.length === 0) return [];
+    
+    const now = new Date();
+    const data: any[] = [];
+    
+    if (volumeTrendsRange === 'weekly') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (i * 7));
+        const weekStart = startOfWeek(d, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        
+        const weekActivities = history.filter(h => {
+          const ad = new Date(h.date);
+          return ad >= weekStart && ad <= weekEnd;
+        });
+        
+        data.push({
+          label: `W${format(weekStart, 'w')}`,
+          distance: weekActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
+          duration: weekActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
+          elevation: weekActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
+        });
+      }
+    } else if (volumeTrendsRange === 'monthly') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthActivities = history.filter(h => {
+          const ad = new Date(h.date);
+          return ad.getMonth() === d.getMonth() && ad.getFullYear() === d.getFullYear();
+        });
+        
+        data.push({
+          label: format(d, 'MMM'),
+          distance: monthActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
+          duration: monthActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
+          elevation: monthActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
+        });
+      }
+    } else {
+      for (let i = 4; i >= 0; i--) {
+        const year = now.getFullYear() - i;
+        const yearActivities = history.filter(h => new Date(h.date).getFullYear() === year);
+        
+        data.push({
+          label: year.toString(),
+          distance: yearActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
+          duration: yearActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
+          elevation: yearActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
+        });
+      }
+    }
+    
+    return data;
+  }, [history, volumeTrendsRange]);
 
   const trainingLoadData = React.useMemo(() => {
     if (history.length === 0) return [];
@@ -831,6 +890,7 @@ export default function App() {
   const [isZonesExpanded, setIsZonesExpanded] = useState(true);
   const [isPmcExpanded, setIsPmcExpanded] = useState(true);
   const [isTrainingLoadExpanded, setIsTrainingLoadExpanded] = useState(true);
+  const [isVolumeTrendsExpanded, setIsVolumeTrendsExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(true);
   const [showUploadView, setShowUploadView] = useState(false);
@@ -858,10 +918,11 @@ export default function App() {
     setIsZonesExpanded(expand);
     setIsPmcExpanded(expand);
     setIsTrainingLoadExpanded(expand);
+    setIsVolumeTrendsExpanded(expand);
     setIsHistoryExpanded(expand);
   };
 
-  const areAllPanelsCollapsed = !isOverviewExpanded && !isChartExpanded && !isMapExpanded && !isDetailsExpanded && !isLapsExpanded && !isWPrimeExpanded && !isPowerCurveExpanded && !isZonesExpanded && !isPmcExpanded && !isTrainingLoadExpanded && !isHistoryExpanded;
+  const areAllPanelsCollapsed = !isOverviewExpanded && !isChartExpanded && !isMapExpanded && !isDetailsExpanded && !isLapsExpanded && !isWPrimeExpanded && !isPowerCurveExpanded && !isZonesExpanded && !isPmcExpanded && !isTrainingLoadExpanded && !isVolumeTrendsExpanded && !isHistoryExpanded;
 
   // Recalculate summary metrics when settings change
   React.useEffect(() => {
@@ -1514,6 +1575,14 @@ export default function App() {
                   setTrainingLoadRange={setTrainingLoadRange}
                   trainingLoadData={trainingLoadData}
                   trainingLoadStats={trainingLoadStats}
+                />
+
+                <VolumeTrendsAnalysis 
+                  isExpanded={isVolumeTrendsExpanded}
+                  setIsExpanded={setIsVolumeTrendsExpanded}
+                  range={volumeTrendsRange}
+                  setRange={setVolumeTrendsRange}
+                  data={volumeTrendsData}
                 />
                 </div>
               </div>

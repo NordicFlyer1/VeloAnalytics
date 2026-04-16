@@ -49,7 +49,7 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">W</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest whitespace-nowrap">W xPower</span>
         </div>
         <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] text-app-muted font-bold uppercase tracking-widest gap-1">
           <div className="flex gap-3">

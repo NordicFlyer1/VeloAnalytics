@@ -41,7 +41,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
           >
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-xl border border-app-border">
+                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
                   {[
                     { id: 'file', label: 'File' },
                     { id: '1km', label: '1km' },
@@ -55,7 +55,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                       key={mode.id}
                       onClick={() => setLapMode(mode.id as any)}
                       className={cn(
-                        "px-2 py-1 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                        "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-full transition-all",
                         lapMode === mode.id 
                           ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text hover:bg-app-card"
