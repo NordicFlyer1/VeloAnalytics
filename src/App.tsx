@@ -657,62 +657,48 @@ export default function App() {
     return Object.values(summary).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [history, bikeScoreSummaryView]);
 
-  const pmcData = React.useMemo(() => {
-    if (history.length === 0) return [];
-    
-    const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
-    const historyByDate = sortedHistory.reduce((acc, h) => {
-      acc[h.date] = (acc[h.date] || 0) + (h.bikeScore || 0);
-      return acc;
-    }, {} as Record<string, number>);
+  const [pmcData, setPmcData] = useState<PMCDataPoint[]>([]);
+  const [isCalculatingPmc, setIsCalculatingPmc] = useState(false);
 
-    const startDate = subDays(new Date(sortedHistory[0].date), 42); // Start 42 days before first activity
-    const endDate = new Date();
-    
-    const allData: PMCDataPoint[] = [];
-    let currentLTS = 0;
-    let currentSTS = 0;
-    
-    const curr = new Date(startDate);
-    while (curr <= endDate) {
-      if (isNaN(curr.getTime())) {
-        curr.setDate(curr.getDate() + 1);
-        continue;
+  // Recalculate PMC in background
+  React.useEffect(() => {
+    if (history.length === 0) {
+      setPmcData([]);
+      return;
+    }
+
+    const calculatePmcAsync = async () => {
+      setIsCalculatingPmc(true);
+      try {
+        const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
+        const historyData = sortedHistory.map(h => ({ date: h.date, bikeScore: h.bikeScore || 0 }));
+        
+        let allData = await workerCalculatePMC(historyData);
+        
+        // Filter based on pmcDateRange
+        if (pmcDateRange !== 'all') {
+          const now = new Date();
+          let filterDate: Date | null = null;
+          if (pmcDateRange === '6weeks') filterDate = subDays(now, 42);
+          else if (pmcDateRange === '3months') filterDate = subDays(now, 90);
+          else if (pmcDateRange === '6months') filterDate = subDays(now, 180);
+          else if (pmcDateRange === '1year') filterDate = subDays(now, 365);
+
+          if (filterDate) {
+            const filterStr = filterDate.toISOString().split('T')[0];
+            allData = allData.filter(d => d.date >= filterStr);
+          }
+        }
+        
+        setPmcData(allData);
+      } catch (err) {
+        console.error('Failed to calculate PMC in worker:', err);
+      } finally {
+        setIsCalculatingPmc(false);
       }
-      const dateStr = curr.toISOString().split('T')[0];
-      const dayBikeScore = historyByDate[dateStr] || 0;
-      
-      currentLTS = currentLTS + (dayBikeScore - currentLTS) / 42;
-      currentSTS = currentSTS + (dayBikeScore - currentSTS) / 7;
-      
-      allData.push({
-        date: dateStr,
-        bikeScore: dayBikeScore,
-        lts: currentLTS,
-        sts: currentSTS,
-        sb: currentLTS - currentSTS
-      });
-      
-      curr.setDate(curr.getDate() + 1);
-    }
+    };
 
-    // Filter based on pmcDateRange
-    if (pmcDateRange === 'all') return allData;
-
-    const now = new Date();
-    let filterDate: Date | null = null;
-
-    if (pmcDateRange === '6weeks') filterDate = subDays(now, 42);
-    else if (pmcDateRange === '3months') filterDate = subDays(now, 90);
-    else if (pmcDateRange === '6months') filterDate = subDays(now, 180);
-    else if (pmcDateRange === '1year') filterDate = subDays(now, 365);
-
-    if (filterDate) {
-      const filterStr = filterDate.toISOString().split('T')[0];
-      return allData.filter(d => d.date >= filterStr);
-    }
-    
-    return allData;
+    calculatePmcAsync();
   }, [history, pmcDateRange]);
 
   const currentPMC = React.useMemo(() => {

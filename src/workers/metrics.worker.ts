@@ -16,6 +16,11 @@ self.onmessage = (e: MessageEvent) => {
 
   try {
     switch (type) {
+      case 'PING': {
+        self.postMessage({ type: 'PONG' });
+        break;
+      }
+
       case 'CALCULATE_POWER_CURVE': {
         const result = calculatePowerCurve(payload.data);
         self.postMessage({ type: 'POWER_CURVE_RESULT', payload: result, id });
