@@ -124,9 +124,11 @@ export const MetricLane = React.memo(({
             
             {activePoint !== null && data[activePoint] && (
               <ReferenceLineAny 
+                yAxisId={metric}
                 x={data[activePoint].timestamp} 
                 stroke="var(--app-text)" 
-                strokeOpacity={0.15}
+                strokeOpacity={0.8}
+                strokeWidth={1}
                 strokeDasharray="3 3" 
               />
             )}
@@ -177,7 +179,24 @@ export const MetricLane = React.memo(({
               />
             ))}
 
-            <Tooltip content={() => null} cursor={false} />
+            <Tooltip 
+              isAnimationActive={false}
+              cursor={false}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const val = payload[0].value;
+                  return (
+                    <div className="bg-app-card/90 backdrop-blur-md border border-app-border p-2 rounded-xl shadow-xl flex items-center gap-2">
+                       <span className="text-xs font-mono font-bold text-app-text">
+                        {metric === 'speed' || metric === 'slope' ? Number(val).toFixed(1) : Math.round(Number(val))}
+                      </span>
+                      <span className="text-[8px] font-bold text-app-muted uppercase">{config.unit}</span>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
 
             <Area 
               yAxisId={metric}

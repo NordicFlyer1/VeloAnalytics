@@ -109,7 +109,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                     }
                   }}
                   isLast={false}
-                  syncId="wPrimeAnalysis"
+                  syncId="activityAnalysis"
                   height={160}
                   estimatedCp={cpWPrime?.cp}
                   cp={cp}
@@ -141,7 +141,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                     }
                   }}
                   isLast={true}
-                  syncId="wPrimeAnalysis"
+                  syncId="activityAnalysis"
                   height={160}
                 />
               </div>

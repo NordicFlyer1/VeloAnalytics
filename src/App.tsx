@@ -721,6 +721,16 @@ export default function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [mapProvider, setMapProvider] = useState<'osm' | 'google'>('osm');
   const [activePoint, setActivePoint] = useState<number | null>(null);
+  const lastActivePointUpdate = React.useRef<number>(0);
+
+  const throttledSetActivePoint = React.useCallback((index: number | null) => {
+    const now = Date.now();
+    // Throttle to roughly 30fps (32ms) to keep main thread fluid
+    if (now - lastActivePointUpdate.current > 32 || index === null) {
+      setActivePoint(index);
+      lastActivePointUpdate.current = now;
+    }
+  }, []);
   const [isPointLocked, setIsPointLocked] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -1372,7 +1382,7 @@ export default function App() {
                     setSmoothingWindow={setSmoothingWindow}
                     smoothedData={smoothedData}
                     activePoint={activePoint}
-                    setActivePoint={setActivePoint}
+                    setActivePoint={throttledSetActivePoint}
                     isPointLocked={isPointLocked}
                     setIsPointLocked={setIsPointLocked}
                     estimatedCp={estimatedCp}
@@ -1402,7 +1412,7 @@ export default function App() {
                     isMapMaximized={isMapMaximized}
                     setIsMapMaximized={setIsMapMaximized}
                     toggleFullScreen={toggleFullScreen}
-                    setActivePoint={setActivePoint}
+                    setActivePoint={throttledSetActivePoint}
                     setIsPointLocked={setIsPointLocked}
                     mapProvider={mapProvider}
                     setMapProvider={setMapProvider}
@@ -1449,7 +1459,7 @@ export default function App() {
                   manualWPrime={manualWPrime}
                   smoothedData={smoothedData}
                   activePoint={activePoint}
-                  setActivePoint={setActivePoint}
+                  setActivePoint={throttledSetActivePoint}
                   isPointLocked={isPointLocked}
                   setIsPointLocked={setIsPointLocked}
                   cp={cp}

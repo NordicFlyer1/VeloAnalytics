@@ -34,16 +34,35 @@ export const GoogleMapPolyline = ({
     const findClosestPointIndex = (lat: number, lng: number) => {
       let minDistance = Infinity;
       let closestIndex = -1;
+      const step = Math.max(1, Math.floor(data.length / 200));
       
-      data.forEach((p, index) => {
+      // Step 1: Coarse search
+      for (let i = 0; i < data.length; i += step) {
+        const p = data[i];
         if (p.latitude !== undefined && p.longitude !== undefined) {
           const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
           if (d < minDistance) {
             minDistance = d;
-            closestIndex = index;
+            closestIndex = i;
           }
         }
-      });
+      }
+      
+      // Step 2: Fine search around the candidate
+      if (closestIndex !== -1) {
+        const start = Math.max(0, closestIndex - step);
+        const end = Math.min(data.length - 1, closestIndex + step);
+        for (let i = start; i <= end; i++) {
+          const p = data[i];
+          if (p.latitude !== undefined && p.longitude !== undefined) {
+            const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+            if (d < minDistance) {
+              minDistance = d;
+              closestIndex = i;
+            }
+          }
+        }
+      }
       
       return closestIndex;
     };

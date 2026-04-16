@@ -7,10 +7,11 @@ interface MapBoundsProps {
   points: [number, number][];
   data: CyclingDataPoint[];
   activePoint: number | null;
+  isPointLocked: boolean;
   isMapMaximized: boolean;
 }
 
-export const MapBounds = ({ points, data, activePoint, isMapMaximized }: MapBoundsProps) => {
+export const MapBounds = ({ points, data, activePoint, isPointLocked, isMapMaximized }: MapBoundsProps) => {
   const map = useLeafletMap();
   
   React.useEffect(() => {
@@ -36,10 +37,11 @@ export const MapBounds = ({ points, data, activePoint, isMapMaximized }: MapBoun
   }, [map, points, activePoint]);
 
   React.useEffect(() => {
-    if (activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude) {
+    // Only center map on point if it's LOCKED (clicked), otherwise just let the marker move
+    if (activePoint !== null && isPointLocked && data[activePoint]?.latitude && data[activePoint]?.longitude) {
       map.setView([data[activePoint].latitude!, data[activePoint].longitude!], map.getZoom());
     }
-  }, [activePoint, data, map]);
+  }, [activePoint, isPointLocked, data, map]);
 
   return null;
 };
