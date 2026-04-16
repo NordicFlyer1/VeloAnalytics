@@ -39,7 +39,7 @@ export const SummaryCards = React.memo(({
           <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
-          <span className="text-2xl sm:text-3xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
+          <span className="text-3xl sm:text-4xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
           Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
@@ -205,7 +205,7 @@ export const SummaryCards = React.memo(({
             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
+            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
             <span className="text-[10px] text-app-muted font-medium uppercase tracking-widest">LTS</span>
           </div>
           <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
