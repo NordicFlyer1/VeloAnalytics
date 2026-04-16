@@ -75,7 +75,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="space-y-8 pt-6">
+            <div className="space-y-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {/* Range Selector - Matched with TrainingLoadSummary (Top Left) */}
                 <div className="grid grid-cols-3 md:flex md:w-auto gap-2">
