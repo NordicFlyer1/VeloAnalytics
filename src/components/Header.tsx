@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setShowAboutModal(true)}
               className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-              title="About & Methodology"
+              title="Overview, Methodology & License"
             >
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
             </button>

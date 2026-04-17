@@ -198,55 +198,37 @@ export const ActivityMap = React.memo(({
                         ))}
                       </div>
                     </div>
-                    <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} center={gpsPoints[0]} zoom={13} scrollWheelZoom={true}>
+                    {(MapContainer as any).displayName = 'MapContainer'}
+                    <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} {...{center: gpsPoints[0], zoom: 13, scrollWheelZoom: true} as any}>
                       <TileLayer
-                        url={
-                          mapType === 'terrain' 
+                        {...{
+                          url: mapType === 'terrain' 
                             ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
                             : theme === 'dark'
                               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                        }
-                        attribution={
-                          mapType === 'terrain'
+                              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png" ,
+                          attribution: mapType === 'terrain'
                             ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-                            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        }
-                        maxZoom={19}
+                            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                          maxZoom: 19
+                        } as any}
                       />
                       <LeafletPolyline 
-                        positions={gpsPoints} 
-                        color="#f97316" 
-                        weight={4} 
-                        opacity={0.8} 
-                        eventHandlers={{
-                          mousemove: (e) => {
-                            if (isPointLocked || data.length === 0) return;
-                            const { lat, lng } = e.latlng;
-                            
-                            // Efficient search: First find approximate area by subsampling
-                            // Then search precisely within that area
-                            let minDistance = Infinity;
-                            let closestIndex = -1;
-                            const step = Math.max(1, Math.floor(data.length / 200)); 
-                            
-                            // Step 1: Coarse search
-                            for (let i = 0; i < data.length; i += step) {
-                              const p = data[i];
-                              if (p.latitude !== undefined && p.longitude !== undefined) {
-                                const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                if (d < minDistance) {
-                                  minDistance = d;
-                                  closestIndex = i;
-                                }
-                              }
-                            }
-                            
-                            // Step 2: Fine search around the candidate
-                            if (closestIndex !== -1) {
-                              const start = Math.max(0, closestIndex - step);
-                              const end = Math.min(data.length - 1, closestIndex + step);
-                              for (let i = start; i <= end; i++) {
+                        {...{
+                          positions: gpsPoints, 
+                          color: "#f97316", 
+                          weight: 4, 
+                          opacity: 0.8, 
+                          eventHandlers: {
+                            mousemove: (e) => {
+                              if (isPointLocked || data.length === 0) return;
+                              const { lat, lng } = e.latlng;
+                              
+                              let minDistance = Infinity;
+                              let closestIndex = -1;
+                              const step = Math.max(1, Math.floor(data.length / 200)); 
+                              
+                              for (let i = 0; i < data.length; i += step) {
                                 const p = data[i];
                                 if (p.latitude !== undefined && p.longitude !== undefined) {
                                   const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
@@ -256,43 +238,60 @@ export const ActivityMap = React.memo(({
                                   }
                                 }
                               }
-                            }
-                            
-                            if (closestIndex !== -1) setActivePoint(closestIndex);
-                          },
-                          mouseout: () => {
-                            if (!isPointLocked) setActivePoint(null);
-                          },
-                          click: (e) => {
-                            const { lat, lng } = e.latlng;
-                            let minDistance = Infinity;
-                            let closestIndex = -1;
-                            
-                            data.forEach((p, index) => {
-                              if (p.latitude !== undefined && p.longitude !== undefined) {
-                                const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
-                                if (d < minDistance) {
-                                  minDistance = d;
-                                  closestIndex = index;
+                              
+                              if (closestIndex !== -1) {
+                                const start = Math.max(0, closestIndex - step);
+                                const end = Math.min(data.length - 1, closestIndex + step);
+                                for (let i = start; i <= end; i++) {
+                                  const p = data[i];
+                                  if (p.latitude !== undefined && p.longitude !== undefined) {
+                                    const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                    if (d < minDistance) {
+                                      minDistance = d;
+                                      closestIndex = i;
+                                    }
+                                  }
                                 }
                               }
-                            });
-                            
-                            if (closestIndex !== -1) {
-                              setActivePoint(closestIndex);
-                              setIsPointLocked(true);
+                              
+                              if (closestIndex !== -1) setActivePoint(closestIndex);
+                            },
+                            mouseout: () => {
+                              if (!isPointLocked) setActivePoint(null);
+                            },
+                            click: (e) => {
+                              const { lat, lng } = e.latlng;
+                              let minDistance = Infinity;
+                              let closestIndex = -1;
+                              
+                              data.forEach((p, index) => {
+                                if (p.latitude !== undefined && p.longitude !== undefined) {
+                                  const d = Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2);
+                                  if (d < minDistance) {
+                                    minDistance = d;
+                                    closestIndex = index;
+                                  }
+                                }
+                              });
+                              
+                              if (closestIndex !== -1) {
+                                setActivePoint(closestIndex);
+                                setIsPointLocked(true);
+                              }
                             }
                           }
-                        }}
+                        } as any}
                       />
                       {activePoint !== null && data[activePoint]?.latitude && data[activePoint]?.longitude && (
                         <CircleMarker 
-                          center={[data[activePoint].latitude!, data[activePoint].longitude!]} 
-                          radius={8} 
-                          fillColor="#f97316" 
-                          color="white" 
-                          weight={3} 
-                          fillOpacity={1} 
+                          {...{
+                            center: [data[activePoint].latitude!, data[activePoint].longitude!], 
+                            radius: 8, 
+                            fillColor: "#f97316", 
+                            color: "white", 
+                            weight: 3, 
+                            fillOpacity: 1
+                          } as any}
                         />
                       )}
                       <MapBounds points={gpsPoints} data={data} activePoint={activePoint} isPointLocked={isPointLocked} isMapMaximized={isMapMaximized} />
@@ -364,95 +363,97 @@ export const ActivityMap = React.memo(({
                           </div>
                         </div>
                         <GoogleMap
-                          ref={googleMapRef}
-                          defaultCenter={{ lat: gpsPoints[0][0], lng: gpsPoints[0][1] }}
-                          defaultZoom={13}
-                          mapTypeId={mapType}
-                          disableDefaultUI={true}
-                          zoomControl={true}
-                          zoomControlOptions={{ position: ControlPosition.RIGHT_BOTTOM }}
-                          gestureHandling={'greedy'}
-                          controlSize={24}
-                          styles={theme === 'dark' ? [
-                            { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-                            { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-                            { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-                            {
-                              featureType: 'administrative.locality',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#d59563' }]
-                            },
-                            {
-                              featureType: 'poi',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#d59563' }]
-                            },
-                            {
-                              featureType: 'poi.park',
-                              elementType: 'geometry',
-                              stylers: [{ color: '#263c3f' }]
-                            },
-                            {
-                              featureType: 'poi.park',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#6b9a76' }]
-                            },
-                            {
-                              featureType: 'road',
-                              elementType: 'geometry',
-                              stylers: [{ color: '#38414e' }]
-                            },
-                            {
-                              featureType: 'road',
-                              elementType: 'geometry.stroke',
-                              stylers: [{ color: '#212a37' }]
-                            },
-                            {
-                              featureType: 'road',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#9ca5b3' }]
-                            },
-                            {
-                              featureType: 'road.highway',
-                              elementType: 'geometry',
-                              stylers: [{ color: '#746855' }]
-                            },
-                            {
-                              featureType: 'road.highway',
-                              elementType: 'geometry.stroke',
-                              stylers: [{ color: '#1f2835' }]
-                            },
-                            {
-                              featureType: 'road.highway',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#f3d19c' }]
-                            },
-                            {
-                              featureType: 'transit',
-                              elementType: 'geometry',
-                              stylers: [{ color: '#2f3948' }]
-                            },
-                            {
-                              featureType: 'transit.station',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#d59563' }]
-                            },
-                            {
-                              featureType: 'water',
-                              elementType: 'geometry',
-                              stylers: [{ color: '#17263c' }]
-                            },
-                            {
-                              featureType: 'water',
-                              elementType: 'labels.text.fill',
-                              stylers: [{ color: '#515c6d' }]
-                            },
-                            {
-                              featureType: 'water',
-                              elementType: 'labels.text.stroke',
-                              stylers: [{ color: '#17263c' }]
-                            }
-                          ] : []}
+                          {...{
+                            ref: googleMapRef,
+                            defaultCenter: { lat: gpsPoints[0][0], lng: gpsPoints[0][1] },
+                            defaultZoom: 13,
+                            mapTypeId: mapType,
+                            disableDefaultUI: true,
+                            zoomControl: true,
+                            zoomControlOptions: { position: ControlPosition.RIGHT_BOTTOM },
+                            gestureHandling: 'greedy',
+                            controlSize: 24,
+                            styles: theme === 'dark' ? [
+                              { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                              { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                              { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                              {
+                                featureType: 'administrative.locality',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#d59563' }]
+                              },
+                              {
+                                featureType: 'poi',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#d59563' }]
+                              },
+                              {
+                                featureType: 'poi.park',
+                                elementType: 'geometry',
+                                stylers: [{ color: '#263c3f' }]
+                              },
+                              {
+                                featureType: 'poi.park',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#6b9a76' }]
+                              },
+                              {
+                                featureType: 'road',
+                                elementType: 'geometry',
+                                stylers: [{ color: '#38414e' }]
+                              },
+                              {
+                                featureType: 'road',
+                                elementType: 'geometry.stroke',
+                                stylers: [{ color: '#212a37' }]
+                              },
+                              {
+                                featureType: 'road',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#9ca5b3' }]
+                              },
+                              {
+                                featureType: 'road.highway',
+                                elementType: 'geometry',
+                                stylers: [{ color: '#746855' }]
+                              },
+                              {
+                                featureType: 'road.highway',
+                                elementType: 'geometry.stroke',
+                                stylers: [{ color: '#1f2835' }]
+                              },
+                              {
+                                featureType: 'road.highway',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#f3d19c' }]
+                              },
+                              {
+                                featureType: 'transit',
+                                elementType: 'geometry',
+                                stylers: [{ color: '#2f3948' }]
+                              },
+                              {
+                                featureType: 'transit.station',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#d59563' }]
+                              },
+                              {
+                                featureType: 'water',
+                                elementType: 'geometry',
+                                stylers: [{ color: '#17263c' }]
+                              },
+                              {
+                                featureType: 'water',
+                                elementType: 'labels.text.fill',
+                                stylers: [{ color: '#515c6d' }]
+                              },
+                              {
+                                featureType: 'water',
+                                elementType: 'labels.text.stroke',
+                                stylers: [{ color: '#17263c' }]
+                              }
+                            ] : []
+                          } as any}
                         >
                           <GoogleMapPolyline 
                             points={gpsPoints.map(p => ({ lat: p[0], lng: p[1] }))} 

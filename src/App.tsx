@@ -491,7 +491,12 @@ export default function App() {
         const point = curve?.find(p => p.duration === d);
         if (point && point.power > maxPower) maxPower = point.power;
       });
-      return { duration: d, power: maxPower };
+      const labelMap: Record<number, string> = {
+        1: '1s', 2: '2s', 5: '5s', 10: '10s', 20: '20s', 30: '30s', 
+        60: '1m', 120: '2m', 300: '5m', 600: '10m', 1200: '20m', 
+        1800: '30m', 3600: '60m'
+      };
+      return { duration: d, power: maxPower, label: labelMap[d] || `${d}s` };
     }).filter(p => p.power > 0);
   }, [history]);
 
@@ -508,7 +513,12 @@ export default function App() {
         const point = curve?.find(p => p.duration === d);
         if (point && point.power > maxPower) maxPower = point.power;
       });
-      return { duration: d, power: maxPower };
+      const labelMap: Record<number, string> = {
+        1: '1s', 2: '2s', 5: '5s', 10: '10s', 20: '20s', 30: '30s', 
+        60: '1m', 120: '2m', 300: '5m', 600: '10m', 1200: '20m', 
+        1800: '30m', 3600: '60m'
+      };
+      return { duration: d, power: maxPower, label: labelMap[d] || `${d}s` };
     }).filter(p => p.power > 0);
   }, [history]);
 
