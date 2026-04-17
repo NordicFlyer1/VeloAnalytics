@@ -76,7 +76,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
               <div className="flex flex-wrap gap-3 items-center">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Metrics</span>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
                   {Object.entries(metricsConfig).map(([key, config]) => {
                     const typedConfig = config as { label: string, color: string, unit: string };
                     return (
@@ -90,18 +90,18 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                           );
                         }}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                           activeMetrics.includes(key) 
-                            ? "bg-app-card text-app-text border-orange-500/50 shadow-lg shadow-orange-500/5" 
-                            : "bg-app-card/50 text-app-muted border-app-border hover:border-app-muted/30"
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                            : "text-app-muted hover:text-app-text"
                         )}
                       >
                         <div 
                           className={cn(
                             "w-2 h-2 rounded-full transition-all",
-                            activeMetrics.includes(key) ? "scale-100 opacity-100" : "scale-50 opacity-30"
+                            activeMetrics.includes(key) ? "bg-black/40" : ""
                           )} 
-                          style={{ backgroundColor: typedConfig.color }} 
+                          style={!activeMetrics.includes(key) ? { backgroundColor: typedConfig.color } : {}} 
                         />
                         {typedConfig.label}
                       </button>
@@ -112,19 +112,19 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
               
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
-                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-2xl sm:rounded-full border border-app-border">
+                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
                   {[1, 3, 10, 30, 60].map((window) => (
                     <button
                       key={window}
                       onClick={() => setSmoothingWindow(window)}
                       className={cn(
-                        "px-2 sm:px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                         smoothingWindow === window 
-                          ? "bg-orange-500 text-black shadow-lg" 
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
                       )}
                     >
-                      {window === 1 ? 'Raw' : `${window}s`}
+                      {window === 1 ? 'Raw' : `${window}S`}
                     </button>
                   ))}
                 </div>

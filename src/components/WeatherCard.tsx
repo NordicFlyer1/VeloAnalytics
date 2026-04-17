@@ -41,7 +41,7 @@ export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default'
         </div>
         <div className="h-4 w-px bg-app-border" />
         <div className="hidden xs:flex flex-col">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[60px]">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[60px]">
             {weather.locationName}
           </span>
         </div>
@@ -49,11 +49,11 @@ export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default'
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <Wind className="w-3 h-3 text-blue-400" />
-            <span className="text-[9px] font-medium">{Math.round(weather.windSpeed * 3.6)}k</span>
+            <span className="text-[10px] font-medium">{Math.round(weather.windSpeed * 3.6)} KM/H</span>
           </div>
           <div className="flex items-center gap-1">
             <Droplets className="w-3 h-3 text-cyan-400" />
-            <span className="text-[9px] font-medium">{weather.humidity}%</span>
+            <span className="text-[10px] font-medium">{weather.humidity}%</span>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default'
           className="w-10 h-10 -my-2"
           referrerPolicy="no-referrer"
         />
-        <span className="text-[8px] font-bold uppercase tracking-tighter text-app-muted">{weather.description}</span>
+        <span className="text-[10px] font-bold uppercase tracking-tighter text-app-muted">{weather.description}</span>
       </div>
       
       <div className="h-8 w-px bg-app-border" />
@@ -83,7 +83,7 @@ export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default'
           <Thermometer className="w-3 h-3 text-orange-500" />
           <span className="text-sm font-bold tracking-tight">{Math.round(weather.temp)}°C</span>
         </div>
-        <span className="text-[8px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[80px]">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted truncate max-w-[80px]">
           {weather.locationName}
         </span>
       </div>
@@ -93,11 +93,11 @@ export const WeatherCard = React.memo(({ weather, isLoading, variant = 'default'
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
           <Wind className="w-3 h-3 text-blue-400" />
-          <span className="text-[10px] font-medium">{Math.round(weather.windSpeed * 3.6)} km/h</span>
+          <span className="text-[10px] font-medium uppercase">{Math.round(weather.windSpeed * 3.6)} KM/H</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Droplets className="w-3 h-3 text-cyan-400" />
-          <span className="text-[10px] font-medium">{weather.humidity}%</span>
+          <span className="text-[10px] font-medium uppercase">{weather.humidity}% HUM</span>
         </div>
       </div>
     </motion.div>

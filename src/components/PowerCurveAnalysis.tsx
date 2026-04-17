@@ -62,14 +62,14 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
               <div className="flex items-center justify-between">
                 {selectedHistoryIds.length >= 2 && (
                   <div className="flex items-center gap-4">
-                    <div className="text-[10px] text-app-muted uppercase tracking-widest">
-                      Overlaying {selectedHistoryIds.length} activities
+                    <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">
+                      OVERLAYING {selectedHistoryIds.length} ACTIVITIES
                     </div>
                     <button 
                       onClick={() => setSelectedHistoryIds([])}
-                      className="px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
+                      className="px-3 py-1 bg-white/[0.05] border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:bg-orange-500/10 transition-all"
                     >
-                      Clear Comparison
+                      CLEAR COMPARISON
                     </button>
                   </div>
                 )}
@@ -107,9 +107,9 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                       domain={[1, 3600]} 
                       ticks={[1, 2, 5, 10, 30, 60, 300, 600, 1200, 3600]}
                       tickFormatter={(tick) => {
-                        if (tick < 60) return `${tick}s`;
-                        if (tick < 3600) return `${tick / 60}m`;
-                        return `${tick / 3600}h`;
+                        if (tick < 60) return `${tick}S`;
+                        if (tick < 3600) return `${tick / 60}M`;
+                        return `${tick / 3600}H`;
                       }}
                       stroke="var(--app-muted)"
                       fontSize={10}
@@ -128,12 +128,12 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                         color: 'var(--app-text)',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                       }}
-                      labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
+                      labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
                       labelFormatter={(label) => {
                         const d = Number(label);
-                        if (d < 60) return `${d} seconds`;
-                        if (d < 3600) return `${d / 60} minutes`;
-                        return `${d / 3600} hours`;
+                        if (d < 60) return `${d} SECONDS`;
+                        if (d < 3600) return `${d / 60} MINUTES`;
+                        return `${d / 3600} HOURS`;
                       }}
                       formatter={(value: any) => [`${Math.round(value)} W`, 'Power']}
                     />
@@ -141,11 +141,17 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                       verticalAlign="top" 
                       align="right" 
                       iconType="circle"
-                      wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '20px', color: 'var(--app-text)' }}
+                      wrapperStyle={{ 
+                        fontSize: '10px', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em', 
+                        paddingBottom: '20px', 
+                        color: 'var(--app-muted)' 
+                      }}
                     />
-                    <Line type="monotone" dataKey="current" name="Current Activity" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="allTime" name="All-Time Best" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                    <Line type="monotone" dataKey="ninetyDay" name="90-Day Best" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                    <Line type="monotone" dataKey="current" name="CURRENT ACTIVITY" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="allTime" name="ALL-TIME BEST" stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                    <Line type="monotone" dataKey="ninetyDay" name="90-DAY BEST" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
                     
                     {getComparisonCurves().map((comp, i) => (
                       <Line 
@@ -168,11 +174,11 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                   const p = summary?.powerCurve?.find(cp => cp.duration === d);
                   return (
                     <div key={d} className="bg-app-card/50 border border-app-border rounded-xl p-3 text-center">
-                      <div className="text-[8px] text-app-muted uppercase tracking-widest mb-1">
-                        {d < 60 ? `${d}s` : d < 3600 ? `${d / 60}m` : `${d / 3600}h`}
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1">
+                        {d < 60 ? `${d}S` : d < 3600 ? `${d / 60}M` : `${d / 3600}H`}
                       </div>
                       <div className="text-sm font-bold text-app-text">
-                        {p ? `${p.power}W` : '-'}
+                        {p ? `${p.power} W` : '-'}
                       </div>
                     </div>
                   );

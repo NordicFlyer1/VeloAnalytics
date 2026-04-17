@@ -40,9 +40,9 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
                 <div className="space-y-3">
                   {summary?.powerZones?.map((z) => (
                     <div key={z.name} className="space-y-1">
-                      <div className="flex justify-between text-[10px]">
+                      <div className="flex justify-between text-[10px] uppercase font-bold tracking-widest">
                         <span className="text-app-text/60">{z.name}</span>
-                        <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
+                        <span className="text-app-muted">{Math.floor(z.seconds / 60)}M {z.seconds % 60}S ({z.percentage.toFixed(1)}%)</span>
                       </div>
                       <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
                         <div 
@@ -60,9 +60,9 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
                   <div className="space-y-3">
                     {summary.hrZones.map((z) => (
                       <div key={z.name} className="space-y-1">
-                        <div className="flex justify-between text-[10px]">
+                        <div className="flex justify-between text-[10px] uppercase font-bold tracking-widest">
                           <span className="text-app-text/60">{z.name}</span>
-                          <span className="text-app-muted">{Math.floor(z.seconds / 60)}m {z.seconds % 60}s ({z.percentage.toFixed(1)}%)</span>
+                          <span className="text-app-muted">{Math.floor(z.seconds / 60)}M {z.seconds % 60}S ({z.percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
                           <div 

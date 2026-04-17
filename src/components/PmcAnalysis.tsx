@@ -57,25 +57,25 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="space-y-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Range Selector - Aligned under Title (Top Left) */}
-                <div className="grid grid-cols-3 sm:flex sm:w-auto gap-2">
+                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto overflow-x-auto sm:overflow-x-visible">
                   {[
-                    { id: 'all', label: 'All' },
-                    { id: '1year', label: '1 Year' },
-                    { id: '6months', label: '6 Months' },
-                    { id: '3months', label: '3 Months' },
-                    { id: '6weeks', label: '6 Weeks' }
+                    { id: 'all', label: 'ALL' },
+                    { id: '1year', label: '1Y' },
+                    { id: '6months', label: '6M' },
+                    { id: '3months', label: '3M' },
+                    { id: '6weeks', label: '6W' }
                   ].map(range => (
                     <button
                       key={range.id}
                       onClick={() => setPmcDateRange(range.id as any)}
                       className={cn(
-                        "px-2 md:px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border text-center",
+                        "flex-1 md:flex-none px-3 md:px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                         pmcDateRange === range.id 
-                          ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                          : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
                       )}
                     >
                       {range.label}
@@ -129,10 +129,10 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                         color: 'var(--app-text)',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                       }}
-                      labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
+                      labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
                       labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
                       formatter={(value: any, name: string) => {
-                        if (name === 'BikeScore') return [Math.round(value), name];
+                        if (name === 'BIKESCORE') return [Math.round(value), name];
                         return [Number(value).toFixed(1), name];
                       }}
                     />
@@ -141,14 +141,20 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                       height={36}
                       onMouseEnter={(e) => setPmcFocus(e.dataKey as string)}
                       onMouseLeave={() => setPmcFocus(null)}
-                      wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--app-text)' }}
+                      wrapperStyle={{ 
+                        paddingTop: '10px',
+                        fontSize: '10px', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em', 
+                        color: 'var(--app-muted)' 
+                      }}
                     />
                     <Bar 
                       yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
                       dataKey="bikeScore" 
                       fill="#f97316" 
                       opacity={pmcFocus === 'bikeScore' ? 0.8 : pmcFocus ? 0.1 : 0.3} 
-                      name="BikeScore" 
+                      name="BIKESCORE" 
                     />
                     <Line 
                       yAxisId="fitness" 
@@ -158,7 +164,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                       strokeWidth={pmcFocus === 'lts' ? 4 : 2} 
                       opacity={pmcFocus === 'lts' ? 1 : pmcFocus ? 0.2 : 1}
                       dot={false} 
-                      name="Fitness (LTS)" 
+                      name="FITNESS (LTS)" 
                     />
                     <Line 
                       yAxisId="fitness" 
@@ -168,7 +174,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                       strokeWidth={pmcFocus === 'sts' ? 4 : 2} 
                       opacity={pmcFocus === 'sts' ? 1 : pmcFocus ? 0.2 : 1}
                       dot={false} 
-                      name="Fatigue (STS)" 
+                      name="FATIGUE (STS)" 
                     />
                     <Area 
                       yAxisId="form" 
@@ -179,7 +185,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                       strokeWidth={pmcFocus === 'sb' ? 3 : 1}
                       fillOpacity={pmcFocus === 'sb' ? 0.4 : pmcFocus ? 0.05 : 0.1} 
                       opacity={pmcFocus === 'sb' ? 1 : pmcFocus ? 0.2 : 1}
-                      name="Form (SB)" 
+                      name="FORM (SB)" 
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -196,7 +202,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                   onMouseLeave={() => setPmcFocus(null)}
                 >
                   <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(currentPMC?.bikeScore || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BIKESCORE</div>
                 </div>
                 <div 
                   className={cn(
@@ -207,7 +213,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                   onMouseLeave={() => setPmcFocus(null)}
                 >
                   <div className="text-2xl font-light tracking-tighter text-blue-500">{Math.round(currentPMC?.lts || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fitness (LTS)</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">FITNESS (LTS)</div>
                 </div>
                 <div 
                   className={cn(
@@ -218,7 +224,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                   onMouseLeave={() => setPmcFocus(null)}
                 >
                   <div className="text-2xl font-light tracking-tighter text-red-500">{Math.round(currentPMC?.sts || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Fatigue (STS)</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">FATIGUE (STS)</div>
                 </div>
                 <div 
                   className={cn(
@@ -229,7 +235,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                   onMouseLeave={() => setPmcFocus(null)}
                 >
                   <div className="text-2xl font-light tracking-tighter text-green-500">{Math.round(currentPMC?.sb || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Form (SB)</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">FORM (SB)</div>
                 </div>
               </div>
 

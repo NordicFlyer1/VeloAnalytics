@@ -57,6 +57,13 @@ export const MetricLane = React.memo(({
   showCP = true,
   showECP = true
 }: MetricLaneProps) => {
+  const formatValue = (val: number | null) => {
+    if (val === null) return null;
+    if (config.unit === 'KJ') return Number(val / 1000).toFixed(1);
+    if (metric === 'speed' || metric === 'slope') return Number(val).toFixed(1);
+    return Math.round(val).toString();
+  };
+
   const currentValue = activePoint !== null && data[activePoint] ? data[activePoint][metric] : null;
 
   return (
@@ -75,9 +82,9 @@ export const MetricLane = React.memo(({
         {currentValue !== null && (
           <div className="flex items-baseline gap-1 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-sm font-mono font-bold text-app-text tabular-nums">
-              {metric === 'speed' || metric === 'slope' ? Number(currentValue).toFixed(1) : Math.round(currentValue)}
+              {formatValue(currentValue)}
             </span>
-            <span className="text-[8px] font-bold text-app-muted uppercase">{config.unit}</span>
+            <span className="text-[10px] font-bold text-app-muted uppercase">{config.unit}</span>
           </div>
         )}
       </div>
@@ -119,7 +126,7 @@ export const MetricLane = React.memo(({
               axisLine={false}
               domain={['auto', 'auto']}
               width={45}
-              tickFormatter={(val) => Math.round(val).toString()}
+              tickFormatter={(val) => config.unit === 'KJ' ? (val / 1000).toFixed(1) : Math.round(val).toString()}
             />
             
             {activePoint !== null && data[activePoint] && (
@@ -188,9 +195,9 @@ export const MetricLane = React.memo(({
                   return (
                     <div className="bg-app-card/90 backdrop-blur-md border border-app-border p-2 rounded-xl shadow-xl flex items-center gap-2">
                        <span className="text-xs font-mono font-bold text-app-text">
-                        {metric === 'speed' || metric === 'slope' ? Number(val).toFixed(1) : Math.round(Number(val))}
+                        {formatValue(Number(val))}
                       </span>
-                      <span className="text-[8px] font-bold text-app-muted uppercase">{config.unit}</span>
+                      <span className="text-[10px] font-bold text-app-muted uppercase">{config.unit}</span>
                     </div>
                   );
                 }

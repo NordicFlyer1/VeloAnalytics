@@ -114,33 +114,72 @@ export const GoogleMapPolyline = ({
 
 export const GoogleMapTrafficLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
+  const layerRef = React.useRef<google.maps.TrafficLayer | null>(null);
+
   React.useEffect(() => {
     if (!map) return;
-    const layer = new google.maps.TrafficLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
+    if (!layerRef.current) {
+      layerRef.current = new google.maps.TrafficLayer();
+    }
+    layerRef.current.setMap(enabled ? map : null);
   }, [map, enabled]);
+
+  React.useEffect(() => {
+    return () => {
+      if (layerRef.current) {
+        layerRef.current.setMap(null);
+        layerRef.current = null;
+      }
+    };
+  }, []);
+
   return null;
 };
 
 export const GoogleMapBicyclingLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
+  const layerRef = React.useRef<google.maps.BicyclingLayer | null>(null);
+
   React.useEffect(() => {
     if (!map) return;
-    const layer = new google.maps.BicyclingLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
+    if (!layerRef.current) {
+      layerRef.current = new google.maps.BicyclingLayer();
+    }
+    layerRef.current.setMap(enabled ? map : null);
   }, [map, enabled]);
+
+  React.useEffect(() => {
+    return () => {
+      if (layerRef.current) {
+        layerRef.current.setMap(null);
+        layerRef.current = null;
+      }
+    };
+  }, []);
+
   return null;
 };
 
 export const GoogleMapTransitLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
+  const layerRef = React.useRef<google.maps.TransitLayer | null>(null);
+
   React.useEffect(() => {
     if (!map) return;
-    const layer = new google.maps.TransitLayer();
-    if (enabled) layer.setMap(map);
-    return () => layer.setMap(null);
+    if (!layerRef.current) {
+      layerRef.current = new google.maps.TransitLayer();
+    }
+    layerRef.current.setMap(enabled ? map : null);
   }, [map, enabled]);
+
+  React.useEffect(() => {
+    return () => {
+      if (layerRef.current) {
+        layerRef.current.setMap(null);
+        layerRef.current = null;
+      }
+    };
+  }, []);
+
   return null;
 };

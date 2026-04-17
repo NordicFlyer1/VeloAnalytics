@@ -43,3 +43,24 @@ This document serves as the source of truth for the visual and structural design
 ## 6. Global Controls
 - **Collapse All:** A global toggle should exist to mass-expand or mass-collapse all sections.
 - **Theme Toggle:** Supports Light and Dark modes with smooth transitions.
+
+## 7. Control Standards
+- **Selection Groups:** Use the "Capsule" pattern exclusively for all metric, range, and mode toggles: `bg-app-bg/50 p-1 rounded-full border border-app-border`.
+- **Active State:** Active capsules use `bg-orange-500 text-black shadow-lg shadow-orange-500/20`.
+- **Inactive State:** Inactive capsules use `text-app-muted hover:text-app-text transition-all`.
+
+## 8. Typography & Units
+- **Unit Case:** All units MUST be uppercase: `KM`, `M`, `W`, `RPM`, `KM/H`, `BPM`, `KJ`.
+- **Label Size:** Minimum secondary label size is `text-[10px]`. Avoid `text-[8px]` for data labels.
+- **Metric Headers:** Consistent `text-[10px] uppercase tracking-widest font-bold text-app-muted`.
+
+## 9. Chart Consistency
+- **Tooltips:** MUST use `{ backgroundColor: 'var(--app-tooltip-bg)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid var(--app-border)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }`.
+- **Legends:** MUST use `verticalAlign="top"`, `fontSize: '10px'`, `textTransform: 'uppercase'`, `letterSpacing: '0.1em'`.
+- **Grid:** `stroke="var(--app-border)"`, `vertical={false}`, `strokeDasharray="3 3"`.
+
+## 10. Spacing & Visual Hierarchy
+- **Section Spacing:** Main content vertical spacing is `space-y-6`.
+- **Header Gaps:** Flex headers (e.g., summary metrics or control bars) use `gap-4`.
+- **Card Padding:** All cards use consistent `p-8` for desktop and `p-4` or `p-6` for mobile.
+- **Section Headers:** Vertical gap between section headers and content is established via the `space-y-6` container.

@@ -113,7 +113,7 @@ export const HistorySidebar = React.memo(({
                       title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
                     >
                       <ArrowUpDown className="w-3 h-3" />
-                      {historySortOrder === 'newest' ? 'Newest' : 'Oldest'}
+                      {historySortOrder === 'newest' ? 'NEWEST' : 'OLDEST'}
                     </button>
                   )}
                 </div>
@@ -148,24 +148,21 @@ export const HistorySidebar = React.memo(({
                           <div className="text-xs font-bold truncate">{h.name}</div>
                           <div className="text-[10px] text-app-muted truncate">
                             {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
-                            {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W avg`}
+                            {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)} W AVG`}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                        <div className="text-right hidden sm:block">
-                          <div className="text-xs font-bold text-orange-500">{Math.round(h.bikeScore || 0)}</div>
-                          <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">BikeScore</div>
-                        </div>
+                          <div className="text-right hidden sm:block font-bold">
+                            <div className="text-xs text-orange-500">{Math.round(h.bikeScore || 0)}</div>
+                            <div className="text-[10px] text-app-muted uppercase tracking-widest">BIKESCORE</div>
+                          </div>
                         <div className="flex items-center gap-1 sm:gap-2">
                           <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              loadFromHistory(h.id);
-                            }}
-                            className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[8px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
+                            onClick={(e) => { e.stopPropagation(); loadFromHistory(h.id); }}
+                            className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[10px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
                           >
-                            View
+                            VIEW
                           </button>
                           <button 
                             onClick={(e) => {

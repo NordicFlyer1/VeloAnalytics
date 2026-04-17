@@ -5,7 +5,10 @@ import {
   Expand, 
   Maximize, 
   Navigation, 
-  CheckCircle2 
+  CheckCircle2,
+  Car,
+  Bike,
+  Bus
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
@@ -152,7 +155,7 @@ export const ActivityMap = React.memo(({
                           mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
                         )}
                       >
-                        Google
+                        GOOGLE
                       </button>
                     </div>
                   </div>
@@ -180,7 +183,7 @@ export const ActivityMap = React.memo(({
                       </button>
                     )}
                     <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                      <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                      <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                         {(['roadmap', 'terrain'] as const).map((t) => (
                           <button
                             key={t}
@@ -190,7 +193,7 @@ export const ActivityMap = React.memo(({
                               (t === 'roadmap' && mapType !== 'terrain') || (t === 'terrain' && mapType === 'terrain') ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
                             )}
                           >
-                            {t === 'roadmap' ? 'Standard' : 'Terrain'}
+                            {t === 'roadmap' ? 'STANDARD' : 'TERRAIN'}
                           </button>
                         ))}
                       </div>
@@ -313,7 +316,7 @@ export const ActivityMap = React.memo(({
                           </button>
                         )}
                         <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
-                          <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md shadow-lg">
+                          <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                             {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
                               <button
                                 key={t}
@@ -323,11 +326,11 @@ export const ActivityMap = React.memo(({
                                   mapType === t ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
                                 )}
                               >
-                                {t}
+                                {t.toUpperCase()}
                               </button>
                             ))}
                           </div>
-                          <div className="flex bg-app-bg/90 p-1 rounded-xl border border-app-border backdrop-blur-md gap-1 shadow-lg">
+                          <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md gap-1 shadow-lg">
                             <button
                               onClick={() => setShowTraffic(!showTraffic)}
                               className={cn(
@@ -336,7 +339,7 @@ export const ActivityMap = React.memo(({
                               )}
                               title="Traffic Layer"
                             >
-                              <Navigation className="w-3 h-3" />
+                              <Car className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setShowBicycling(!showBicycling)}
@@ -346,7 +349,7 @@ export const ActivityMap = React.memo(({
                               )}
                               title="Bicycling Layer"
                             >
-                              <MapIcon className="w-3 h-3" />
+                              <Bike className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setShowTransit(!showTransit)}
@@ -356,7 +359,7 @@ export const ActivityMap = React.memo(({
                               )}
                               title="Transit Layer"
                             >
-                              <Expand className="w-3 h-3" />
+                              <Bus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -484,7 +487,7 @@ export const ActivityMap = React.memo(({
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-app-card/30 text-center p-8">
                   <Navigation className="w-12 h-12 text-app-muted mb-4 animate-pulse" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2">No GPS Data</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2">NO GPS DATA</h3>
                   <p className="text-[10px] text-app-muted max-w-[200px]">This activity does not contain location coordinates for map visualization.</p>
                 </div>
               )}

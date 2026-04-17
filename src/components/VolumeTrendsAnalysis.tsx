@@ -25,9 +25,9 @@ interface VolumeTrendsAnalysisProps {
 type MetricType = 'distance' | 'duration' | 'elevation';
 
 const metrics: { id: MetricType; label: string; icon: any; color: string; unit: string }[] = [
-  { id: 'distance', label: 'Distance', icon: Activity, color: '#f97316', unit: 'km' },
-  { id: 'duration', label: 'Time', icon: Clock, color: '#a855f7', unit: 'h' },
-  { id: 'elevation', label: 'Elevation', icon: Mountain, color: '#3b82f6', unit: 'm' },
+  { id: 'distance', label: 'Distance', icon: Activity, color: '#f97316', unit: 'KM' },
+  { id: 'duration', label: 'Time', icon: Clock, color: '#a855f7', unit: 'H' },
+  { id: 'elevation', label: 'Elevation', icon: Mountain, color: '#3b82f6', unit: 'M' },
 ];
 
 export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
@@ -75,19 +75,19 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="space-y-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Range Selector - Matched with TrainingLoadSummary (Top Left) */}
-                <div className="grid grid-cols-3 md:flex md:w-auto gap-2">
+                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((r) => (
                     <button
                       key={r}
                       onClick={() => setRange(r)}
                       className={cn(
-                        "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
+                        "flex-1 md:flex-none px-4 md:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                         range === r 
-                          ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                          : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
                       )}
                     >
                       {r}
@@ -96,7 +96,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                 </div>
 
                 {/* Metric Selector - Capsule style (Top Right) */}
-                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border/50 w-fit">
+                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
                   {metrics.map((m) => {
                     const Icon = m.icon;
                     return (
@@ -104,13 +104,13 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                         key={m.id}
                         onClick={() => setActiveMetric(m.id)}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all",
+                          "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                           activeMetric === m.id 
-                            ? "bg-app-card text-app-text shadow-sm border border-app-border/50" 
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                             : "text-app-muted hover:text-app-text"
                         )}
                       >
-                        <Icon size={12} style={{ color: activeMetric === m.id ? m.color : undefined }} />
+                        <Icon size={12} className={cn(activeMetric === m.id ? "text-black/40" : "")} style={activeMetric !== m.id ? { color: m.color } : {}} />
                         <span className="hidden sm:inline">{m.label}</span>
                       </button>
                     );
@@ -145,7 +145,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                         WebkitBackdropFilter: 'blur(8px)',
                         border: '1px solid var(--app-border)', 
                         borderRadius: '12px', 
-                        fontSize: '11px', 
+                        fontSize: '12px', 
                         color: 'var(--app-text)',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                       }}
@@ -173,14 +173,14 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                     {formatValue(currentStats.total)}
                     <span className="text-[10px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
                   </div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total {activeMetricConfig.label}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">TOTAL {activeMetricConfig.label}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-light tracking-tighter text-app-text">
                     {formatValue(currentStats.avg)}
                     <span className="text-[10px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
                   </div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg / {range === 'weekly' ? 'Week' : range === 'monthly' ? 'Month' : 'Year'}</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">AVG / {range === 'weekly' ? 'WEEK' : range === 'monthly' ? 'MONTH' : 'YEAR'}</div>
                 </div>
               </div>
             </div>

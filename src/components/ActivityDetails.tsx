@@ -58,7 +58,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
           >
             <div className="space-y-4">
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Activity Name</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Activity Name</span>
                 {isEditingName ? (
                   <div className="flex items-center gap-2">
                     <input 
@@ -113,42 +113,42 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                 )}
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Start Time</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Start Time</span>
                 <span className="text-xs font-medium">{format(summary.startTime, 'h:mm:ss a')}</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Duration</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Duration</span>
                 <span className="text-xs font-medium">{formatNumericalDuration(summary.duration)}</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Distance</span>
-                <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} km</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Distance</span>
+                <span className="text-xs font-medium">{(summary.distance / 1000).toFixed(2)} KM</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Avg/Max Power</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Power</span>
                 <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Avg/Max Cadence</span>
-                <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} rpm</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Cadence</span>
+                <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} RPM</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Avg/Max Speed</span>
-                <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} km/h</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Speed</span>
+                <span className="text-xs font-medium">{(summary.avgSpeed || 0).toFixed(1)} / {(summary.maxSpeed || 0).toFixed(1)} KM/H</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Avg/Max Heart Rate</span>
-                <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} bpm</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Heart Rate</span>
+                <span className="text-xs font-medium">{Math.round(summary.avgHeartRate || 0)} / {Math.round(summary.maxHeartRate || 0)} BPM</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                <span className="text-xs text-app-muted">Elevation Gain</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Elevation Gain</span>
                 <span className="text-xs font-medium">
-                  {Math.round(summary.totalAscent || 0)} m
+                  {Math.round(summary.totalAscent || 0)} M
                 </span>
               </div>
               {estimatedCp && (
                 <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                  <span className="text-xs text-app-muted font-bold text-orange-500/60">Estimated CP (eCP)</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500/60 uppercase">ESTIMATED CP (ECP)</span>
                   <span className="text-xs font-bold text-orange-500">
                     {estimatedCp} W
                   </span>
@@ -162,7 +162,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                 className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
               >
                 <FileDown className="w-3 h-3 text-orange-500" />
-                Original
+                ORIGINAL
               </button>
               <button 
                 onClick={exportGPX}

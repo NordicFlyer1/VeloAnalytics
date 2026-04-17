@@ -1318,12 +1318,12 @@ export default function App() {
     .map(p => [p.latitude!, p.longitude!] as [number, number]), [data]);
 
   const metricsConfig = React.useMemo((): Record<string, { label: string, color: string, unit: string }> => ({
-    power: { label: 'Power', color: '#f97316', unit: 'W' },
-    heartRate: { label: 'Heart Rate', color: '#ef4444', unit: 'bpm' },
-    cadence: { label: 'Cadence', color: '#a855f7', unit: 'rpm' },
-    speed: { label: 'Speed', color: '#22c55e', unit: 'km/h' },
-    altitude: { label: 'Altitude', color: '#3b82f6', unit: 'm' },
-    slope: { label: 'Slope', color: '#eab308', unit: '%' },
+    power: { label: 'POWER', color: '#f97316', unit: 'W' },
+    heartRate: { label: 'HEART RATE', color: '#ef4444', unit: 'BPM' },
+    cadence: { label: 'CADENCE', color: '#a855f7', unit: 'RPM' },
+    speed: { label: 'SPEED', color: '#22c55e', unit: 'KM/H' },
+    altitude: { label: 'ALTITUDE', color: '#3b82f6', unit: 'M' },
+    slope: { label: 'SLOPE', color: '#eab308', unit: '%' },
   }), []);
 
   return (

@@ -54,18 +54,18 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="space-y-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="grid grid-cols-3 md:flex w-full md:w-auto gap-2">
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
                     <button
                       key={range}
                       onClick={() => setTrainingLoadRange(range)}
                       className={cn(
-                        "px-2 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
+                        "flex-1 md:flex-none px-4 md:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                         trainingLoadRange === range 
-                          ? "bg-orange-500 text-black border-orange-500 shadow-lg shadow-orange-500/20" 
-                          : "bg-app-card text-app-muted border-app-border hover:bg-app-card/80"
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
                       )}
                     >
                       {range}
@@ -89,9 +89,9 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
                     <YAxis 
                       stroke="var(--app-muted)" 
                       fontSize={10} 
-                      axisLine={false}
-                      tickLine={false}
-                      label={{ value: 'BikeScore', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px' } }} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      label={{ value: 'BIKESCORE', angle: -90, position: 'insideLeft', style: { fill: 'var(--app-muted)', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.1em' } }} 
                     />
                     <Tooltip 
                       cursor={false}
@@ -107,9 +107,9 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
                       }}
                       labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
                       formatter={(value: any, name: string) => {
-                        if (name.toLowerCase() === 'work') return [`${Math.round(value)} kJ`, 'Total Work'];
-                        if (name.toLowerCase() === 'bikescore') return [Math.round(value), 'BikeScore'];
-                        if (name.toLowerCase() === 'duration') return [`${(value / 3600).toFixed(1)} h`, 'Total Time'];
+                        if (name.toLowerCase() === 'work') return [`${Math.round(value)} KJ`, 'TOTAL WORK'];
+                        if (name.toLowerCase() === 'bikescore') return [Math.round(value), 'BIKESCORE'];
+                        if (name.toLowerCase() === 'duration') return [`${(value / 3600).toFixed(1)} H`, 'TOTAL TIME'];
                         return [typeof value === 'number' ? Math.round(value) : value, name];
                       }}
                     />
@@ -117,7 +117,7 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
                       dataKey="bikeScore" 
                       fill="#f97316" 
                       radius={[6, 6, 0, 0]} 
-                      name="BikeScore"
+                      name="BIKESCORE"
                       activeBar={{ fill: "#fb923c" }}
                     />
                   </BarChart>
@@ -127,19 +127,19 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
                 <div className="text-center">
                   <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BikeScore</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BIKESCORE</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BikeScore / Period</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BIKESCORE / Period</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)}kJ</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Work</div>
+                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)} KJ</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL WORK</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)}h</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total Time</div>
+                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)} H</div>
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL TIME</div>
                 </div>
               </div>
             </div>

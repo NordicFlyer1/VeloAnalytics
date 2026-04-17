@@ -113,7 +113,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
                     />
                   </div>
                   {item.error && (
-                    <p className="text-[8px] text-red-400 mt-1 uppercase tracking-widest">{item.error}</p>
+                    <p className="text-[10px] text-red-400 mt-1 uppercase tracking-widest">{item.error}</p>
                   )}
                 </div>
                 {item.status === 'completed' && (
@@ -133,7 +133,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
                       setShowUploadView(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="ml-4 px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-[8px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all"
+                    className="ml-4 px-4 py-1.5 bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-black rounded-full text-[10px] font-bold uppercase tracking-widest border border-orange-500/20 transition-all shadow-lg hover:shadow-orange-500/20"
                   >
                     View
                   </button>

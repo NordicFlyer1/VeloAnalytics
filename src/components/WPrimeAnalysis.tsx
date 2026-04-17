@@ -59,26 +59,26 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">Anaerobic Reserve Depletion & Recovery</p>
+                  <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">ANAEROBIC RESERVE DEPLETION & RECOVERY</p>
                 </div>
                 {cpWPrime && (
                   <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
                     <div className="text-center">
-                      <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                        Critical Power
-                        {manualCP !== null && <span className="text-[8px] bg-orange-500/20 text-orange-500 px-1 rounded">Manual</span>}
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1 font-bold">
+                        CRITICAL POWER
+                        {manualCP !== null && <span className="text-[10px] bg-orange-500/20 text-orange-500 px-1 rounded tracking-normal normal-case font-bold">MANUAL</span>}
                       </div>
-                      <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)}W</div>
+                      <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)} W</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                        W' Capacity
-                        {manualWPrime !== null && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 rounded">Manual</span>}
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1 font-bold">
+                        W' CAPACITY
+                        {manualWPrime !== null && <span className="text-[10px] bg-purple-500/20 text-purple-500 px-1 rounded tracking-normal normal-case font-bold">MANUAL</span>}
                       </div>
-                      <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)}kJ</div>
+                      <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)} KJ</div>
                     </div>
                   </div>
                 )}
@@ -120,7 +120,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                 {/* W' Balance Lane */}
                 <MetricLane 
                   metric="wPrimeBalance"
-                  config={{ label: "W' Balance", color: '#a855f7', unit: 'J' }}
+                  config={{ label: "W' Balance", color: '#a855f7', unit: 'KJ' }}
                   data={smoothedData}
                   activePoint={activePoint}
                   onMouseMove={(e) => {
@@ -155,7 +155,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                   )}
                 >
                   <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
                 </button>
                 <button 
                   onClick={() => setShowECP(!showECP)}
@@ -165,7 +165,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                   )}
                 >
                   <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
                 </button>
               </div>
 
@@ -177,20 +177,20 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated CP (eCP)</span>
+                    <span className="text-[10px] tracking-widest text-app-muted font-bold uppercase">Estimated CP (eCP)</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
-                      <span className="text-sm text-app-muted">Watts</span>
+                      <span className="text-sm font-bold uppercase tracking-widest text-app-muted">W</span>
                     </div>
                     <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
                       Critical Power represents the highest power output you can maintain indefinitely without fatigue.
                     </p>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] tracking-widest text-app-muted font-bold">Estimated W' (eW')</span>
+                    <span className="text-[10px] tracking-widest text-app-muted font-bold uppercase">ESTIMATED W' (EW')</span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.wPrime || 0)}</span>
-                      <span className="text-sm text-app-muted">Joules</span>
+                      <span className="text-5xl font-light tracking-tighter">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
+                      <span className="text-sm font-bold uppercase tracking-widest text-app-muted">KJ</span>
                     </div>
                     <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
                       W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
@@ -198,8 +198,8 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                   </div>
                 </div>
                 <div className="mt-8 pt-8 border-t border-app-border/30">
-                  <p className="text-[9px] text-app-muted/40 uppercase tracking-widest font-medium">
-                    Model: 2-Parameter Linear Model (Work = CP × t + W')
+                  <p className="text-[10px] text-app-muted/40 uppercase tracking-widest font-bold">
+                    MODEL: 2-PARAMETER LINEAR MODEL (WORK = CP × T + W')
                   </p>
                 </div>
               </div>

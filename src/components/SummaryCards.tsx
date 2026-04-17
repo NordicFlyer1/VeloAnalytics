@@ -42,7 +42,7 @@ export const SummaryCards = React.memo(({
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} kJ
+          Work: {Math.round((summary.avgPower || 0) * summary.duration / 1000)} KJ
         </div>
       </div>
 
@@ -53,23 +53,23 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest whitespace-nowrap">W xPower</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest whitespace-nowrap">W xPower</span>
         </div>
         <div className="mt-2 sm:mt-4 flex flex-wrap items-start sm:items-center gap-x-3 sm:gap-x-6 gap-y-2 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
           <div className="flex gap-2 sm:gap-3">
-            <span>Avg: {Math.round(summary.avgPower || 0)}W</span>
-            <span>Max: {Math.round(summary.maxPower || 0)}W</span>
+            <span>AVG: {Math.round(summary.avgPower || 0)}W</span>
+            <span>MAX: {Math.round(summary.maxPower || 0)}W</span>
           </div>
           {userWeight && (
             <div className="flex gap-2 sm:gap-3 text-orange-500/80">
-              <span>Avg: {(() => {
+              <span>AVG: {(() => {
                 const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
                 return ((summary.avgPower || 0) / weightKg).toFixed(1);
-              })()} W/kg</span>
-              <span>Max: {(() => {
+              })()} W/KG</span>
+              <span>MAX: {(() => {
                 const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
                 return ((summary.maxPower || 0) / weightKg).toFixed(1);
-              })()} W/kg</span>
+              })()} W/KG</span>
             </div>
           )}
           {data.some(p => p.leftRightBalance !== undefined) && (
@@ -92,10 +92,10 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BikeScore</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">BIKESCORE</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Relative Intensity: {(summary.relativeIntensity || 0).toFixed(2)}
+          RELATIVE INTENSITY: {(summary.relativeIntensity || 0).toFixed(2)}
         </div>
       </div>
 
@@ -106,10 +106,10 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">BPM</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">BPM</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Max: {Math.round(summary.maxHeartRate || 0)} bpm
+          MAX: {Math.round(summary.maxHeartRate || 0)} BPM
         </div>
       </div>
 
@@ -120,10 +120,10 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.distance / 1000).toFixed(1)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">KM</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Ascent: {Math.round(summary.totalAscent || 0)}m
+          ASCENT: {Math.round(summary.totalAscent || 0)} M
         </div>
       </div>
 
@@ -134,10 +134,10 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">KM/H</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">KM/H</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Max: {(summary.maxSpeed || 0).toFixed(1)}km/h
+          MAX: {(summary.maxSpeed || 0).toFixed(1)} KM/H
         </div>
       </div>
 
@@ -148,10 +148,10 @@ export const SummaryCards = React.memo(({
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
-          <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">RPM</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">RPM</span>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          Max: {Math.round(summary.maxCadence || 0)} rpm
+          MAX: {Math.round(summary.maxCadence || 0)} RPM
         </div>
       </div>
 
@@ -173,11 +173,11 @@ export const SummaryCards = React.memo(({
             )}>
               {(summary.aerobicDecoupling || 0).toFixed(1)}%
             </span>
-            <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">Pw:HR</span>
+            <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">PW:HR</span>
           </div>
           <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-            {summary.aerobicDecoupling < 5 ? "Good Efficiency" : 
-             summary.aerobicDecoupling < 10 ? "Moderate Drift" : "High Drift"}
+            {summary.aerobicDecoupling < 5 ? "GOOD EFFICIENCY" : 
+             summary.aerobicDecoupling < 10 ? "MODERATE DRIFT" : "HIGH DRIFT"}
           </div>
         </div>
       )}
@@ -190,27 +190,27 @@ export const SummaryCards = React.memo(({
           </div>
           <div className="flex items-baseline gap-1 sm:gap-2">
             <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
-            <span className="text-[10px] sm:text-xs text-app-muted font-medium uppercase tracking-widest">°C</span>
+            <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">°C</span>
           </div>
           <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-            Avg Ambient
+            AVG AMBIENT
           </div>
         </div>
       )}
       
       {history.length > 0 && currentPMC && (
         <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
-          <div className="flex justify-between items-start mb-2 sm:mb-4">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Performance (PMC)</span>
-            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
-            <span className="text-[10px] text-app-muted font-medium uppercase tracking-widest">LTS</span>
-          </div>
-          <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-            STS: {Math.round(currentPMC.sts || 0)} | SB: {Math.round(currentPMC.sb || 0)}
-          </div>
+        <div className="flex justify-between items-start mb-2 sm:mb-4">
+          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Performance (PMC)</span>
+          <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+        </div>
+        <div className="flex items-baseline gap-1 sm:gap-2">
+          <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
+          <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">FITNESS (LTS)</span>
+        </div>
+        <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+          STS: {Math.round(currentPMC.sts || 0)} <span className="text-app-border/40 mx-1">|</span> FORM (SB): {Math.round(currentPMC.sb || 0)}
+        </div>
         </div>
       )}
     </div>

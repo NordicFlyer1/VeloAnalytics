@@ -43,22 +43,22 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
                   {[
-                    { id: 'file', label: 'File' },
-                    { id: '1km', label: '1km' },
-                    { id: '5km', label: '5km' },
-                    { id: '10km', label: '10km' },
-                    { id: '1min', label: '1min' },
-                    { id: '5min', label: '5min' },
-                    { id: '10min', label: '10min' }
+                    { id: 'file', label: 'FILE' },
+                    { id: '1km', label: '1KM' },
+                    { id: '5km', label: '5KM' },
+                    { id: '10km', label: '10KM' },
+                    { id: '1min', label: '1MIN' },
+                    { id: '5min', label: '5MIN' },
+                    { id: '10min', label: '10MIN' }
                   ].map((mode) => (
                     <button
                       key={mode.id}
                       onClick={() => setLapMode(mode.id as any)}
                       className={cn(
-                        "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-full transition-all",
+                        "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
                         lapMode === mode.id 
-                          ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
-                          : "text-app-muted hover:text-app-text hover:bg-app-card"
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
                       )}
                     >
                       {mode.label}
@@ -72,13 +72,13 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                 <table className="w-full text-left border-collapse hidden md:table">
                   <thead className="sticky top-0 bg-app-card z-10">
                     <tr className="border-b border-app-border">
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Lap</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Time</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Dist (km)</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Power</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max HR</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Cadence</th>
-                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">Avg/Max Speed</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">LAP</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">TIME</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">DIST (KM)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX POWER (W)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX HR (BPM)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX CADENCE (RPM)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX SPEED (KM/H)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -93,13 +93,13 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                           {Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W
                         </td>
                         <td className="py-4 text-xs text-app-text/60">
-                          {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm
+                          {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)}
                         </td>
                         <td className="py-4 text-xs text-app-text/60">
-                          {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm
+                          {Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)}
                         </td>
                         <td className="py-4 text-xs text-app-text/60">
-                          {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h
+                          {(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)}
                         </td>
                       </tr>
                     ))}
@@ -110,28 +110,28 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                 <div className="grid grid-cols-1 gap-4 md:hidden">
                   {currentLaps.map((lap) => (
                     <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
-                      <div className="flex justify-between items-center border-b border-app-border pb-3">
-                        <span className="text-sm font-bold text-orange-500">Lap #{lap.id}</span>
-                        <span className="text-xs font-medium text-app-text/60">
-                          {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} km
+                      <div className="flex justify-between items-center border-b border-app-border pb-3 uppercase tracking-widest font-bold">
+                        <span className="text-sm text-orange-500">LAP #{lap.id}</span>
+                        <span className="text-xs text-app-text/60">
+                          {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} KM
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                         <div className="space-y-1">
-                          <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
                           <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W</div>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                          <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} bpm</div>
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
+                          <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} BPM</div>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                          <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} rpm</div>
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
+                          <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} RPM</div>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-[8px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                          <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} km/h</div>
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
+                          <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} KM/H</div>
                         </div>
                       </div>
                     </div>
