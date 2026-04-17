@@ -47,6 +47,10 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
         description="Peak power output across different time durations"
         isExpanded={isPowerCurveExpanded}
         onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
+        infoContent={{
+          title: "Power Curve",
+          description: "Compares your maximum power outputs across all durations (from 1s to 60m) against your 90-day and all-time bests to identify strengths and peaks."
+        }}
       />
 
       <AnimatePresence>

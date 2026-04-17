@@ -64,6 +64,10 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
         description="Historical analysis of distance, time, and elevation gain"
         isExpanded={isExpanded}
         onToggle={() => setIsExpanded(!isExpanded)}
+        infoContent={{
+          title: "Volume Trends",
+          description: "Analyzes your weekly and monthly activity volume. Tracks total distance, elevation gain, and time to ensure consistent training progression."
+        }}
       />
 
       <AnimatePresence>

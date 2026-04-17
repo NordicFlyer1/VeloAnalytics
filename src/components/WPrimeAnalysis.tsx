@@ -49,6 +49,10 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
         description="Anaerobic capacity utilization and recovery tracking"
         isExpanded={isWPrimeExpanded}
         onToggle={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
+        infoContent={{
+          title: "W' Balance",
+          description: "Your real-time anaerobic capacity reservoir (W'). It depletes when your power output exceeds Critical Power (CP) and recovers when you ride below it. The recovery model is fatigue-adjusted, meaning it becomes less efficient over the duration of long rides."
+        }}
       />
 
       <AnimatePresence>

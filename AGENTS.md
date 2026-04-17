@@ -64,3 +64,12 @@ This document serves as the source of truth for the visual and structural design
 - **Header Gaps:** Flex headers (e.g., summary metrics or control bars) use `gap-4`.
 - **Card Padding:** All cards use consistent `p-8` for desktop and `p-4` or `p-6` for mobile.
 - **Section Headers:** Vertical gap between section headers and content is established via the `space-y-6` container.
+
+## 11. Metric Color Palette
+- **Power:** Orange (`#f97316`)
+- **W' Balance:** Purple (`#a855f7`)
+- **Heart Rate:** Red (`#ef4444`)
+- **Cadence:** Green (`#22c55e`)
+- **Speed:** Cyan (`#06b6d4`)
+- **Altitude:** Amber (`#f59e0b`)
+- **Slope:** Slate (`#64748b`)

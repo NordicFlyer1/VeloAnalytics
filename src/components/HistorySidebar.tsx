@@ -52,6 +52,10 @@ export const HistorySidebar = React.memo(({
         description="Manage and compare your previously uploaded activities"
         isExpanded={isHistoryExpanded}
         onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
+        infoContent={{
+          title: "Activity History",
+          description: "Your local database of rides. You can select multiple activities to compare power curves, view historical training load trends in the PMC, or permanently delete rides using the trash icon."
+        }}
       />
                 
       <AnimatePresence>

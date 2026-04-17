@@ -162,7 +162,7 @@ export default function App() {
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
-  const [activeMetrics, setActiveMetrics] = useState<string[]>(['power']);
+  const [activeMetrics, setActiveMetrics] = useState<string[]>(['power', 'wPrimeBalance']);
   const [smoothingWindow, setSmoothingWindow] = useState<number>(() => {
     const saved = localStorage.getItem('veloanalytics_smoothing');
     return saved ? parseInt(saved) : 1;
@@ -1329,11 +1329,12 @@ export default function App() {
 
   const metricsConfig = React.useMemo((): Record<string, { label: string, color: string, unit: string }> => ({
     power: { label: 'POWER', color: '#f97316', unit: 'W' },
+    wPrimeBalance: { label: "W' BALANCE", color: '#a855f7', unit: 'J' },
     heartRate: { label: 'HEART RATE', color: '#ef4444', unit: 'BPM' },
-    cadence: { label: 'CADENCE', color: '#a855f7', unit: 'RPM' },
-    speed: { label: 'SPEED', color: '#22c55e', unit: 'KM/H' },
-    altitude: { label: 'ALTITUDE', color: '#3b82f6', unit: 'M' },
-    slope: { label: 'SLOPE', color: '#eab308', unit: '%' },
+    cadence: { label: 'CADENCE', color: '#22c55e', unit: 'RPM' },
+    speed: { label: 'SPEED', color: '#06b6d4', unit: 'KM/H' },
+    altitude: { label: 'ALTITUDE', color: '#f59e0b', unit: 'M' },
+    slope: { label: 'SLOPE', color: '#64748b', unit: '%' },
   }), []);
 
   return (

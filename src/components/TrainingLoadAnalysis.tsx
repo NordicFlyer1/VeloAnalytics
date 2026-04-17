@@ -43,6 +43,10 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
         description="Weekly and monthly aggregation of training stress and volume"
         isExpanded={isTrainingLoadExpanded}
         onToggle={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
+        infoContent={{
+          title: "Training Load",
+          description: "Quantifies the physiological cost of your workouts using BikeScore™. Monitors accumulated stress over different time windows to ensure balanced training."
+        }}
       />
 
       <AnimatePresence>

@@ -89,6 +89,10 @@ export const ActivityMap = React.memo(({
         description="GPS track visualization with interactive data point inspection"
         isExpanded={isMapExpanded}
         onToggle={() => setIsMapExpanded(!isMapExpanded)}
+        infoContent={{
+          title: "Activity Map",
+          description: "A geographical view of your effort. Synchronized with the charts, so you can see exactly where on the route a specific metric peak or drop occurred."
+        }}
       />
 
       <AnimatePresence>
@@ -198,7 +202,6 @@ export const ActivityMap = React.memo(({
                         ))}
                       </div>
                     </div>
-                    {(MapContainer as any).displayName = 'MapContainer'}
                     <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} {...{center: gpsPoints[0], zoom: 13, scrollWheelZoom: true} as any}>
                       <TileLayer
                         {...{

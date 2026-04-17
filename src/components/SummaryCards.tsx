@@ -130,7 +130,7 @@ export const SummaryCards = React.memo(({
       <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-          <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
+          <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-500" />
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
@@ -144,7 +144,7 @@ export const SummaryCards = React.memo(({
       <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-          <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
+          <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
         </div>
         <div className="flex items-baseline gap-1 sm:gap-2">
           <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>

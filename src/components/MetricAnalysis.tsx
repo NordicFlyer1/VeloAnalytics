@@ -63,6 +63,10 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
         description="Deep dive into your performance data with synchronized charts"
         isExpanded={isChartExpanded}
         onToggle={() => setIsChartExpanded(!isChartExpanded)}
+        infoContent={{
+          title: "Metric Analysis",
+          description: "Explore point-by-point data for Power, W' Balance, Heart Rate, Cadence, Speed, Altitude, and Slope. Use the smoothing controls to filter out raw data noise and find significant trends."
+        }}
       />
       
       <AnimatePresence>
@@ -83,11 +87,15 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                       <button
                         key={key}
                         onClick={() => {
-                          setActiveMetrics(prev => 
-                            prev.includes(key) 
+                          setActiveMetrics(prev => {
+                            const next = prev.includes(key) 
                               ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
-                              : [...prev, key]
-                          );
+                              : [...prev, key];
+                            
+                            // Sort based on metricsConfig order
+                            const order = Object.keys(metricsConfig);
+                            return [...next].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+                          });
                         }}
                         className={cn(
                           "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",

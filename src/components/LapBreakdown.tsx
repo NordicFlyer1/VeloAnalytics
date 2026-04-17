@@ -28,6 +28,10 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
         description="Detailed performance metrics for individual segments"
         isExpanded={isLapsExpanded}
         onToggle={() => setIsLapsExpanded(!isLapsExpanded)}
+        infoContent={{
+          title: "Lap Breakdown",
+          description: "Comprehensive analysis of automatic and manual segments. Provides granular statistics for each lap including duration, distance, intensity (relative and absolute), power distribution, heart rate response, and total work performed."
+        }}
       />
 
       <AnimatePresence>
@@ -76,6 +80,8 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">TIME</th>
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">DIST (KM)</th>
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX POWER (W)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">xPower (W)</th>
+                      <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">WORK (KJ)</th>
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX HR (BPM)</th>
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX CADENCE (RPM)</th>
                       <th className="py-4 text-[10px] uppercase tracking-widest text-app-muted font-bold">AVG/MAX SPEED (KM/H)</th>
@@ -91,6 +97,12 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                         <td className="py-4 text-xs text-app-text/60">{(lap.distance / 1000).toFixed(2)}</td>
                         <td className="py-4 text-xs text-app-text/60 font-bold">
                           {Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W
+                        </td>
+                        <td className="py-4 text-xs text-app-text/60 italic">
+                          {Math.round(lap.xPower || 0)}
+                        </td>
+                        <td className="py-4 text-xs text-orange-500/80 font-bold">
+                          {Math.round((lap.avgPower || 0) * (lap.duration || 0) / 1000)}
                         </td>
                         <td className="py-4 text-xs text-app-text/60">
                           {Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)}
@@ -118,8 +130,12 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                       </div>
                       <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                         <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max)</span>
-                          <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} W</div>
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max • xP)</span>
+                          <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} / {Math.round(lap.xPower || 0)} W</div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Work</span>
+                          <div className="text-xs font-bold text-orange-500">{Math.round((lap.avgPower || 0) * (lap.duration || 0) / 1000)} KJ</div>
                         </div>
                         <div className="space-y-1">
                           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>

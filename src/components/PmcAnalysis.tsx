@@ -46,6 +46,10 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
         description="Performance Management Chart showing fitness, fatigue, and form"
         isExpanded={isPmcExpanded}
         onToggle={() => setIsPmcExpanded(!isPmcExpanded)}
+        infoContent={{
+          title: "PMC Analysis",
+          description: "Tracks Long-Term Stress (Fitness), Short-Term Stress (Fatigue), and Stress Balance (Form) over time based on your training load (BikeScore™) history."
+        }}
       />
 
       <AnimatePresence>

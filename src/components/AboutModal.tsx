@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, TrendingUp, Activity, BookOpen, FileText, Scale } from 'lucide-react';
+import { Zap, TrendingUp, Activity, BookOpen, Scale, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import methodologyContent from '../../METHODOLOGY.md?raw';
 import licenseContent from '../../LICENSE?raw';
+import { FAQSection } from './FAQSection';
 import { cn } from '../lib/utils';
 
 interface AboutModalProps {
@@ -15,7 +16,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
   showAboutModal,
   setShowAboutModal
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'methodology' | 'license'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'methodology' | 'faq' | 'license'>('overview');
 
   return (
     <AnimatePresence>
@@ -51,11 +52,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({
               </div>
 
               {/* Capsule Tab Switcher */}
-              <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start">
+              <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start overflow-x-auto max-w-full">
                 <button
                   onClick={() => setActiveTab('overview')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'overview' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
@@ -66,7 +67,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <button
                   onClick={() => setActiveTab('methodology')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'methodology' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
@@ -75,9 +76,20 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                   Methodology
                 </button>
                 <button
+                  onClick={() => setActiveTab('faq')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                    activeTab === 'faq' 
+                      ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                      : "text-app-muted hover:text-app-text"
+                  )}
+                >
+                  FAQ
+                </button>
+                <button
                   onClick={() => setActiveTab('license')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'license' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
@@ -149,10 +161,26 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                         </div>
                       </div>
                     </section>
+                    
+                    <section className="space-y-4">
+                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Getting Help</h3>
+                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-6 flex gap-4">
+                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
+                          <HelpCircle className="w-5 h-5 text-black" />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-bold text-app-text">Contextual Help</h4>
+                          <p className="text-xs text-app-muted leading-relaxed">
+                            Look for the small <span className="text-orange-500 font-bold italic">i</span> icons next to section headers throughout the app. 
+                            Clicking them will show a quick explainer for that specific analysis block.
+                          </p>
+                        </div>
+                      </div>
+                    </section>
 
                     <div className="pt-8 border-t border-app-border/50 text-center">
                       <p className="text-[10px] text-app-muted italic">
-                        Explore the <span className="text-orange-500 font-bold">Methodology</span> and <span className="text-orange-500 font-bold">License</span> for full transparency.
+                        Explore the tabs above for full documentation, FAQs, and licensing.
                       </p>
                     </div>
                   </motion.div>
@@ -167,6 +195,16 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                     <div className="markdown-body">
                       <ReactMarkdown>{methodologyContent}</ReactMarkdown>
                     </div>
+                  </motion.div>
+                ) : activeTab === 'faq' ? (
+                  <motion.div
+                    key="faq"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FAQSection />
                   </motion.div>
                 ) : (
                   <motion.div

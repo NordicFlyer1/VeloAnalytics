@@ -45,6 +45,10 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
         description="Key performance indicators and summary statistics"
         isExpanded={isDetailsExpanded}
         onToggle={() => setIsDetailsExpanded(!isDetailsExpanded)}
+        infoContent={{
+          title: "Activity Details",
+          description: "High-level summary of your session, including duration, distance, total work (KJ), and normalized metrics like xPower and BikeScore™."
+        }}
       />
       
       <AnimatePresence>
@@ -129,6 +133,18 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                 <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">xPower</span>
+                <span className="text-xs font-medium">{Math.round(summary.xPower || 0)} W</span>
+              </div>
+              {estimatedCp && (
+                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500/60 uppercase">ESTIMATED CP (ECP)</span>
+                  <span className="text-xs font-bold text-orange-500">
+                    {estimatedCp} W
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                 <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Cadence</span>
                 <span className="text-xs font-medium">{Math.round(summary.avgCadence || 0)} / {Math.round(summary.maxCadence || 0)} RPM</span>
               </div>
@@ -146,14 +162,14 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                   {Math.round(summary.totalAscent || 0)} M
                 </span>
               </div>
-              {estimatedCp && (
-                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500/60 uppercase">ESTIMATED CP (ECP)</span>
-                  <span className="text-xs font-bold text-orange-500">
-                    {estimatedCp} W
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Total Work</span>
+                <span className="text-xs font-medium">{Math.round(summary.work || 0)} KJ</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">BikeScore™</span>
+                <span className="text-xs font-medium">{Math.round(summary.bikeScore || 0)} pts</span>
+              </div>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-3">

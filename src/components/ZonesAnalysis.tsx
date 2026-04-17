@@ -23,6 +23,10 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
         description="Time distribution across power and heart rate intensity levels"
         isExpanded={isZonesExpanded}
         onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
+        infoContent={{
+          title: "Training Zones",
+          description: "Distributes your total ride time into Power and Heart Rate zones. Essential for verifying if the session met its specific training objectives."
+        }}
       />
 
       <AnimatePresence>
