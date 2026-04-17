@@ -1538,6 +1538,8 @@ export default function App() {
                   updateActivityName={updateActivityName}
                   currentActivityId={currentActivityId}
                   estimatedCp={estimatedCp}
+                  userWeight={userWeight}
+                  weightUnit={weightUnit}
                   exportOriginal={exportOriginal}
                   exportGPX={exportGPX}
                 />

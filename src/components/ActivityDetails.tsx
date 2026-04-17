@@ -17,6 +17,8 @@ interface ActivityDetailsProps {
   updateActivityName: (id: string, newName: string) => void;
   currentActivityId: string | null;
   estimatedCp: number | null;
+  userWeight: number | null;
+  weightUnit: 'kg' | 'lbs';
   exportOriginal: () => void;
   exportGPX: () => void;
 }
@@ -32,6 +34,8 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
   updateActivityName,
   currentActivityId,
   estimatedCp,
+  userWeight,
+  weightUnit,
   exportOriginal,
   exportGPX
 }) => {
@@ -132,6 +136,22 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                 <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max Power</span>
                 <span className="text-xs font-medium">{Math.round(summary.avgPower || 0)} / {Math.round(summary.maxPower || 0)} W</span>
               </div>
+              {userWeight && (
+                <div className="flex justify-between items-center py-3 border-b border-app-border/50">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">Avg/Max W/KG</span>
+                  <div className="flex gap-2">
+                    <span className="text-xs font-medium">
+                      {(() => {
+                        const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
+                        return ((summary.avgPower || 0) / weightKg).toFixed(1);
+                      })()} / {(() => {
+                        const weightKg = weightUnit === 'lbs' ? userWeight * 0.453592 : userWeight;
+                        return ((summary.maxPower || 0) / weightKg).toFixed(1);
+                      })()} W/KG
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between items-center py-3 border-b border-app-border/50">
                 <span className="text-[10px] uppercase tracking-widest font-bold text-app-muted">xPower</span>
                 <span className="text-xs font-medium">{Math.round(summary.xPower || 0)} W</span>
