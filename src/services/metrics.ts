@@ -51,13 +51,23 @@ export function calculatePowerCurve(data: CyclingDataPoint[]): PowerCurvePoint[]
 }
 
 /**
- * Calculates W' balance over time using the Skiba model.
+ * Calculates W' balance over time using a fatigue-adjusted Skiba model.
+ * The model accounts for the physiological reality that recovery slows and 
+ * maximum anaerobic capacity (W') decreases as total work (kJ) accumulates during long rides.
  */
 export function calculateWPrimeBalance(data: CyclingDataPoint[], cp: number, wPrime: number): number[] {
   if (data.length === 0 || cp <= 0 || wPrime <= 0) return [];
 
   const wPrimeBal: number[] = new Array(data.length);
   wPrimeBal[0] = wPrime;
+  
+  let cumulativeWorkKJ = 0;
+  
+  // Fatigue sensitivity coefficients
+  // tauFactor: Increases tau (slowing recovery) by approx 15% per 1000kJ
+  const TAU_FATIGUE_COEFF = 0.15;
+  // capacityFactor: Decreases effective W' ceiling by approx 5% per 1000kJ
+  const CAPACITY_FATIGUE_COEFF = 0.05;
 
   for (let i = 1; i < data.length; i++) {
     const p = data[i].power || 0;
@@ -70,19 +80,34 @@ export function calculateWPrimeBalance(data: CyclingDataPoint[], cp: number, wPr
     }
     if (dt <= 0) dt = 1;
 
+    // Accumulate total work in kJ
+    cumulativeWorkKJ += (p * dt) / 1000;
+    
+    // Calculate fatigue factors based on current cumulative work
+    const workInThousands = cumulativeWorkKJ / 1000;
+    const tauMultiplier = 1 + (TAU_FATIGUE_COEFF * workInThousands);
+    const capacityMultiplier = Math.max(0.5, 1 - (CAPACITY_FATIGUE_COEFF * workInThousands));
+    
+    const currentWPrimeCeiling = wPrime * capacityMultiplier;
+
     if (p > cp) {
       // Depletion
       wPrimeBal[i] = prevWBal - (p - cp) * dt;
     } else {
       // Recovery
-      // Skiba (2012) recovery constant tau
-      const tau = 546 * Math.exp(-0.01 * (cp - p)) + 316;
-      wPrimeBal[i] = prevWBal + (wPrime - prevWBal) * (1 - Math.exp(-dt / tau));
+      // Base Skiba (2012) recovery constant tau
+      const baseTau = 546 * Math.exp(-0.01 * (cp - p)) + 316;
+      
+      // Apply fatigue factor to tau (recovery becomes slower as ride progresses)
+      const adjustedTau = baseTau * tauMultiplier;
+      
+      // Recover toward the dynamic ceiling (which shrinks as ride progresses)
+      wPrimeBal[i] = prevWBal + (currentWPrimeCeiling - prevWBal) * (1 - Math.exp(-dt / adjustedTau));
     }
 
-    // Clamp to [0, wPrime]
+    // Clamp to [0, currentWPrimeCeiling]
     if (wPrimeBal[i] < 0) wPrimeBal[i] = 0;
-    if (wPrimeBal[i] > wPrime) wPrimeBal[i] = wPrime;
+    if (wPrimeBal[i] > currentWPrimeCeiling) wPrimeBal[i] = currentWPrimeCeiling;
   }
 
   return wPrimeBal;

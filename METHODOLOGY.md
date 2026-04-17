@@ -33,9 +33,12 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 *   **STS (Short Term Stress / Fatigue)**: A 7-day exponentially weighted moving average of daily BikeScore.
 *   **SB (Stress Balance / Form)**: The difference between yesterday's LTS and yesterday's STS ($SB = LTS_{yest} - STS_{yest}$).
 
-### 5. W' Balance (W'bal)
+### 5. Fatigue-Adjusted W' Balance (W'bal)
 **Concept**: A real-time model of your remaining anaerobic work capacity.
-**Calculation**: Based on the differential model developed by **Dr. Philip Skiba**. It tracks how W' is depleted when riding above CP and how it is replenished (using an exponential decay constant, Tau) when riding below CP.
+**Implementation**: VeloAnalytics uses a **Fatigue-Adjusted Skiba Model**. While the standard model uses a static recovery constant, VeloAnalytics accounts for parameter non-stationarity during long-duration activities:
+1.  **Recovery Slowing**: The recovery time constant ($\tau$) is scaled by accumulated work ($kJ$). As you fatigue, $\tau$ increases (e.g., ~15% slower per 1000kJ), reflecting the physiological "sluggishness" of a fatigued system.
+2.  **Capacity Decay**: The maximum anaerobic capacity ($W'$) is not treated as a static tank. The ceiling of the tank decays gradually based on cumulative work (e.g., ~5% per 1000kJ), acknowledging that you cannot reach 100% of your fresh $W'$ after several hours of riding.
+3.  **Standard Model**: For shorter efforts, these adjustments are negligible, and the model behaves as the standard differential equation proposed by **Dr. Philip Skiba**.
 
 ### 6. Aerobic Decoupling (Pw:HR)
 **Concept**: Measures the "drift" between Power and Heart Rate during a steady-state effort.
