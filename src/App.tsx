@@ -173,6 +173,7 @@ export default function App() {
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
 
   const handleCompare = () => {
     mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1390,6 +1391,8 @@ export default function App() {
         areAllPanelsCollapsed={areAllPanelsCollapsed}
         toggleAllPanels={toggleAllPanels}
         setShowSettings={setShowSettings}
+        toggleHistorySidebar={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+        isHistorySidebarOpen={isHistorySidebarOpen}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -1416,18 +1419,19 @@ export default function App() {
         />
 
         {(!showUploadView && (summary || history.length > 0)) && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <EmptyHistoryView 
               summary={summary}
               history={history}
               selectedHistoryIds={selectedHistoryIds}
               loadFromHistory={loadFromHistory}
+              onOpenHistory={() => setIsHistorySidebarOpen(true)}
             />
 
             {summary && (
               <>
                 {/* Overview Section */}
-                <div className="bg-app-card border border-app-border rounded-3xl p-8">
+                <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
                   <SectionHeader 
                     icon={LayoutList}
                     title="Activity Overview"
@@ -1634,9 +1638,14 @@ export default function App() {
           historySortOrder={historySortOrder}
           setHistorySortOrder={setHistorySortOrder}
           handleCompare={handleCompare}
-          loadFromHistory={loadFromHistory}
+          loadFromHistory={(id) => {
+            loadFromHistory(id);
+            setIsHistorySidebarOpen(false);
+          }}
           removeFromHistory={removeFromHistory}
           removeMultipleFromHistory={removeMultipleFromHistory}
+          isOpen={isHistorySidebarOpen}
+          onClose={() => setIsHistorySidebarOpen(false)}
         />
                 </div>
               )}

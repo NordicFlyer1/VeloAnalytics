@@ -6,7 +6,8 @@ import {
   TrendingUp, 
   Trash2, 
   ArrowUpDown, 
-  Activity 
+  Activity,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, formatDuration } from '../lib/utils';
@@ -27,6 +28,8 @@ interface HistorySidebarProps {
   loadFromHistory: (id: string) => void;
   removeFromHistory: (id: string) => void;
   removeMultipleFromHistory: (ids: string[]) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const HistorySidebar = React.memo(({
@@ -42,21 +45,54 @@ export const HistorySidebar = React.memo(({
   handleCompare,
   loadFromHistory,
   removeFromHistory,
-  removeMultipleFromHistory
+  removeMultipleFromHistory,
+  isOpen,
+  onClose
 }: HistorySidebarProps) => {
+  const isMobileView = isOpen !== undefined;
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
-      <SectionHeader 
-        icon={History}
-        title="Activity History"
-        description="Manage and compare your previously uploaded activities"
-        isExpanded={isHistoryExpanded}
-        onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
-        infoContent={{
-          title: "Activity History",
-          description: "Your local database of rides. You can select multiple activities to compare power curves, view historical training load trends in the PMC, or permanently delete rides using the trash icon."
-        }}
-      />
+    <>
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isMobileView && isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <div className={cn(
+        "bg-app-card border border-app-border rounded-3xl p-6 sm:p-8 transition-all duration-300 relative",
+        isMobileView ? cn(
+          "fixed top-0 right-0 h-full w-[85%] sm:w-[400px] z-[70] rounded-none border-l shadow-2xl overflow-y-auto md:relative md:w-auto md:h-auto md:rounded-3xl md:border md:shadow-none md:z-auto md:p-8",
+          isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
+        ) : ""
+      )}>
+        {isMobileView && (
+          <button 
+            onClick={onClose}
+            className="absolute top-6 right-6 p-2 hover:bg-app-bg rounded-full text-app-muted md:hidden z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+
+        <SectionHeader 
+          icon={History}
+          title="Activity History"
+          description="Manage and compare activities"
+          isExpanded={isHistoryExpanded}
+          onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
+          infoContent={{
+            title: "Activity History",
+            description: "Your local database of rides. You can select multiple activities to compare power curves, view historical training load trends in the PMC, or permanently delete rides using the trash icon."
+          }}
+        />
                 
       <AnimatePresence>
         {isHistoryExpanded && (
@@ -196,6 +232,7 @@ export const HistorySidebar = React.memo(({
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 });
 

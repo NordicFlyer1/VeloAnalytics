@@ -94,7 +94,12 @@ export const MetricLane = React.memo(({
           <AreaChart 
             data={data}
             syncId={syncId}
-            margin={{ top: 40, right: 30, left: 10, bottom: isLast ? 20 : 0 }}
+            margin={{ 
+              top: window.innerWidth < 768 ? 35 : 40, 
+              right: window.innerWidth < 768 ? 5 : 30, 
+              left: window.innerWidth < 768 ? -20 : 10, 
+              bottom: isLast ? (window.innerWidth < 768 ? 10 : 20) : 0 
+            }}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
             onClick={onClick}
@@ -110,22 +115,23 @@ export const MetricLane = React.memo(({
               dataKey="timestamp" 
               hide={!isLast}
               stroke="var(--app-muted)" 
-              fontSize={9}
+              fontSize={8}
               tickLine={false}
               axisLine={false}
               tickFormatter={(val) => {
                 const d = new Date(val);
-                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+                return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
               }}
             />
             <YAxis 
               yAxisId={metric}
               stroke="var(--app-muted)"
-              fontSize={9}
+              fontSize={8}
               tickLine={false}
               axisLine={false}
               domain={['auto', 'auto']}
-              width={45}
+              width={window.innerWidth < 768 ? 30 : 45}
+              orientation="right"
               tickFormatter={(val) => config.unit === 'KJ' ? (val / 1000).toFixed(1) : Math.round(val).toString()}
             />
             

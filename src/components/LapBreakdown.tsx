@@ -21,7 +21,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
   setLapMode
 }) => {
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={LayoutList}
         title="Lap Breakdown"
@@ -45,7 +45,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
           >
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide">
                   {[
                     { id: 'file', label: 'FILE' },
                     { id: '1km', label: '1KM' },

@@ -16,11 +16,11 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
   summary
 }) => {
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Training Zones"
-        description="Time distribution across power and heart rate intensity levels"
+        description="Time distribution"
         isExpanded={isZonesExpanded}
         onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
         infoContent={{
@@ -38,7 +38,7 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               <div className="space-y-6">
                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
                 <div className="space-y-3">

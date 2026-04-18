@@ -66,7 +66,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
   };
 
   return (
-    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Metric Analysis"
@@ -88,10 +88,10 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-              <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Metrics</span>
-                <div className="flex flex-wrap gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar">
                   {Object.entries(metricsConfig).map(([key, config]) => {
                     const typedConfig = config as { label: string, color: string, unit: string };
                     return (
@@ -109,7 +109,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                           });
                         }}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                           activeMetrics.includes(key) 
                             ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                             : "text-app-muted hover:text-app-text"
@@ -117,7 +117,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                       >
                         <div 
                           className={cn(
-                            "w-2 h-2 rounded-full transition-all",
+                            "w-2 h-2 rounded-full transition-all flex-shrink-0",
                             activeMetrics.includes(key) ? "bg-black/40" : ""
                           )} 
                           style={!activeMetrics.includes(key) ? { backgroundColor: typedConfig.color } : {}} 
@@ -129,15 +129,15 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
-                <div className="flex flex-wrap items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border">
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar">
                   {[1, 3, 10, 30, 60].map((window) => (
                     <button
                       key={window}
                       onClick={() => setSmoothingWindow(window)}
                       className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                         smoothingWindow === window 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
@@ -177,7 +177,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                   }}
                   isLast={index === activeMetrics.length - 1}
                   syncId="activityAnalysis"
-                  height={activeMetrics.length > 3 ? 120 : 160}
+                  height={window.innerWidth < 768 ? 100 : (activeMetrics.length > 3 ? 120 : 160)}
                   estimatedCp={estimatedCp}
                   cp={cp}
                   manualCP={manualCP}

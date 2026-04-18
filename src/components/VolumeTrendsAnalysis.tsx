@@ -66,7 +66,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
   };
 
   return (
-    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Volume Trends"

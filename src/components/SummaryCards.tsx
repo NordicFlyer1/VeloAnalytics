@@ -32,15 +32,15 @@ export const SummaryCards = React.memo(({
   weightUnit
 }: SummaryCardsProps) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Duration & Work</span>
           <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{formatDuration(summary.duration)}</span>
           </div>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
@@ -48,19 +48,19 @@ export const SummaryCards = React.memo(({
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power Metrics</span>
           <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(summary.xPower || 0)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest whitespace-nowrap">W xPower</span>
           </div>
         </div>
-        <div className="mt-2 sm:mt-4 flex flex-wrap items-start sm:items-center gap-x-3 sm:gap-x-6 gap-y-2 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
-          <div className="flex gap-2 sm:gap-3">
+        <div className="mt-2 sm:mt-4 flex flex-wrap items-start sm:items-center gap-x-2 sm:gap-x-6 gap-y-1 text-[10px] text-app-muted font-bold uppercase tracking-widest justify-start">
+          <div className="flex flex-col sm:flex-row gap-0.5 sm:gap-3">
             <span>AVG: {Math.round(summary.avgPower || 0)}W</span>
             <span>MAX: {Math.round(summary.maxPower || 0)}W</span>
           </div>
@@ -77,30 +77,30 @@ export const SummaryCards = React.memo(({
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Training Stress</span>
           <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(summary.bikeScore || 0)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">BIKESCORE</span>
           </div>
         </div>
         <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-          RELATIVE INTENSITY: {(summary.relativeIntensity || 0).toFixed(2)}
+          RI: {(summary.relativeIntensity || 0).toFixed(2)}
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
           <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(summary.avgHeartRate || 0)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">BPM</span>
           </div>
         </div>
@@ -109,14 +109,14 @@ export const SummaryCards = React.memo(({
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Distance & Elevation</span>
           <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 rotate-45" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.distance / 1000).toFixed(1)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{(summary.distance / 1000).toFixed(1)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">KM</span>
           </div>
         </div>
@@ -125,14 +125,14 @@ export const SummaryCards = React.memo(({
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
           <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-500" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{(summary.avgSpeed || 0).toFixed(1)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">KM/H</span>
           </div>
         </div>
@@ -141,14 +141,14 @@ export const SummaryCards = React.memo(({
         </div>
       </div>
 
-      <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+      <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
         <div className="flex justify-between items-start mb-2 sm:mb-4">
           <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
           <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <div className="flex items-baseline gap-1 sm:gap-2">
-            <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(summary.avgCadence || 0)}</span>
             <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">RPM</span>
           </div>
         </div>
@@ -158,7 +158,7 @@ export const SummaryCards = React.memo(({
       </div>
 
       {summary.aerobicDecoupling !== undefined && (
-        <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+        <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
           <div className="flex justify-between items-start mb-2 sm:mb-4">
             <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Aerobic Decoupling</span>
             <TrendingUp className={cn(
@@ -170,7 +170,7 @@ export const SummaryCards = React.memo(({
           <div className="flex-1 flex flex-col justify-center">
             <div className="flex items-baseline gap-1 sm:gap-2">
               <span className={cn(
-                "text-3xl sm:text-4xl font-light tracking-tighter",
+                "text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter",
                 summary.aerobicDecoupling < 5 ? "text-green-500" :
                 summary.aerobicDecoupling < 10 ? "text-orange-500" : "text-red-500"
               )}>
@@ -180,21 +180,21 @@ export const SummaryCards = React.memo(({
             </div>
           </div>
           <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-            {summary.aerobicDecoupling < 5 ? "GOOD EFFICIENCY" : 
-             summary.aerobicDecoupling < 10 ? "MODERATE DRIFT" : "HIGH DRIFT"}
+            {summary.aerobicDecoupling < 5 ? "GOOD" : 
+             summary.aerobicDecoupling < 10 ? "MODERATE" : "HIGH"}
           </div>
         </div>
       )}
 
       {summary.avgTemperature !== undefined && (
-        <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+        <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
           <div className="flex justify-between items-start mb-2 sm:mb-4">
             <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Temperature</span>
             <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="flex items-baseline gap-1 sm:gap-2">
-              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
+              <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(summary.avgTemperature || 0)}</span>
               <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">°C</span>
             </div>
           </div>
@@ -205,19 +205,19 @@ export const SummaryCards = React.memo(({
       )}
       
       {history.length > 0 && currentPMC && (
-        <div className="bg-app-bg border border-app-border rounded-2xl p-4 sm:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[160px]">
+        <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px]">
           <div className="flex justify-between items-start mb-2 sm:mb-4">
             <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Performance (PMC)</span>
             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="flex items-baseline gap-1 sm:gap-2">
-              <span className="text-3xl sm:text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
-              <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">FITNESS (LTS)</span>
+              <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{Math.round(currentPMC.lts || 0)}</span>
+              <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">FITNESS</span>
             </div>
           </div>
           <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
-            STS: {Math.round(currentPMC.sts || 0)} <span className="text-app-border/40 mx-1">|</span> FORM (SB): {Math.round(currentPMC.sb || 0)}
+            SB: {Math.round(currentPMC.sb || 0)}
           </div>
         </div>
       )}
