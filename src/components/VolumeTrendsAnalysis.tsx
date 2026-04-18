@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart3, Activity, Clock, Mountain } from 'lucide-react';
 import { 
@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { SectionHeader } from './SectionHeader';
 import { cn } from '../lib/utils';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface VolumeTrendsAnalysisProps {
   isExpanded: boolean;
@@ -38,6 +39,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
   data
 }) => {
   const [activeMetric, setActiveMetric] = React.useState<MetricType>('distance');
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const activeMetricConfig = metrics.find(m => m.id === activeMetric)!;
 
@@ -56,14 +58,22 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
     return Math.round(val).toString();
   };
 
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_VolumeTrends_${range}_${activeMetric}_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Volume Trends"
         description="Historical analysis of distance, time, and elevation gain"
         isExpanded={isExpanded}
         onToggle={() => setIsExpanded(!isExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "Volume Trends",
           description: "Analyzes your weekly and monthly activity volume. Tracks total distance, elevation gain, and time to ensure consistent training progression."

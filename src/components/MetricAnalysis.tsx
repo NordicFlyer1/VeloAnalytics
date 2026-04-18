@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart3 } from 'lucide-react';
 import { SectionHeader } from './SectionHeader';
 import { MetricLane } from './MetricLane';
 import { cn } from '../lib/utils';
 import { CyclingDataPoint, ZoneDefinition } from '../types';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface MetricAnalysisProps {
   isChartExpanded: boolean;
@@ -55,14 +56,24 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
   showECP,
   setShowECP
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_MetricAnalysis_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Metric Analysis"
         description="Deep dive into your performance data with synchronized charts"
         isExpanded={isChartExpanded}
         onToggle={() => setIsChartExpanded(!isChartExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "Metric Analysis",
           description: "Explore point-by-point data for Power, W' Balance, Heart Rate, Cadence, Speed, Altitude, and Slope. Use the smoothing controls to filter out raw data noise and find significant trends."

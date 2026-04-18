@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar } from 'lucide-react';
 import { 
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { SectionHeader } from './SectionHeader';
 import { cn } from '../lib/utils';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface TrainingLoadAnalysisProps {
   isTrainingLoadExpanded: boolean;
@@ -35,14 +36,24 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
   trainingLoadData,
   trainingLoadStats
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_TrainingLoad_${trainingLoadRange}_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-8">
       <SectionHeader 
         icon={Calendar}
         title="Training Load Summary"
         description="Weekly and monthly aggregation of training stress and volume"
         isExpanded={isTrainingLoadExpanded}
         onToggle={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "Training Load",
           description: "Quantifies the physiological cost of your workouts using BikeScore™. Monitors accumulated stress over different time windows to ensure balanced training."

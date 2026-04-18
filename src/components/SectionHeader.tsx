@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronUp, ChevronDown, Info, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Info, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -9,6 +9,7 @@ interface SectionHeaderProps {
   description?: string;
   isExpanded: boolean;
   onToggle: () => void;
+  onExport?: () => void;
   className?: string;
   infoContent?: {
     title: string;
@@ -22,10 +23,24 @@ export const SectionHeader = ({
   description, 
   isExpanded, 
   onToggle, 
+  onExport,
   className,
   infoContent
 }: SectionHeaderProps) => {
   const [showInfo, setShowInfo] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onExport) {
+      setIsExporting(true);
+      try {
+        await onExport();
+      } finally {
+        setIsExporting(false);
+      }
+    }
+  };
 
   return (
     <div className={cn("mb-6", className)}>
@@ -53,22 +68,37 @@ export const SectionHeader = ({
             {description && <p className="text-xs text-app-muted font-medium">{description}</p>}
           </div>
         </div>
-        <button 
-          onClick={onToggle}
-          className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group"
-        >
-          {isExpanded ? (
-            <>
-              <span className="hidden sm:inline">Collapse</span>
-              <ChevronUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
-            </>
-          ) : (
-            <>
-              <span className="hidden sm:inline">Expand</span>
-              <ChevronDown className="w-3 h-3 group-hover:translate-y-0.5 transition-transform" />
-            </>
+        <div className="flex items-center gap-2">
+          {onExport && isExpanded && (
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className={cn(
+                "p-2 bg-app-card border border-app-border rounded-full text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed",
+                isExporting && "animate-pulse"
+              )}
+              title="Download as PNG"
+            >
+              <Download className={cn("w-3.5 h-3.5 group-hover:scale-110 transition-transform", isExporting && "animate-bounce")} />
+            </button>
           )}
-        </button>
+          <button 
+            onClick={onToggle}
+            className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group"
+          >
+            {isExpanded ? (
+              <>
+                <span className="hidden sm:inline">Collapse</span>
+                <ChevronUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
+              </>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Expand</span>
+                <ChevronDown className="w-3 h-3 group-hover:translate-y-0.5 transition-transform" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>

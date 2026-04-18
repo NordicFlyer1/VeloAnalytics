@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { SectionHeader } from './SectionHeader';
 import { ActivitySummary, PowerCurvePoint } from '../types';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface PowerCurveAnalysisProps {
   isPowerCurveExpanded: boolean;
@@ -39,6 +40,13 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
   mmpCurveRef,
   theme
 }) => {
+  const handleExport = async () => {
+    if (mmpCurveRef.current) {
+      const fileName = `Velo_PowerCurve_${summary?.name || 'Activity'}_${new Date().getTime()}.png`;
+      await exportComponentAsImage(mmpCurveRef.current, fileName);
+    }
+  };
+
   return (
     <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-3xl p-8">
       <SectionHeader 
@@ -47,6 +55,7 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
         description="Peak power output across different time durations"
         isExpanded={isPowerCurveExpanded}
         onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "Power Curve",
           description: "Compares your maximum power outputs across all durations (from 1s to 60m) against your 90-day and all-time bests to identify strengths and peaks."

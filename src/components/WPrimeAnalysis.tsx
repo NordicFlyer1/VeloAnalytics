@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TrendingUp, Zap } from 'lucide-react';
 import { SectionHeader } from './SectionHeader';
 import { MetricLane } from './MetricLane';
 import { cn } from '../lib/utils';
 import { CyclingDataPoint } from '../types';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface WPrimeAnalysisProps {
   isWPrimeExpanded: boolean;
@@ -41,14 +42,24 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
   showECP,
   setShowECP
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_WPrimeAnalysis_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-8">
       <SectionHeader 
         icon={TrendingUp}
         title="W' Balance Analysis"
         description="Anaerobic capacity utilization and recovery tracking"
         isExpanded={isWPrimeExpanded}
         onToggle={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "W' Balance",
           description: "Your real-time anaerobic capacity reservoir (W'). It depletes when your power output exceeds Critical Power (CP) and recovers when you ride below it. The recovery model is fatigue-adjusted, meaning it becomes less efficient over the duration of long rides."

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart as LineChartIcon } from 'lucide-react';
 import { 
@@ -16,6 +16,7 @@ import {
 import { format } from 'date-fns';
 import { SectionHeader } from './SectionHeader';
 import { cn } from '../lib/utils';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface PmcAnalysisProps {
   isPmcExpanded: boolean;
@@ -38,14 +39,24 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
   pmcDateRange,
   setPmcDateRange
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_PMCAnalysis_${pmcDateRange}_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-3xl p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-3xl p-8">
       <SectionHeader 
         icon={LineChartIcon}
         title="PMC Analysis"
         description="Performance Management Chart showing fitness, fatigue, and form"
         isExpanded={isPmcExpanded}
         onToggle={() => setIsPmcExpanded(!isPmcExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "PMC Analysis",
           description: "Tracks Long-Term Stress (Fitness), Short-Term Stress (Fatigue), and Stress Balance (Form) over time based on your training load (BikeScore™) history."
