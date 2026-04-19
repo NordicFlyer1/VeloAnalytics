@@ -170,47 +170,30 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
                 
-                {cpMode === 'estimated' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated CP</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(cpWPrime?.cp || 0)}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated W'</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">
+                      {cpMode === 'estimated' ? 'Estimated CP' : 'Active CP'}
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-light tracking-tighter text-app-text">
+                        {Math.round(cpMode === 'estimated' ? (cpWPrime?.cp || 0) : (manualCP ?? cpWPrime?.cp ?? 0))}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-1">
-                      <div className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase flex items-center gap-1">
-                        ACTIVE CP
-                        {manualCP !== null && <span className="text-[9px] bg-app-bg/50 border border-app-border text-app-muted px-1 rounded normal-case font-bold">MANUAL</span>}
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(manualCP ?? cpWPrime?.cp ?? 0)}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase flex items-center gap-1">
-                        ACTIVE W'
-                        {manualWPrime !== null && <span className="text-[9px] bg-app-bg/50 border border-app-border text-app-muted px-1 rounded normal-case font-bold">MANUAL</span>}
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((manualWPrime ?? cpWPrime?.wPrime ?? 0) / 1000)}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
-                      </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">
+                      {cpMode === 'estimated' ? "Estimated W'" : "Active W'"}
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-light tracking-tighter text-app-text">
+                        {Math.round((cpMode === 'estimated' ? (cpWPrime?.wPrime || 0) : (manualWPrime ?? cpWPrime?.wPrime ?? 0)) / 1000)}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </motion.div>

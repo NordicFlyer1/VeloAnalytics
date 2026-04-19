@@ -11,7 +11,7 @@ import {
   ReferenceArea 
 } from 'recharts';
 import { cn } from '../lib/utils';
-import { getZonesFromDefinitions } from '../services/metrics';
+import { getZonesFromDefinitions, DEFAULT_FALLBACK_CP } from '../services/metrics';
 
 const ReferenceAreaAny = ReferenceArea as any;
 const ReferenceLineAny = ReferenceLine as any;
@@ -146,25 +146,29 @@ export const MetricLane = React.memo(({
             )}
 
             {/* CP Reference Lines for Power lane */}
-            {metric === 'power' && estimatedCp && showECP && (
-              <ReferenceLineAny 
-                yAxisId="power" 
-                y={estimatedCp} 
-                stroke="var(--app-muted)" 
-                strokeDasharray="4 4" 
-                strokeOpacity={0.8}
-                strokeWidth={1.5}
-              />
-            )}
-            {metric === 'power' && manualCP !== null && showCP && (
-              <ReferenceLineAny 
-                yAxisId="power" 
-                y={cp} 
-                stroke="var(--app-muted)" 
-                strokeDasharray="4 4" 
-                strokeOpacity={0.8}
-                strokeWidth={1.5}
-              />
+            {metric === 'power' && (
+              <>
+                {showECP && (estimatedCp || DEFAULT_FALLBACK_CP) && (
+                  <ReferenceLineAny 
+                    yAxisId="power" 
+                    y={estimatedCp || DEFAULT_FALLBACK_CP} 
+                    stroke="var(--app-muted)" 
+                    strokeDasharray="4 4" 
+                    strokeOpacity={0.5}
+                    strokeWidth={1.5}
+                  />
+                )}
+                {showCP && (
+                  <ReferenceLineAny 
+                    yAxisId="power" 
+                    y={(manualCP && manualCP > 0) ? manualCP : (estimatedCp || DEFAULT_FALLBACK_CP)} 
+                    stroke="var(--app-muted)" 
+                    strokeDasharray="4 4" 
+                    strokeOpacity={0.5}
+                    strokeWidth={1.5}
+                  />
+                )}
+              </>
             )}
 
             {/* Zone Highlighting */}

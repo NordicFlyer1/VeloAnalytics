@@ -17,6 +17,7 @@ export interface ProcessingContext {
   maxHR: number;
   manualCP: number | null;
   manualWPrime: number | null;
+  cpMode: 'manual' | 'estimated';
   powerZoneDefinitions: ZoneDefinition[];
   hrZoneDefinitions: ZoneDefinition[];
   workerCalculatePowerCurve: (points: CyclingDataPoint[]) => Promise<any>;
@@ -104,9 +105,17 @@ export async function processActivityData(
   // Calculate W' Balance
   const cpWPrimeResult = await ctx.workerEstimateCPWPrime(points);
   
-  // Logic Guard: Use Manual if > 0, else Estimate if > 0, else Fallback
-  const effectiveCP = (ctx.manualCP && ctx.manualCP > 0) ? ctx.manualCP : (cpWPrimeResult?.cp && cpWPrimeResult.cp > 0 ? cpWPrimeResult.cp : DEFAULT_FALLBACK_CP);
-  const effectiveWPrime = (ctx.manualWPrime && ctx.manualWPrime > 0) ? ctx.manualWPrime : (cpWPrimeResult?.wPrime && cpWPrimeResult.wPrime > 0 ? cpWPrimeResult.wPrime : DEFAULT_FALLBACK_WPRIME);
+  // Logic Guard: Respect cpMode, Fallback if Manual is missing/0
+  let effectiveCP: number;
+  let effectiveWPrime: number;
+
+  if (ctx.cpMode === 'manual') {
+    effectiveCP = (ctx.manualCP && ctx.manualCP > 0) ? ctx.manualCP : (cpWPrimeResult?.cp || DEFAULT_FALLBACK_CP);
+    effectiveWPrime = (ctx.manualWPrime && ctx.manualWPrime > 0) ? ctx.manualWPrime : (cpWPrimeResult?.wPrime || DEFAULT_FALLBACK_WPRIME);
+  } else {
+    effectiveCP = cpWPrimeResult?.cp || DEFAULT_FALLBACK_CP;
+    effectiveWPrime = cpWPrimeResult?.wPrime || DEFAULT_FALLBACK_WPRIME;
+  }
   
   if (effectiveCP > 0 && effectiveWPrime > 0) {
     const wBal = await ctx.workerCalculateWPrimeBalance(points, effectiveCP, effectiveWPrime);

@@ -103,7 +103,9 @@ import {
   getZonesFromDefinitions, 
   DEFAULT_POWER_ZONES, 
   DEFAULT_HR_ZONES, 
-  calculateAerobicDecoupling 
+  calculateAerobicDecoupling,
+  DEFAULT_FALLBACK_CP,
+  DEFAULT_FALLBACK_WPRIME
 } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
 import { processActivityData, ProcessingContext } from './services/activityProcessor';
@@ -509,14 +511,61 @@ export default function App() {
     }) : null);
   }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
 
+  // Recalculate W' Balance when CP mode or manual values change
+  React.useEffect(() => {
+    if (data.length === 0) return;
+
+    const calculateNewWBal = async () => {
+      let targetCP: number;
+      let targetWPrime: number;
+
+      if (cpMode === 'manual') {
+        targetCP = (manualCP && manualCP > 0) ? manualCP : (cpWPrime?.cp || DEFAULT_FALLBACK_CP);
+        targetWPrime = (manualWPrime && manualWPrime > 0) ? manualWPrime : (cpWPrime?.wPrime || DEFAULT_FALLBACK_WPRIME);
+      } else {
+        targetCP = cpWPrime?.cp || DEFAULT_FALLBACK_CP;
+        targetWPrime = cpWPrime?.wPrime || DEFAULT_FALLBACK_WPRIME;
+      }
+
+      try {
+        const wBal = await workerCalculateWPrimeBalance(data, targetCP, targetWPrime);
+        setData(prev => {
+          // Only update if data hasn't changed radically (checks length and first timestamp)
+          if (prev.length !== data.length || (prev[0]?.timestamp.getTime() !== data[0]?.timestamp.getTime())) {
+            return prev;
+          }
+          return prev.map((p, i) => ({
+            ...p,
+            wPrimeBalance: wBal[i]
+          }));
+        });
+      } catch (err) {
+        console.error('Failed to recalculate W\' balance:', err);
+      }
+    };
+
+    calculateNewWBal();
+  }, [cpMode, manualCP, manualWPrime, cpWPrime, data.length]);
+
   const processData = useCallback(async (points: CyclingDataPoint[], fileName: string, lapData?: any[]) => {
     if (points.length === 0) return null;
+
+    const {
+      cp,
+      maxHR,
+      manualCP,
+      manualWPrime,
+      cpMode,
+      powerZoneDefinitions,
+      hrZoneDefinitions
+    } = settings;
 
     const ctx: ProcessingContext = {
       cp,
       maxHR,
       manualCP,
       manualWPrime,
+      cpMode,
       powerZoneDefinitions,
       hrZoneDefinitions,
       workerCalculatePowerCurve,
@@ -537,7 +586,7 @@ export default function App() {
       console.error('Error processing activity data:', error);
       return null;
     }
-  }, [cp, maxHR, manualCP, manualWPrime, powerZoneDefinitions, hrZoneDefinitions, workerCalculatePowerCurve, workerEstimateCPWPrime, workerCalculateWPrimeBalance]);
+  }, [settings, workerCalculatePowerCurve, workerEstimateCPWPrime, workerCalculateWPrimeBalance]);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;

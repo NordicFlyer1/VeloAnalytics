@@ -362,6 +362,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
           maxHR: settings.maxHR,
           manualCP: settings.manualCP,
           manualWPrime: settings.manualWPrime,
+          cpMode: settings.cpMode,
           powerZoneDefinitions: settings.powerZoneDefinitions,
           hrZoneDefinitions: settings.hrZoneDefinitions,
           workerCalculatePowerCurve: workers.calculatePowerCurve,
