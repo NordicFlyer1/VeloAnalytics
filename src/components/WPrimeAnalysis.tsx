@@ -161,48 +161,43 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
               </div>
 
               {/* CP & W' Analysis */}
-              <div className="bg-app-card border border-app-border rounded-3xl p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-sm font-bold tracking-[0.2em] text-app-text/60">Critical Power Analysis</h3>
+              <div className="bg-app-card border border-app-border rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[10px] font-bold tracking-widest text-app-muted uppercase">Estimated Metrics (eCP / eW')</h3>
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] tracking-widest text-app-muted font-bold uppercase">Estimated CP (eCP)</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated CP</span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
-                      <span className="text-sm font-bold uppercase tracking-widest text-app-muted">W</span>
+                      <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(cpWPrime?.cp || 0)}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] tracking-widest text-app-muted font-bold uppercase">ESTIMATED W' (EW')</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated W'</span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-light tracking-tighter">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
-                      <span className="text-sm font-bold uppercase tracking-widest text-app-muted">KJ</span>
+                      <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
                     </div>
                   </div>
                 </div>
 
                 {cpWPrime && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 mt-8 border-t border-app-border/30">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-6 mt-6 border-t border-app-border/30">
                     <div className="flex flex-col">
                       <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
-                        CRITICAL POWER
+                        ACTIVE CP
                         {manualCP !== null && <span className="text-[9px] bg-orange-500/20 text-orange-500 px-1 rounded normal-case font-bold">MANUAL</span>}
                       </div>
                       <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)} W</div>
                     </div>
                     <div className="flex flex-col">
                       <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
-                        W' CAPACITY
+                        ACTIVE W'
                         {manualWPrime !== null && <span className="text-[9px] bg-purple-500/20 text-purple-500 px-1 rounded normal-case font-bold">MANUAL</span>}
                       </div>
                       <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)} KJ</div>
-                    </div>
-                    <div className="flex flex-col sm:col-span-2 justify-end">
-                      <p className="text-[10px] text-app-muted/40 uppercase tracking-widest font-bold text-right">
-                        MODEL: 2-PARAMETER LINEAR MODEL (WORK = CP × T + W')
-                      </p>
                     </div>
                   </div>
                 )}

@@ -57,8 +57,8 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "What is Critical Power (CP)?",
         beginnerAnswer: "Think of this as your personal speed limit for long efforts. It's the hardest you can push for about 45-60 minutes without blowing up.",
-        technicalAnswer: "Critical Power (CP) represents the highest power output that can be maintained for a quasi-steady state without exhaustion. It is the asymptote of the power-duration relationship.",
-        keywords: ["fitness", "ftp", "limit", "threshold", "exhaustion"]
+        technicalAnswer: "Critical Power (CP) represents the highest power output that can be maintained for a quasi-steady state without exhaustion. We calculate it using the 2-parameter linear model: Work = CP × t + W', where 'Work' is the total anaerobic work performed and 't' is time. It is the asymptote of the power-duration relationship.",
+        keywords: ["fitness", "ftp", "limit", "threshold", "exhaustion", "calculation", "formula", "model"]
       },
       {
         question: "What does W' Balance represent?",
