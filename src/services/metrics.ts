@@ -1,5 +1,8 @@
 import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition, PowerCurvePoint, PMCDataPoint } from '../types';
 
+export const DEFAULT_FALLBACK_CP = 125;
+export const DEFAULT_FALLBACK_WPRIME = 15000; // 15kJ
+
 /**
  * Calculates the best average power for various durations.
  */

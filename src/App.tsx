@@ -91,16 +91,13 @@ import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, endOfWee
 import { cn, formatDuration, formatNumericalDuration } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus, WeatherData } from './types';
 import { useMetricsWorker } from './hooks/useMetricsWorker';
-
-const DEFAULT_FALLBACK_CP = 125;
-const DEFAULT_FALLBACK_WPRIME = 15000; // 15kJ
+import { useSharedSettings } from './hooks/useSharedSettings';
+import { useActivityHistory } from './hooks/useActivityHistory';
 
 import { 
   calculateXPower, 
   calculateRI, 
   calculateBikeScore, 
-  calculateSlope, 
-  estimateCP, 
   calculateLapSummary, 
   calculateZones, 
   getZonesFromDefinitions, 
@@ -109,6 +106,7 @@ import {
   calculateAerobicDecoupling 
 } from './services/metrics';
 import { saveActivityData, getActivityData, deleteActivityData } from './services/storage';
+import { processActivityData, ProcessingContext } from './services/activityProcessor';
 
 // Fix for Leaflet icons in React
 import L from 'leaflet';
@@ -125,18 +123,58 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function App() {
-  const [data, setData] = useState<CyclingDataPoint[]>([]);
-  const [summary, setSummary] = useState<ActivitySummary | null>(null);
-  const [cp, setCP] = useState(() => {
-    const saved = localStorage.getItem('veloanalytics_cp');
-    const parsed = saved ? parseInt(saved) : 125;
-    return isNaN(parsed) ? 125 : parsed;
-  });
-  const [autoUpdateCP, setAutoUpdateCP] = useState(() => {
-    const saved = localStorage.getItem('veloanalytics_autoupdate_cp');
-    return saved ? saved === 'true' : true;
-  });
-  const [estimatedCp, setEstimatedCp] = useState<number | null>(null);
+  const workers = useMetricsWorker();
+  const { 
+    calculatePowerCurve: workerCalculatePowerCurve, 
+    estimateCPWPrime: workerEstimateCPWPrime, 
+    calculateWPrimeBalance: workerCalculateWPrimeBalance,
+    calculatePMC: workerCalculatePMC
+  } = workers;
+  const settings = useSharedSettings();
+  
+  const {
+    history, setHistory,
+    data, setData,
+    summary, setSummary,
+    estimatedCp, setEstimatedCp,
+    cpWPrime, setCpWPrime,
+    originalFile, setOriginalFile,
+    currentActivityId, setCurrentActivityId,
+    pmcData, setPmcData,
+    isCalculatingPmc,
+    pmcDateRange, setPmcDateRange,
+    pmcFocus, setPmcFocus,
+    currentPMC,
+    trainingLoadRange, setTrainingLoadRange,
+    volumeTrendsRange, setVolumeTrendsRange,
+    bikeScoreSummaryView, setBikeScoreSummaryView,
+    trainingLoadData,
+    volumeTrendsData,
+    bikeScoreSummaryData,
+    allTimeBestCurve,
+    rolling90DayBestCurve,
+    addToHistory,
+    loadFromHistory,
+    removeFromHistory: baseRemoveFromHistory,
+    removeMultipleFromHistory: baseRemoveMultipleFromHistory,
+    updateActivityName: baseUpdateActivityName
+  } = useActivityHistory({ workers, settings });
+
+  const {
+    cp, setCP,
+    autoUpdateCP, setAutoUpdateCP,
+    manualCP, setManualCP,
+    manualWPrime, setManualWPrime,
+    userWeight, setUserWeight,
+    weightUnit, setWeightUnit,
+    maxHR, setMaxHR,
+    theme, setTheme, toggleTheme,
+    smoothingWindow, setSmoothingWindow,
+    cpMode, setCpMode,
+    powerZoneDefinitions, setPowerZoneDefinitions,
+    hrZoneDefinitions, setHrZoneDefinitions
+  } = settings;
+
   const [isDragging, setIsDragging] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<FileStatus[]>([]);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
@@ -145,40 +183,9 @@ export default function App() {
     type: '',
     progress: 0
   });
-  const [cpWPrime, setCpWPrime] = useState<{ cp: number; wPrime: number } | null>(null);
-  const [manualCP, setManualCP] = useState<number | null>(() => {
-    const saved = localStorage.getItem('veloanalytics_manual_cp');
-    return saved ? parseInt(saved) : null;
-  });
-  const [manualWPrime, setManualWPrime] = useState<number | null>(() => {
-    const saved = localStorage.getItem('veloanalytics_manual_wprime');
-    return saved ? parseInt(saved) : null;
-  });
-  const [userWeight, setUserWeight] = useState<number | null>(() => {
-    const saved = localStorage.getItem('veloanalytics_user_weight');
-    return saved ? parseFloat(saved) : null;
-  });
-  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(() => {
-    const saved = localStorage.getItem('veloanalytics_weight_unit');
-    return (saved === 'kg' || saved === 'lbs') ? saved : 'kg';
-  });
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
-  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [activeMetrics, setActiveMetrics] = useState<string[]>(['power', 'wPrimeBalance']);
-  const [smoothingWindow, setSmoothingWindow] = useState<number>(() => {
-    const saved = localStorage.getItem('veloanalytics_smoothing');
-    return saved ? parseInt(saved) : 1;
-  });
-  const [cpMode, setCpMode] = useState<'manual' | 'estimated'>(() => {
-    const saved = localStorage.getItem('veloanalytics_cp_mode');
-    return (saved === 'manual' || saved === 'estimated') ? saved : 'estimated';
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_cp_mode', cpMode);
-  }, [cpMode]);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -199,71 +206,6 @@ export default function App() {
       }
     }
   };
-  const { 
-    calculatePowerCurve: workerCalculatePowerCurve, 
-    calculateWPrimeBalance: workerCalculateWPrimeBalance, 
-    calculatePMC: workerCalculatePMC, 
-    estimateCPWPrime: workerEstimateCPWPrime 
-  } = useMetricsWorker();
-
-  const [history, setHistory] = useState<HistoricalActivity[]>(() => {
-    const saved = localStorage.getItem('veloanalytics_history');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [trainingLoadRange, setTrainingLoadRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
-  const [volumeTrendsRange, setVolumeTrendsRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('veloanalytics_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  React.useEffect(() => {
-    try {
-      // Strip out large data before saving to localStorage
-      // We keep powerCurve as it's small and useful for aggregate analysis
-      const strippedHistory = history.map(({ fullSummary, fullData, originalFile, ...rest }) => rest);
-      localStorage.setItem('veloanalytics_history', JSON.stringify(strippedHistory));
-    } catch (e) {
-      console.error('Failed to save history to localStorage:', e);
-    }
-  }, [history]);
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_cp', cp.toString());
-  }, [cp]);
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_autoupdate_cp', autoUpdateCP.toString());
-  }, [autoUpdateCP]);
-
-  React.useEffect(() => {
-    if (manualCP !== null) localStorage.setItem('veloanalytics_manual_cp', manualCP.toString());
-    else localStorage.removeItem('veloanalytics_manual_cp');
-  }, [manualCP]);
-
-  React.useEffect(() => {
-    if (manualWPrime !== null) localStorage.setItem('veloanalytics_manual_wprime', manualWPrime.toString());
-    else localStorage.removeItem('veloanalytics_manual_wprime');
-  }, [manualWPrime]);
-
-  React.useEffect(() => {
-    if (userWeight !== null) localStorage.setItem('veloanalytics_user_weight', userWeight.toString());
-    else localStorage.removeItem('veloanalytics_user_weight');
-  }, [userWeight]);
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_weight_unit', weightUnit);
-  }, [weightUnit]);
 
   React.useEffect(() => {
     if (autoUpdateCP && estimatedCp && estimatedCp > cp) {
@@ -271,9 +213,19 @@ export default function App() {
     }
   }, [autoUpdateCP, estimatedCp, cp]);
 
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_smoothing', smoothingWindow.toString());
-  }, [smoothingWindow]);
+  const removeFromHistory = async (id: string) => {
+    await baseRemoveFromHistory(id);
+    setSelectedHistoryIds(prev => prev.filter(selectedId => selectedId !== id));
+  };
+  
+  const removeMultipleFromHistory = async (ids: string[]) => {
+    await baseRemoveMultipleFromHistory(ids);
+    setSelectedHistoryIds([]);
+  };
+
+  const updateActivityName = (id: string, newName: string) => {
+    baseUpdateActivityName(id, newName);
+  };
 
   const smoothedData = React.useMemo(() => {
     if (smoothingWindow <= 1 || data.length === 0) return data;
@@ -361,125 +313,6 @@ export default function App() {
       .filter(h => h.curve.length > 0);
   }, [history, selectedHistoryIds]);
 
-  const volumeTrendsData = React.useMemo(() => {
-    if (history.length === 0) return [];
-    
-    const now = new Date();
-    const data: any[] = [];
-    
-    if (volumeTrendsRange === 'weekly') {
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (i * 7));
-        const weekStart = startOfWeek(d, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        
-        const weekActivities = history.filter(h => {
-          const ad = new Date(h.date);
-          return ad >= weekStart && ad <= weekEnd;
-        });
-        
-        data.push({
-          label: `W${format(weekStart, 'w')}`,
-          distance: weekActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
-          duration: weekActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
-          elevation: weekActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
-        });
-      }
-    } else if (volumeTrendsRange === 'monthly') {
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthActivities = history.filter(h => {
-          const ad = new Date(h.date);
-          return ad.getMonth() === d.getMonth() && ad.getFullYear() === d.getFullYear();
-        });
-        
-        data.push({
-          label: format(d, 'MMM'),
-          distance: monthActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
-          duration: monthActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
-          elevation: monthActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
-        });
-      }
-    } else {
-      for (let i = 4; i >= 0; i--) {
-        const year = now.getFullYear() - i;
-        const yearActivities = history.filter(h => new Date(h.date).getFullYear() === year);
-        
-        data.push({
-          label: year.toString(),
-          distance: yearActivities.reduce((sum, a) => sum + (a.distance || 0), 0),
-          duration: yearActivities.reduce((sum, a) => sum + (a.duration || 0), 0),
-          elevation: yearActivities.reduce((sum, a) => sum + (a.totalAscent || 0), 0)
-        });
-      }
-    }
-    
-    return data;
-  }, [history, volumeTrendsRange]);
-
-  const trainingLoadData = React.useMemo(() => {
-    if (history.length === 0) return [];
-    
-    const now = new Date();
-    const data: any[] = [];
-    
-    if (trainingLoadRange === 'weekly') {
-      // Last 12 weeks
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (i * 7));
-        const weekStart = new Date(d);
-        weekStart.setDate(d.getDate() - d.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        
-        const weekActivities = history.filter(h => {
-          const ad = new Date(h.date);
-          return ad >= weekStart && ad <= weekEnd;
-        });
-        
-        data.push({
-          label: `W${format(weekStart, 'w')}`,
-          bikeScore: weekActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: weekActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: weekActivities.reduce((sum, a) => sum + a.duration, 0)
-        });
-      }
-    } else if (trainingLoadRange === 'monthly') {
-      // Last 12 months
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthActivities = history.filter(h => {
-          const ad = new Date(h.date);
-          return ad.getMonth() === d.getMonth() && ad.getFullYear() === d.getFullYear();
-        });
-        
-        data.push({
-          label: format(d, 'MMM'),
-          bikeScore: monthActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: monthActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: monthActivities.reduce((sum, a) => sum + a.duration, 0)
-        });
-      }
-    } else {
-      // Last 5 years
-      for (let i = 4; i >= 0; i--) {
-        const year = now.getFullYear() - i;
-        const yearActivities = history.filter(h => new Date(h.date).getFullYear() === year);
-        
-        data.push({
-          label: year.toString(),
-          bikeScore: yearActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: yearActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: yearActivities.reduce((sum, a) => sum + a.duration, 0)
-        });
-      }
-    }
-    
-    return data;
-  }, [history, trainingLoadRange]);
-
   const trainingLoadStats = React.useMemo(() => {
     if (trainingLoadData.length === 0) return { totalBikeScore: 0, avgBikeScore: 0, totalWork: 0, totalDuration: 0 };
     
@@ -503,330 +336,6 @@ export default function App() {
     });
   }, [history, historySortOrder]);
 
-  const allTimeBestCurve = React.useMemo(() => {
-    if (history.length === 0) return [];
-    const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
-    return durations.map(d => {
-      let maxPower = 0;
-      history.forEach(h => {
-        const curve = h.powerCurve || h.fullSummary?.powerCurve;
-        const point = curve?.find(p => p.duration === d);
-        if (point && point.power > maxPower) maxPower = point.power;
-      });
-      const labelMap: Record<number, string> = {
-        1: '1s', 2: '2s', 5: '5s', 10: '10s', 20: '20s', 30: '30s', 
-        60: '1m', 120: '2m', 300: '5m', 600: '10m', 1200: '20m', 
-        1800: '30m', 3600: '60m'
-      };
-      return { duration: d, power: maxPower, label: labelMap[d] || `${d}s` };
-    }).filter(p => p.power > 0);
-  }, [history]);
-
-  const rolling90DayBestCurve = React.useMemo(() => {
-    if (history.length === 0) return [];
-    const ninetyDaysAgo = subDays(new Date(), 90);
-    const recentHistory = history.filter(h => new Date(h.date) >= ninetyDaysAgo);
-    
-    const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
-    return durations.map(d => {
-      let maxPower = 0;
-      recentHistory.forEach(h => {
-        const curve = h.powerCurve || h.fullSummary?.powerCurve;
-        const point = curve?.find(p => p.duration === d);
-        if (point && point.power > maxPower) maxPower = point.power;
-      });
-      const labelMap: Record<number, string> = {
-        1: '1s', 2: '2s', 5: '5s', 10: '10s', 20: '20s', 30: '30s', 
-        60: '1m', 120: '2m', 300: '5m', 600: '10m', 1200: '20m', 
-        1800: '30m', 3600: '60m'
-      };
-      return { duration: d, power: maxPower, label: labelMap[d] || `${d}s` };
-    }).filter(p => p.power > 0);
-  }, [history]);
-
-  const addToHistory = async (activity?: ActivitySummary | React.MouseEvent, activityData?: CyclingDataPoint[], file?: File) => {
-    // If called from onClick, activity will be the event object.
-    // We only want to use it if it's a real ActivitySummary.
-    const target = (activity && 'startTime' in activity) ? activity : summary;
-    const targetData = activityData || data;
-    const targetFile = file || originalFile;
-    
-    if (!target || !target.startTime || isNaN(target.startTime.getTime())) return null;
-    const dateStr = target.startTime.toISOString().split('T')[0];
-    const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const newActivity: HistoricalActivity = {
-      id,
-      date: dateStr,
-      name: target.name,
-      bikeScore: target.bikeScore || 0,
-      duration: target.duration,
-      distance: target.distance,
-      avgPower: target.avgPower,
-      maxPower: target.maxPower,
-      xPower: target.xPower,
-      relativeIntensity: target.relativeIntensity,
-      avgHeartRate: target.avgHeartRate,
-      maxHeartRate: target.maxHeartRate,
-      avgCadence: target.avgCadence,
-      avgSpeed: target.avgSpeed,
-      totalAscent: target.totalAscent,
-      work: target.work,
-      aerobicDecoupling: target.aerobicDecoupling,
-      cp: cp,
-      powerCurve: target.powerCurve,
-      fullSummary: target,
-      fullData: targetData,
-      originalFile: targetFile || undefined,
-      originalFileName: targetFile?.name || undefined
-    };
-
-    // Save large data to IndexedDB
-    try {
-      await saveActivityData(id, { 
-        fullSummary: target, 
-        fullData: targetData,
-        originalFile: targetFile || undefined,
-        originalFileName: targetFile?.name || undefined
-      });
-    } catch (e) {
-      console.error('Failed to save activity data to IndexedDB:', e);
-    }
-
-    setHistory(prev => [...prev, newActivity]);
-    return id;
-  };
-
-  const loadFromHistory = async (id: string) => {
-    let activity = history.find(h => h.id === id);
-    if (!activity) return;
-
-    let fullSummary = activity.fullSummary;
-    let fullData = activity.fullData;
-    let originalFileBlob = activity.originalFile;
-    let originalFileName = activity.originalFileName;
-
-    // If data is missing (not in localStorage), fetch from IndexedDB
-    if (!fullSummary || !fullData || !originalFileBlob) {
-      try {
-        const stored = await getActivityData(id);
-        if (stored) {
-          fullSummary = stored.fullSummary;
-          fullData = stored.fullData;
-          originalFileBlob = stored.originalFile;
-          originalFileName = stored.originalFileName;
-        }
-      } catch (e) {
-        console.error('Failed to fetch activity data from IndexedDB:', e);
-      }
-    }
-
-    if (fullSummary && fullData) {
-      // Ensure dates are correctly parsed as Date objects
-      const restoredSummary = {
-        ...fullSummary,
-        startTime: new Date(fullSummary.startTime),
-        laps: fullSummary.laps?.map(l => ({
-          ...l,
-          startTime: new Date(l.startTime)
-        }))
-      };
-      
-      const restoredData = fullData.map(p => ({
-        ...p,
-        timestamp: new Date(p.timestamp)
-      }));
-
-      // Recalculate W' Balance if missing or if manual values are set
-      let cpWPrimeResult = null;
-      if (restoredData.length > 0) {
-        cpWPrimeResult = await workerEstimateCPWPrime(restoredData);
-        
-        // Logic Guard: Use Manual if > 0, else Estimate if > 0, else Fallback
-        const effectiveCP = (manualCP && manualCP > 0) ? manualCP : (cpWPrimeResult?.cp && cpWPrimeResult.cp > 0 ? cpWPrimeResult.cp : DEFAULT_FALLBACK_CP);
-        const effectiveWPrime = (manualWPrime && manualWPrime > 0) ? manualWPrime : (cpWPrimeResult?.wPrime && cpWPrimeResult.wPrime > 0 ? cpWPrimeResult.wPrime : DEFAULT_FALLBACK_WPRIME);
-        
-        if (effectiveCP > 0 && effectiveWPrime > 0) {
-          const wBal = await workerCalculateWPrimeBalance(restoredData, effectiveCP, effectiveWPrime);
-          restoredData.forEach((p, i) => {
-            p.wPrimeBalance = wBal[i];
-          });
-        }
-      }
-
-      // Recalculate Aerobic Decoupling if missing
-      if (restoredSummary.aerobicDecoupling === undefined) {
-        restoredSummary.aerobicDecoupling = calculateAerobicDecoupling(restoredData);
-      }
-
-      setCurrentActivityId(id);
-      setSummary(restoredSummary);
-      setData(restoredData);
-      setIsEditingName(false);
-      setEditedName('');
-      
-      // Restore original file if available
-      if (originalFileBlob) {
-        // If it's a Blob but not a File, convert it back to a File if we have the name
-        if (originalFileBlob instanceof Blob && !(originalFileBlob instanceof File)) {
-          const fileName = originalFileName || restoredSummary.name || 'activity.fit';
-          const restoredFile = new File([originalFileBlob], fileName, { type: originalFileBlob.type });
-          setOriginalFile(restoredFile);
-        } else {
-          setOriginalFile(originalFileBlob as File);
-        }
-      } else {
-        setOriginalFile(null);
-      }
-
-      setCpWPrime(cpWPrimeResult);
-      setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
-      setActivePoint(null);
-      setIsPointLocked(false);
-      setShowUploadView(false);
-      
-      // Scroll to top when loading an activity
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const removeFromHistory = async (id: string) => {
-    setHistory(prev => prev.filter(h => h.id !== id));
-    setSelectedHistoryIds(prev => prev.filter(selectedId => selectedId !== id));
-    try {
-      await deleteActivityData(id);
-    } catch (e) {
-      console.error('Failed to delete activity data from IndexedDB:', e);
-    }
-  };
-
-  const updateActivityName = (id: string, newName: string) => {
-    setHistory(prev => prev.map(h => {
-      if (h.id === id) {
-        const updated = { ...h, name: newName };
-        if (updated.fullSummary) {
-          updated.fullSummary = { ...updated.fullSummary, name: newName };
-        }
-        return updated;
-      }
-      return h;
-    }));
-    if (currentActivityId === id && summary) {
-      setSummary(prev => prev ? { ...prev, name: newName } : null);
-    }
-  };
-
-  const removeMultipleFromHistory = async (ids: string[]) => {
-    setHistory(prev => prev.filter(h => !ids.includes(h.id)));
-    setSelectedHistoryIds([]);
-    try {
-      for (const id of ids) {
-        await deleteActivityData(id);
-      }
-    } catch (e) {
-      console.error('Failed to delete multiple activity data from IndexedDB:', e);
-    }
-  };
-
-  const [pmcFocus, setPmcFocus] = useState<string | null>(null);
-  const [pmcDateRange, setPmcDateRange] = useState<'all' | '1year' | '6months' | '3months' | '6weeks'>('all');
-  const [bikeScoreSummaryView, setBikeScoreSummaryView] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
-
-  const bikeScoreSummaryData = React.useMemo(() => {
-    if (history.length === 0) return [];
-
-    const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
-    const summary: Record<string, { date: Date, bikeScore: number, label: string }> = {};
-
-    sortedHistory.forEach(h => {
-      const date = new Date(h.date);
-      let key = '';
-      let label = '';
-      let startOfPeriod: Date;
-
-      if (bikeScoreSummaryView === 'weekly') {
-        startOfPeriod = startOfWeek(date, { weekStartsOn: 1 }); // Monday
-        key = format(startOfPeriod, 'yyyy-ww');
-        label = `Wk ${format(startOfPeriod, 'ww, yyyy')}`;
-      } else if (bikeScoreSummaryView === 'monthly') {
-        startOfPeriod = startOfMonth(date);
-        key = format(startOfPeriod, 'yyyy-MM');
-        label = format(startOfPeriod, 'MMM yyyy');
-      } else {
-        startOfPeriod = startOfYear(date);
-        key = format(startOfPeriod, 'yyyy');
-        label = format(startOfPeriod, 'yyyy');
-      }
-
-      if (!summary[key]) {
-        summary[key] = { date: startOfPeriod, bikeScore: 0, label };
-      }
-      summary[key].bikeScore += (h.bikeScore || 0);
-    });
-
-    return Object.values(summary).sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [history, bikeScoreSummaryView]);
-
-  const [pmcData, setPmcData] = useState<PMCDataPoint[]>([]);
-  const [isCalculatingPmc, setIsCalculatingPmc] = useState(false);
-
-  // Recalculate PMC in background
-  React.useEffect(() => {
-    if (history.length === 0) {
-      setPmcData([]);
-      return;
-    }
-
-    const calculatePmcAsync = async () => {
-      setIsCalculatingPmc(true);
-      try {
-        const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
-        const historyData = sortedHistory.map(h => ({ date: h.date, bikeScore: h.bikeScore || 0 }));
-        
-        let allData = await workerCalculatePMC(historyData);
-        
-        // Filter based on pmcDateRange
-        if (pmcDateRange !== 'all') {
-          const now = new Date();
-          let filterDate: Date | null = null;
-          if (pmcDateRange === '6weeks') filterDate = subDays(now, 42);
-          else if (pmcDateRange === '3months') filterDate = subDays(now, 90);
-          else if (pmcDateRange === '6months') filterDate = subDays(now, 180);
-          else if (pmcDateRange === '1year') filterDate = subDays(now, 365);
-
-          if (filterDate) {
-            const filterStr = filterDate.toISOString().split('T')[0];
-            allData = allData.filter(d => d.date >= filterStr);
-          }
-        }
-        
-        setPmcData(allData);
-      } catch (err) {
-        console.error('Failed to calculate PMC in worker:', err);
-      } finally {
-        setIsCalculatingPmc(false);
-      }
-    };
-
-    calculatePmcAsync();
-  }, [history, pmcDateRange]);
-
-  const currentPMC = React.useMemo(() => {
-    if (pmcData.length === 0) return null;
-    return pmcData[pmcData.length - 1];
-  }, [pmcData]);
-
-  const [maxHR, setMaxHR] = useState(() => {
-    const saved = localStorage.getItem('veloanalytics_maxhr');
-    const parsed = saved ? parseInt(saved) : 190;
-    return isNaN(parsed) ? 190 : parsed;
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem('veloanalytics_maxhr', maxHR.toString());
-  }, [maxHR]);
-  const [powerZoneDefinitions, setPowerZoneDefinitions] = useState<ZoneDefinition[]>(DEFAULT_POWER_ZONES);
-  const [hrZoneDefinitions, setHrZoneDefinitions] = useState<ZoneDefinition[]>(DEFAULT_HR_ZONES);
   const [showSettings, setShowSettings] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [mapProvider, setMapProvider] = useState<'osm' | 'google'>('osm');
@@ -1003,122 +512,32 @@ export default function App() {
   const processData = useCallback(async (points: CyclingDataPoint[], fileName: string, lapData?: any[]) => {
     if (points.length === 0) return null;
 
-    // Calculate slope for each point
-    for (let i = 1; i < points.length; i++) {
-      points[i].slope = calculateSlope(points[i - 1], points[i]);
-    }
-
-    const powers = points.map(p => p.power || 0);
-    const cadences = points.map(p => p.cadence || 0).filter(c => c > 0);
-    const speeds = points.map(p => p.speed || 0);
-    const heartRates = points.map(p => p.heartRate || 0).filter(h => h > 0);
-    const temperatures = points.map(p => p.temperature || 0).filter(t => t !== 0);
-    
-    const avgPower = powers.reduce((a, b) => a + b, 0) / powers.length;
-    const maxPower = Math.max(...powers);
-    const xPower = calculateXPower(points);
-    const duration = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000;
-    const distance = points[points.length - 1].distance || 0;
-    
-    const relativeIntensity = xPower ? calculateRI(xPower, cp) : undefined;
-    const bikeScore = (xPower && relativeIntensity) ? calculateBikeScore(duration, xPower, relativeIntensity, cp) : undefined;
-    const work = (avgPower * duration) / 1000;
-
-    // Total ascent calculation
-    let totalAscent = 0;
-    for (let i = 1; i < points.length; i++) {
-      if (points[i].altitude !== undefined && points[i - 1].altitude !== undefined) {
-        const diff = points[i].altitude! - points[i - 1].altitude!;
-        if (diff > 0) totalAscent += diff;
-      }
-    }
-
-    // Process Laps
-    let laps: Lap[] = [];
-    if (lapData && lapData.length > 0) {
-      laps = lapData.map((l, idx) => {
-        const lapStartTime = l.start_time instanceof Date ? l.start_time : new Date(l.start_time);
-        const lapEndTime = new Date(lapStartTime.getTime() + (l.total_elapsed_time || 0) * 1000);
-        
-        const lapPoints = points.filter(p => 
-          p.timestamp >= lapStartTime && 
-          p.timestamp <= lapEndTime
-        );
-        if (lapPoints.length > 0) {
-          return calculateLapSummary(lapPoints, idx + 1);
-        }
-        return {
-          id: idx + 1,
-          startTime: new Date(l.start_time),
-          duration: l.total_elapsed_time,
-          distance: l.total_distance,
-          avgPower: l.avg_power,
-          maxPower: l.max_power,
-          avgHeartRate: l.avg_heart_rate,
-          avgCadence: l.avg_cadence,
-          avgSpeed: l.avg_speed,
-          totalAscent: l.total_ascent
-        };
-      });
-    } else {
-      // Default single lap if no lap data provided
-      laps = [calculateLapSummary(points, 1)];
-    }
-
-    // Zone Calculations
-    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, cp));
-    const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
-    
-    // Heavy calculations moved to worker
-    const powerCurve = await workerCalculatePowerCurve(points);
-
-    // Calculate W' Balance
-    const cpWPrimeResult = await workerEstimateCPWPrime(points);
-    
-    // Logic Guard: Use Manual if > 0, else Estimate if > 0, else Fallback
-    const effectiveCP = (manualCP && manualCP > 0) ? manualCP : (cpWPrimeResult?.cp && cpWPrimeResult.cp > 0 ? cpWPrimeResult.cp : DEFAULT_FALLBACK_CP);
-    const effectiveWPrime = (manualWPrime && manualWPrime > 0) ? manualWPrime : (cpWPrimeResult?.wPrime && cpWPrimeResult.wPrime > 0 ? cpWPrimeResult.wPrime : DEFAULT_FALLBACK_WPRIME);
-    
-    if (effectiveCP > 0 && effectiveWPrime > 0) {
-      const wBal = await workerCalculateWPrimeBalance(points, effectiveCP, effectiveWPrime);
-      points.forEach((p, i) => {
-        p.wPrimeBalance = wBal[i];
-      });
-    }
-
-    const newSummary: ActivitySummary = {
-      name: fileName.replace(/\.[^/.]+$/, ""),
-      startTime: points[0].timestamp,
-      duration,
-      distance,
-      avgPower,
-      maxPower,
-      xPower,
-      relativeIntensity,
-      bikeScore,
-      avgHeartRate: heartRates.length > 0 ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length : undefined,
-      maxHeartRate: heartRates.length > 0 ? Math.max(...heartRates) : undefined,
-      avgCadence: cadences.length > 0 ? cadences.reduce((a, b) => a + b, 0) / cadences.length : undefined,
-      maxCadence: cadences.length > 0 ? Math.max(...cadences) : undefined,
-      avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : undefined,
-      maxSpeed: speeds.length > 0 ? Math.max(...speeds) : undefined,
-      totalAscent,
-      avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : undefined,
-      work,
-      laps,
-      powerZones: pZones,
-      hrZones: hZones,
-      powerCurve,
-      aerobicDecoupling: calculateAerobicDecoupling(points),
+    const ctx: ProcessingContext = {
+      cp,
+      maxHR,
+      manualCP,
+      manualWPrime,
+      powerZoneDefinitions,
+      hrZoneDefinitions,
+      workerCalculatePowerCurve,
+      workerEstimateCPWPrime,
+      workerCalculateWPrimeBalance
     };
 
-    setSummary(newSummary);
-    setData(points);
-    setCpWPrime(cpWPrimeResult);
-    setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
+    try {
+      const { summary: newSummary, cpWPrimeResult } = await processActivityData(points, fileName, ctx, lapData);
 
-    return newSummary;
-  }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions, manualCP, manualWPrime]);
+      setSummary(newSummary);
+      setData(points);
+      setCpWPrime(cpWPrimeResult);
+      setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
+
+      return newSummary;
+    } catch (error) {
+      console.error('Error processing activity data:', error);
+      return null;
+    }
+  }, [cp, maxHR, manualCP, manualWPrime, powerZoneDefinitions, hrZoneDefinitions, workerCalculatePowerCurve, workerEstimateCPWPrime, workerCalculateWPrimeBalance]);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;

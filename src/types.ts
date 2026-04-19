@@ -121,6 +121,7 @@ export interface HistoricalActivity {
   avgHeartRate?: number;
   maxHeartRate?: number;
   avgCadence?: number;
+  maxCadence?: number;
   avgSpeed?: number;
   totalAscent?: number;
   work?: number;
