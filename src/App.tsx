@@ -91,6 +91,10 @@ import { format, subDays, startOfDay, endOfDay, isSameDay, startOfWeek, endOfWee
 import { cn, formatDuration, formatNumericalDuration } from './lib/utils';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDistribution, ZoneDefinition, PMCDataPoint, HistoricalActivity, FileStatus, WeatherData } from './types';
 import { useMetricsWorker } from './hooks/useMetricsWorker';
+
+const DEFAULT_FALLBACK_CP = 125;
+const DEFAULT_FALLBACK_WPRIME = 15000; // 15kJ
+
 import { 
   calculateXPower, 
   calculateRI, 
@@ -125,8 +129,8 @@ export default function App() {
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
   const [cp, setCP] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_cp');
-    const parsed = saved ? parseInt(saved) : 250;
-    return isNaN(parsed) ? 250 : parsed;
+    const parsed = saved ? parseInt(saved) : 125;
+    return isNaN(parsed) ? 125 : parsed;
   });
   const [autoUpdateCP, setAutoUpdateCP] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_autoupdate_cp');
@@ -167,7 +171,14 @@ export default function App() {
     const saved = localStorage.getItem('veloanalytics_smoothing');
     return saved ? parseInt(saved) : 1;
   });
-  const [cpMode, setCpMode] = useState<'manual' | 'estimated'>('manual');
+  const [cpMode, setCpMode] = useState<'manual' | 'estimated'>(() => {
+    const saved = localStorage.getItem('veloanalytics_cp_mode');
+    return (saved === 'manual' || saved === 'estimated') ? saved : 'estimated';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('veloanalytics_cp_mode', cpMode);
+  }, [cpMode]);
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -630,8 +641,10 @@ export default function App() {
       let cpWPrimeResult = null;
       if (restoredData.length > 0) {
         cpWPrimeResult = await workerEstimateCPWPrime(restoredData);
-        const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
-        const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
+        
+        // Logic Guard: Use Manual if > 0, else Estimate if > 0, else Fallback
+        const effectiveCP = (manualCP && manualCP > 0) ? manualCP : (cpWPrimeResult?.cp && cpWPrimeResult.cp > 0 ? cpWPrimeResult.cp : DEFAULT_FALLBACK_CP);
+        const effectiveWPrime = (manualWPrime && manualWPrime > 0) ? manualWPrime : (cpWPrimeResult?.wPrime && cpWPrimeResult.wPrime > 0 ? cpWPrimeResult.wPrime : DEFAULT_FALLBACK_WPRIME);
         
         if (effectiveCP > 0 && effectiveWPrime > 0) {
           const wBal = await workerCalculateWPrimeBalance(restoredData, effectiveCP, effectiveWPrime);
@@ -1061,8 +1074,10 @@ export default function App() {
 
     // Calculate W' Balance
     const cpWPrimeResult = await workerEstimateCPWPrime(points);
-    const effectiveCP = manualCP ?? cpWPrimeResult?.cp ?? 0;
-    const effectiveWPrime = manualWPrime ?? cpWPrimeResult?.wPrime ?? 0;
+    
+    // Logic Guard: Use Manual if > 0, else Estimate if > 0, else Fallback
+    const effectiveCP = (manualCP && manualCP > 0) ? manualCP : (cpWPrimeResult?.cp && cpWPrimeResult.cp > 0 ? cpWPrimeResult.cp : DEFAULT_FALLBACK_CP);
+    const effectiveWPrime = (manualWPrime && manualWPrime > 0) ? manualWPrime : (cpWPrimeResult?.wPrime && cpWPrimeResult.wPrime > 0 ? cpWPrimeResult.wPrime : DEFAULT_FALLBACK_WPRIME);
     
     if (effectiveCP > 0 && effectiveWPrime > 0) {
       const wBal = await workerCalculateWPrimeBalance(points, effectiveCP, effectiveWPrime);
