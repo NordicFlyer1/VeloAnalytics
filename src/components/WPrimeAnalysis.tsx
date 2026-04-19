@@ -75,30 +75,6 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
             transition={{ duration: 0.3 }}
           >
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] text-app-muted uppercase tracking-widest mt-1">ANAEROBIC RESERVE DEPLETION & RECOVERY</p>
-                </div>
-                {cpWPrime && (
-                  <div className="grid grid-cols-2 md:flex md:items-center gap-4 sm:gap-6">
-                    <div className="text-center">
-                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1 font-bold">
-                        CRITICAL POWER
-                        {manualCP !== null && <span className="text-[10px] bg-orange-500/20 text-orange-500 px-1 rounded tracking-normal normal-case font-bold">MANUAL</span>}
-                      </div>
-                      <div className="text-lg sm:text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)} W</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center justify-center gap-1 font-bold">
-                        W' CAPACITY
-                        {manualWPrime !== null && <span className="text-[10px] bg-purple-500/20 text-purple-500 px-1 rounded tracking-normal normal-case font-bold">MANUAL</span>}
-                      </div>
-                      <div className="text-lg sm:text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)} KJ</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
                 {/* Power Lane */}
                 <MetricLane 
@@ -197,9 +173,6 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                       <span className="text-5xl font-light tracking-tighter">{Math.round(cpWPrime?.cp || 0)}</span>
                       <span className="text-sm font-bold uppercase tracking-widest text-app-muted">W</span>
                     </div>
-                    <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                      Critical Power represents the highest power output you can maintain indefinitely without fatigue.
-                    </p>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className="text-[10px] tracking-widest text-app-muted font-bold uppercase">ESTIMATED W' (EW')</span>
@@ -207,28 +180,32 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                       <span className="text-5xl font-light tracking-tighter">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
                       <span className="text-sm font-bold uppercase tracking-widest text-app-muted">KJ</span>
                     </div>
-                    <p className="text-[10px] text-app-muted/50 mt-2 leading-relaxed">
-                      W' is your anaerobic work capacity, the finite amount of energy available above Critical Power.
-                    </p>
                   </div>
                 </div>
-                <div className="mt-8 pt-8 border-t border-app-border/30">
-                  <p className="text-[10px] text-app-muted/40 uppercase tracking-widest font-bold">
-                    MODEL: 2-PARAMETER LINEAR MODEL (WORK = CP × T + W')
-                  </p>
-                </div>
-              </div>
 
-              <div className="bg-app-bg/50 rounded-2xl p-6 border border-app-border">
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-purple-500" />
-                  What is W' Balance?
-                </h4>
-                <p className="text-xs text-app-muted leading-relaxed">
-                  W' (pronounced "W-prime") represents your anaerobic work capacity—the total amount of work you can perform above your Critical Power (CP) before reaching exhaustion. 
-                  The W' Balance chart shows how this reserve depletes when you ride above CP and how it recovers when you ride below it. 
-                  When the curve hits zero, you've theoretically reached your limit for high-intensity effort.
-                </p>
+                {cpWPrime && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 mt-8 border-t border-app-border/30">
+                    <div className="flex flex-col">
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
+                        CRITICAL POWER
+                        {manualCP !== null && <span className="text-[9px] bg-orange-500/20 text-orange-500 px-1 rounded normal-case font-bold">MANUAL</span>}
+                      </div>
+                      <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)} W</div>
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
+                        W' CAPACITY
+                        {manualWPrime !== null && <span className="text-[9px] bg-purple-500/20 text-purple-500 px-1 rounded normal-case font-bold">MANUAL</span>}
+                      </div>
+                      <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)} KJ</div>
+                    </div>
+                    <div className="flex flex-col sm:col-span-2 justify-end">
+                      <p className="text-[10px] text-app-muted/40 uppercase tracking-widest font-bold text-right">
+                        MODEL: 2-PARAMETER LINEAR MODEL (WORK = CP × T + W')
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

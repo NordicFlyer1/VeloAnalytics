@@ -253,27 +253,6 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                   <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">FORM (SB)</div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-app-border/50">
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-500">LTS (Fitness)</h4>
-                  <p className="text-[10px] text-app-muted leading-relaxed">
-                    Long Term Stress is a 42-day weighted average of your daily BikeScore. It represents your long-term training load and overall fitness level.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-red-500">STS (Fatigue)</h4>
-                  <p className="text-[10px] text-app-muted leading-relaxed">
-                    Short Term Stress is a 7-day weighted average of your daily BikeScore. It represents your short-term training load and current level of fatigue.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-green-500">SB (Form)</h4>
-                  <p className="text-[10px] text-app-muted leading-relaxed">
-                    Stress Balance (LTS - STS) represents your current form or freshness. A positive SB suggests you are fresh and ready to perform.
-                  </p>
-                </div>
-              </div>
             </div>
           </motion.div>
         )}
