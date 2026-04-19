@@ -19,10 +19,8 @@ interface WPrimeAnalysisProps {
   isPointLocked: boolean;
   setIsPointLocked: (locked: boolean) => void;
   cp: number;
-  showCP: boolean;
-  setShowCP: (show: boolean) => void;
-  showECP: boolean;
-  setShowECP: (show: boolean) => void;
+  cpMode: 'manual' | 'estimated';
+  setCpMode: (mode: 'manual' | 'estimated') => void;
 }
 
 export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
@@ -37,10 +35,8 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
   isPointLocked,
   setIsPointLocked,
   cp,
-  showCP,
-  setShowCP,
-  showECP,
-  setShowECP
+  cpMode,
+  setCpMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -105,8 +101,8 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                   estimatedCp={cpWPrime?.cp}
                   cp={cp}
                   manualCP={manualCP}
-                  showCP={showCP}
-                  showECP={showECP}
+                  showCP={cpMode === 'manual'}
+                  showECP={cpMode === 'estimated'}
                 />
                 {/* W' Balance Lane */}
                 <MetricLane 
@@ -137,67 +133,81 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
-                <button 
-                  onClick={() => setShowCP(!showCP)}
-                  className={cn(
-                    "flex items-center gap-2 transition-all duration-300",
-                    showCP ? "opacity-100" : "opacity-30 grayscale"
-                  )}
-                >
-                  <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
-                </button>
-                <button 
-                  onClick={() => setShowECP(!showECP)}
-                  className={cn(
-                    "flex items-center gap-2 transition-all duration-300",
-                    showECP ? "opacity-100" : "opacity-30 grayscale"
-                  )}
-                >
-                  <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
-                </button>
+              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Analysis Mode</span>
+                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                  <button 
+                    onClick={() => setCpMode('manual')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                      cpMode === 'manual' 
+                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                        : "text-app-muted hover:text-app-text"
+                    )}
+                  >
+                    Active CP
+                  </button>
+                  <button 
+                    onClick={() => setCpMode('estimated')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                      cpMode === 'estimated' 
+                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                        : "text-app-muted hover:text-app-text"
+                    )}
+                  >
+                    Estimated CP
+                  </button>
+                </div>
               </div>
 
               {/* CP & W' Analysis */}
               <div className="bg-app-card border border-app-border rounded-3xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-[10px] font-bold tracking-widest text-app-muted uppercase">Estimated Metrics (eCP / eW')</h3>
+                  <h3 className="text-[10px] font-bold tracking-widest text-app-muted uppercase">
+                    {cpMode === 'manual' ? 'Manual Performance Model' : 'Estimated Performance Model'}
+                  </h3>
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated CP</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(cpWPrime?.cp || 0)}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
+                
+                {cpMode === 'estimated' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated CP</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(cpWPrime?.cp || 0)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated W'</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase">Estimated W'</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((cpWPrime?.wPrime || 0) / 1000)}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
-                    </div>
-                  </div>
-                </div>
-
-                {cpWPrime && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-6 mt-6 border-t border-app-border/30">
-                    <div className="flex flex-col">
-                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-1">
+                      <div className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase flex items-center gap-1">
                         ACTIVE CP
-                        {manualCP !== null && <span className="text-[9px] bg-orange-500/20 text-orange-500 px-1 rounded normal-case font-bold">MANUAL</span>}
+                        {manualCP !== null && <span className="text-[9px] bg-app-bg/50 border border-app-border text-app-muted px-1 rounded normal-case font-bold">MANUAL</span>}
                       </div>
-                      <div className="text-xl font-bold text-orange-500">{Math.round(manualCP ?? cpWPrime.cp ?? 0)} W</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round(manualCP ?? cpWPrime?.cp ?? 0)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">W</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-[10px] text-app-muted uppercase tracking-widest mb-1 flex items-center gap-1 font-bold">
+                    <div className="flex flex-col gap-1">
+                      <div className="text-[10px] tracking-widest text-app-muted/60 font-medium uppercase flex items-center gap-1">
                         ACTIVE W'
-                        {manualWPrime !== null && <span className="text-[9px] bg-purple-500/20 text-purple-500 px-1 rounded normal-case font-bold">MANUAL</span>}
+                        {manualWPrime !== null && <span className="text-[9px] bg-app-bg/50 border border-app-border text-app-muted px-1 rounded normal-case font-bold">MANUAL</span>}
                       </div>
-                      <div className="text-xl font-bold text-purple-500">{Math.round((manualWPrime ?? cpWPrime.wPrime ?? 0) / 1000)} KJ</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-light tracking-tighter text-app-text">{Math.round((manualWPrime ?? cpWPrime?.wPrime ?? 0) / 1000)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">KJ</span>
+                      </div>
                     </div>
                   </div>
                 )}

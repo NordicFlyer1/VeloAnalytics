@@ -167,8 +167,7 @@ export default function App() {
     const saved = localStorage.getItem('veloanalytics_smoothing');
     return saved ? parseInt(saved) : 1;
   });
-  const [showCP, setShowCP] = useState(true);
-  const [showECP, setShowECP] = useState(true);
+  const [cpMode, setCpMode] = useState<'manual' | 'estimated'>('manual');
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -1498,10 +1497,8 @@ export default function App() {
                     powerZoneDefinitions={powerZoneDefinitions}
                     hrZoneDefinitions={hrZoneDefinitions}
                     maxHR={maxHR}
-                    showCP={showCP}
-                    setShowCP={setShowCP}
-                    showECP={showECP}
-                    setShowECP={setShowECP}
+                    cpMode={cpMode}
+                    setCpMode={setCpMode}
                   />
 
                 <Suspense fallback={
@@ -1572,10 +1569,8 @@ export default function App() {
                   isPointLocked={isPointLocked}
                   setIsPointLocked={setIsPointLocked}
                   cp={cp}
-                  showCP={showCP}
-                  setShowCP={setShowCP}
-                  showECP={showECP}
-                  setShowECP={setShowECP}
+                  cpMode={cpMode}
+                  setCpMode={setCpMode}
                 />
 
                 <PowerCurveAnalysis 

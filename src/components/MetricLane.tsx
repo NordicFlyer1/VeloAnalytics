@@ -139,9 +139,9 @@ export const MetricLane = React.memo(({
               <ReferenceLineAny 
                 yAxisId={metric}
                 x={data[activePoint].timestamp} 
-                stroke="var(--orange-500)" 
-                strokeOpacity={0.6}
-                strokeWidth={1.5}
+                stroke="var(--app-muted)" 
+                strokeOpacity={0.8}
+                strokeWidth={1}
               />
             )}
 
@@ -150,20 +150,20 @@ export const MetricLane = React.memo(({
               <ReferenceLineAny 
                 yAxisId="power" 
                 y={estimatedCp} 
-                stroke="#ef4444" 
-                strokeDasharray="3 3" 
-                strokeOpacity={0.7}
-                strokeWidth={2}
+                stroke="var(--app-muted)" 
+                strokeDasharray="4 4" 
+                strokeOpacity={0.8}
+                strokeWidth={1.5}
               />
             )}
             {metric === 'power' && manualCP !== null && showCP && (
               <ReferenceLineAny 
                 yAxisId="power" 
                 y={cp} 
-                stroke="#3b82f6" 
-                strokeDasharray="3 3" 
-                strokeOpacity={0.7}
-                strokeWidth={2}
+                stroke="var(--app-muted)" 
+                strokeDasharray="4 4" 
+                strokeOpacity={0.8}
+                strokeWidth={1.5}
               />
             )}
 

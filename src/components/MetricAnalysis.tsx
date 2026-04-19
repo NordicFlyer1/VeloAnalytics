@@ -26,10 +26,8 @@ interface MetricAnalysisProps {
   powerZoneDefinitions: ZoneDefinition[];
   hrZoneDefinitions: ZoneDefinition[];
   maxHR: number;
-  showCP: boolean;
-  setShowCP: (show: boolean) => void;
-  showECP: boolean;
-  setShowECP: (show: boolean) => void;
+  cpMode: 'manual' | 'estimated';
+  setCpMode: (mode: 'manual' | 'estimated') => void;
 }
 
 export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
@@ -51,10 +49,8 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
   powerZoneDefinitions,
   hrZoneDefinitions,
   maxHR,
-  showCP,
-  setShowCP,
-  showECP,
-  setShowECP
+  cpMode,
+  setCpMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -182,34 +178,39 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                   powerZoneDefinitions={powerZoneDefinitions}
                   hrZoneDefinitions={hrZoneDefinitions}
                   maxHR={maxHR}
-                  showCP={showCP}
-                  showECP={showECP}
+                  showCP={cpMode === 'manual'}
+                  showECP={cpMode === 'estimated'}
                 />
               ))}
             </div>
 
             {activeMetrics.includes('power') && (
-              <div className="flex items-center justify-center gap-6 py-2 border-t border-app-border/30 bg-app-card/10">
-                <button 
-                  onClick={() => setShowCP(!showCP)}
-                  className={cn(
-                    "flex items-center gap-2 transition-all duration-300",
-                    showCP ? "opacity-100" : "opacity-30 grayscale"
-                  )}
-                >
-                  <div className="w-6 h-0.5 bg-[#3b82f6] border-t border-dashed border-[#3b82f6]" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Critical Power</span>
-                </button>
-                <button 
-                  onClick={() => setShowECP(!showECP)}
-                  className={cn(
-                    "flex items-center gap-2 transition-all duration-300",
-                    showECP ? "opacity-100" : "opacity-30 grayscale"
-                  )}
-                >
-                  <div className="w-6 h-0.5 bg-[#ef4444] border-t border-dashed border-[#ef4444]" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-app-muted">Estimated CP</span>
-                </button>
+              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Analysis Mode</span>
+                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                  <button 
+                    onClick={() => setCpMode('manual')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                      cpMode === 'manual' 
+                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                        : "text-app-muted hover:text-app-text"
+                    )}
+                  >
+                    Active CP
+                  </button>
+                  <button 
+                    onClick={() => setCpMode('estimated')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                      cpMode === 'estimated' 
+                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                        : "text-app-muted hover:text-app-text"
+                    )}
+                  >
+                    Estimated CP
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>
