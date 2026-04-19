@@ -1,6 +1,7 @@
 import React from 'react';
-import { Settings, Zap, Activity } from 'lucide-react';
+import { Settings, Zap, Activity, Info, Bike } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { RidingPosition, SurfaceType } from '../types';
 
 interface SettingsModalProps {
   showSettings: boolean;
@@ -19,6 +20,14 @@ interface SettingsModalProps {
   setUserWeight: (w: number | null) => void;
   weightUnit: 'kg' | 'lbs';
   setWeightUnit: (u: 'kg' | 'lbs') => void;
+  bikeWeight: number;
+  setBikeWeight: (w: number) => void;
+  enableVirtualPower: boolean;
+  setEnableVirtualPower: (e: boolean) => void;
+  ridingPosition: RidingPosition;
+  setRidingPosition: (p: RidingPosition) => void;
+  surfaceType: SurfaceType;
+  setSurfaceType: (s: SurfaceType) => void;
   cpWPrime: any;
   powerZoneDefinitions: any[];
   setPowerZoneDefinitions: (zones: any[]) => void;
@@ -43,6 +52,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setUserWeight,
   weightUnit,
   setWeightUnit,
+  bikeWeight,
+  setBikeWeight,
+  enableVirtualPower,
+  setEnableVirtualPower,
+  ridingPosition,
+  setRidingPosition,
+  surfaceType,
+  setSurfaceType,
   cpWPrime,
   powerZoneDefinitions,
   setPowerZoneDefinitions,
@@ -172,6 +189,96 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
                 <p className="text-[9px] text-app-muted uppercase tracking-widest font-bold ml-1 opacity-60">Power-to-weight (W/KG)</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Equipment & Virtual Power */}
+          <section className="space-y-4 sm:space-y-6">
+            <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted border-b border-app-border/50 pb-2">Equipment & Virtual Power</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs text-app-text/60 ml-1">Bike Weight</label>
+                <div className="flex items-center gap-2 sm:gap-3 bg-app-card border border-app-border rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-blue-500/50 transition-colors">
+                  <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                  <input 
+                    type="number"
+                    step="0.1"
+                    value={bikeWeight} 
+                    onChange={(e) => setBikeWeight(parseFloat(e.target.value) || 0)}
+                    className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                  />
+                  <span className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">KG</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs text-app-text/60 ml-1">Virtual Power Calculation</label>
+                <div className="flex items-center gap-2 sm:gap-3 bg-app-card border border-app-border rounded-xl px-3 sm:px-4 py-2 sm:py-3 transition-colors">
+                  <div className="flex items-center gap-2 flex-1">
+                    <button 
+                      onClick={() => setEnableVirtualPower(!enableVirtualPower)}
+                      className={cn(
+                        "w-8 h-4 sm:w-10 sm:h-5 rounded-full transition-all relative shrink-0",
+                        enableVirtualPower ? "bg-orange-500" : "bg-app-border"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-0.5 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white transition-all",
+                        enableVirtualPower ? "left-4.5 sm:left-5.5" : "left-0.5"
+                      )} />
+                    </button>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-app-muted">
+                      {enableVirtualPower ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  <div className="group relative">
+                    <Info className="w-3.5 h-3.5 text-app-muted cursor-help" />
+                    <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-app-card border border-app-border rounded-lg text-[9px] text-app-muted leading-relaxed hidden group-hover:block z-20 shadow-xl">
+                      Calculates power from speed, weight, and grade if power data is missing.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs text-app-text/60 ml-1">Riding Position</label>
+                <div className="flex bg-app-card/50 p-1 rounded-xl border border-app-border">
+                  {(['tops', 'hoods', 'drops'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setRidingPosition(p)}
+                      className={cn(
+                        "flex-1 py-1.5 sm:py-2 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                        ridingPosition === p 
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs text-app-text/60 ml-1">Road Surface</label>
+                <div className="flex bg-app-card/50 p-1 rounded-xl border border-app-border">
+                  {(['road', 'gravel', 'mtb'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSurfaceType(s)}
+                      className={cn(
+                        "flex-1 py-1.5 sm:py-2 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                        surfaceType === s 
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-app-text"
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </section>

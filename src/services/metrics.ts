@@ -3,6 +3,47 @@ import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDef
 export const DEFAULT_FALLBACK_CP = 125;
 export const DEFAULT_FALLBACK_WPRIME = 15000; // 15kJ
 
+export const CDA_VALUES = {
+  tops: 0.40,
+  hoods: 0.32,
+  drops: 0.28
+} as const;
+
+export const CRR_VALUES = {
+  road: 0.004,
+  gravel: 0.006,
+  mtb: 0.010
+} as const;
+
+/**
+ * Calculates virtual power for a single data point based on physics.
+ */
+export function calculateVirtualPower(
+  speedMS: number, 
+  gradeFraction: number, 
+  totalWeightKG: number, 
+  cda: number, 
+  crr: number
+): number {
+  if (speedMS <= 0.5) return 0; // Ignore noise below 0.5m/s (1.8km/h)
+
+  const G = 9.80665;
+  const RHO = 1.226; // Air density kg/m3 at sea level
+
+  // Power to overcome gravity
+  const pGravity = totalWeightKG * G * gradeFraction * speedMS;
+
+  // Power to overcome rolling resistance
+  const pRolling = totalWeightKG * G * crr * speedMS;
+
+  // Power to overcome aero drag
+  const pAero = 0.5 * cda * RHO * Math.pow(speedMS, 3);
+
+  const totalPower = pGravity + pRolling + pAero;
+
+  return Math.max(0, Math.min(2000, totalPower));
+}
+
 /**
  * Calculates the best average power for various durations.
  */
@@ -251,16 +292,16 @@ export function calculateXPower(data: CyclingDataPoint[]): number | undefined {
     emaValues.push(Math.pow(ema, 4));
   }
 
-  const avgOfQuads = emaValues.reduce((a, b) => a + b, 0) / emaValues.length;
+  const avgOfQuads = emaValues.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / emaValues.length;
   const result = Math.pow(avgOfQuads, 0.25);
-  return isNaN(result) ? undefined : result;
+  return (isNaN(result) || !Number.isFinite(result)) ? undefined : result;
 }
 
 /**
  * Calculates Relative Intensity (RI), an open-source alternative to Intensity Factor (IF).
  */
 export function calculateRI(xPower: number, cp: number): number {
-  if (cp <= 0) return 0;
+  if (!cp || cp <= 0 || !Number.isFinite(xPower)) return 0;
   return xPower / cp;
 }
 
@@ -268,8 +309,9 @@ export function calculateRI(xPower: number, cp: number): number {
  * Calculates BikeScore, an open-source alternative to training stress metrics.
  */
 export function calculateBikeScore(durationSec: number, xPower: number, ri: number, cp: number): number {
-  if (cp <= 0) return 0;
-  return (durationSec * xPower * ri) / (cp * 3600) * 100;
+  if (!cp || cp <= 0 || !Number.isFinite(xPower) || !Number.isFinite(ri)) return 0;
+  const score = (durationSec * xPower * ri) / (cp * 3600) * 100;
+  return Number.isFinite(score) ? score : 0;
 }
 
 /**
@@ -298,7 +340,8 @@ export function calculatePMC(history: { date: string, bikeScore: number }[]): PM
 
   const dailyScores: Record<string, number> = {};
   sortedHistory.forEach(h => {
-    dailyScores[h.date] = (dailyScores[h.date] || 0) + h.bikeScore;
+    const score = Number.isFinite(h.bikeScore) ? h.bikeScore : 0;
+    dailyScores[h.date] = (dailyScores[h.date] || 0) + score;
   });
 
   for (let i = 0; i < dayCount; i++) {
@@ -307,17 +350,18 @@ export function calculatePMC(history: { date: string, bikeScore: number }[]): PM
     const dateStr = currentDate.toISOString().split('T')[0];
     
     const todaysScore = dailyScores[dateStr] || 0;
+    const safeTodaysScore = Number.isFinite(todaysScore) ? todaysScore : 0;
 
     // LTS(today) = LTS(yesterday) + (Score(today) - LTS(yesterday)) * lambda
-    currentLTS = currentLTS + (todaysScore - currentLTS) * ltsLambda;
-    currentSTS = currentSTS + (todaysScore - currentSTS) * stsLambda;
+    currentLTS = currentLTS + (safeTodaysScore - currentLTS) * ltsLambda;
+    currentSTS = currentSTS + (safeTodaysScore - currentSTS) * stsLambda;
 
     pmc.push({
       date: dateStr,
-      bikeScore: todaysScore,
-      lts: currentLTS,
-      sts: currentSTS,
-      sb: currentLTS - currentSTS
+      bikeScore: safeTodaysScore,
+      lts: Number.isFinite(currentLTS) ? currentLTS : 0,
+      sts: Number.isFinite(currentSTS) ? currentSTS : 0,
+      sb: (Number.isFinite(currentLTS) && Number.isFinite(currentSTS)) ? currentLTS - currentSTS : 0
     });
   }
 

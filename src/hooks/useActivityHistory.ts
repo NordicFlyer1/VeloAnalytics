@@ -59,7 +59,10 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       setIsCalculatingPmc(true);
       try {
         const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
-        const historyData = sortedHistory.map(h => ({ date: h.date, bikeScore: h.bikeScore || 0 }));
+        const historyData = sortedHistory.map(h => ({ 
+          date: h.date, 
+          bikeScore: Number.isFinite(h.bikeScore) ? h.bikeScore : 0 
+        }));
         
         let allData = await workers.calculatePMC(historyData);
         
@@ -154,9 +157,9 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         });
         data.push({
           label: `W${format(weekStart, 'w')}`,
-          bikeScore: weekActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: weekActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: weekActivities.reduce((sum, a) => sum + a.duration, 0)
+          bikeScore: weekActivities.reduce((sum, a) => sum + (Number.isFinite(a.bikeScore) ? a.bikeScore : 0), 0),
+          work: weekActivities.reduce((sum, a) => sum + (Number.isFinite(a.work) ? a.work : (Number.isFinite(a.avgPower) ? (a.avgPower || 0) * (a.duration / 1000) : 0)), 0),
+          duration: weekActivities.reduce((sum, a) => sum + (Number.isFinite(a.duration) ? a.duration : 0), 0)
         });
       }
     } else if (trainingLoadRange === 'monthly') {
@@ -168,9 +171,9 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         });
         data.push({
           label: format(d, 'MMM'),
-          bikeScore: monthActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: monthActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: monthActivities.reduce((sum, a) => sum + a.duration, 0)
+          bikeScore: monthActivities.reduce((sum, a) => sum + (Number.isFinite(a.bikeScore) ? a.bikeScore : 0), 0),
+          work: monthActivities.reduce((sum, a) => sum + (Number.isFinite(a.work) ? a.work : (Number.isFinite(a.avgPower) ? (a.avgPower || 0) * (a.duration / 1000) : 0)), 0),
+          duration: monthActivities.reduce((sum, a) => sum + (Number.isFinite(a.duration) ? a.duration : 0), 0)
         });
       }
     } else {
@@ -179,9 +182,9 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         const yearActivities = history.filter(h => new Date(h.date).getFullYear() === year);
         data.push({
           label: year.toString(),
-          bikeScore: yearActivities.reduce((sum, a) => sum + (a.bikeScore || 0), 0),
-          work: yearActivities.reduce((sum, a) => sum + (a.work || (a.avgPower || 0) * (a.duration / 1000)), 0),
-          duration: yearActivities.reduce((sum, a) => sum + a.duration, 0)
+          bikeScore: yearActivities.reduce((sum, a) => sum + (Number.isFinite(a.bikeScore) ? a.bikeScore : 0), 0),
+          work: yearActivities.reduce((sum, a) => sum + (Number.isFinite(a.work) ? a.work : (Number.isFinite(a.avgPower) ? (a.avgPower || 0) * (a.duration / 1000) : 0)), 0),
+          duration: yearActivities.reduce((sum, a) => sum + (Number.isFinite(a.duration) ? a.duration : 0), 0)
         });
       }
     }
@@ -267,7 +270,8 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       if (!summary[key]) {
         summary[key] = { date: startOfPeriod, bikeScore: 0, label };
       }
-      summary[key].bikeScore += (h.bikeScore || 0);
+      const score = Number.isFinite(h.bikeScore) ? h.bikeScore : 0;
+      summary[key].bikeScore += score;
     });
     return Object.values(summary).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [history, bikeScoreSummaryView]);
@@ -363,6 +367,11 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
           manualCP: settings.manualCP,
           manualWPrime: settings.manualWPrime,
           cpMode: settings.cpMode,
+          userWeight: settings.userWeight,
+          bikeWeight: settings.bikeWeight,
+          enableVirtualPower: settings.enableVirtualPower,
+          ridingPosition: settings.ridingPosition,
+          surfaceType: settings.surfaceType,
           powerZoneDefinitions: settings.powerZoneDefinitions,
           hrZoneDefinitions: settings.hrZoneDefinitions,
           workerCalculatePowerCurve: workers.calculatePowerCurve,

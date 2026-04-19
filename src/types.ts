@@ -145,3 +145,6 @@ export interface FileStatus {
   data?: CyclingDataPoint[];
   historyId?: string;
 }
+
+export type RidingPosition = 'tops' | 'hoods' | 'drops';
+export type SurfaceType = 'road' | 'gravel' | 'mtb';

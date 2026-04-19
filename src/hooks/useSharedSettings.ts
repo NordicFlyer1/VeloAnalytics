@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ZoneDefinition } from '../types';
+import { ZoneDefinition, RidingPosition, SurfaceType } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 
 export function useSharedSettings() {
@@ -32,6 +32,26 @@ export function useSharedSettings() {
   const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(() => {
     const saved = localStorage.getItem('veloanalytics_weight_unit');
     return (saved === 'kg' || saved === 'lbs') ? saved : 'kg';
+  });
+
+  const [bikeWeight, setBikeWeight] = useState<number>(() => {
+    const saved = localStorage.getItem('veloanalytics_bike_weight');
+    return saved ? parseFloat(saved) : 9;
+  });
+
+  const [enableVirtualPower, setEnableVirtualPower] = useState<boolean>(() => {
+    const saved = localStorage.getItem('veloanalytics_virtual_power');
+    return saved ? saved === 'true' : false;
+  });
+
+  const [ridingPosition, setRidingPosition] = useState<RidingPosition>(() => {
+    const saved = localStorage.getItem('veloanalytics_riding_position');
+    return (saved === 'tops' || saved === 'hoods' || saved === 'drops') ? saved : 'hoods';
+  });
+
+  const [surfaceType, setSurfaceType] = useState<SurfaceType>(() => {
+    const saved = localStorage.getItem('veloanalytics_surface_type');
+    return (saved === 'road' || saved === 'gravel' || saved === 'mtb') ? saved : 'road';
   });
 
   const [maxHR, setMaxHR] = useState(() => {
@@ -81,6 +101,10 @@ export function useSharedSettings() {
     else localStorage.removeItem('veloanalytics_user_weight');
   }, [userWeight]);
   useEffect(() => { localStorage.setItem('veloanalytics_weight_unit', weightUnit); }, [weightUnit]);
+  useEffect(() => { localStorage.setItem('veloanalytics_bike_weight', bikeWeight.toString()); }, [bikeWeight]);
+  useEffect(() => { localStorage.setItem('veloanalytics_virtual_power', enableVirtualPower.toString()); }, [enableVirtualPower]);
+  useEffect(() => { localStorage.setItem('veloanalytics_riding_position', ridingPosition); }, [ridingPosition]);
+  useEffect(() => { localStorage.setItem('veloanalytics_surface_type', surfaceType); }, [surfaceType]);
   useEffect(() => { localStorage.setItem('veloanalytics_max_hr', maxHR.toString()); }, [maxHR]);
   useEffect(() => { localStorage.setItem('veloanalytics_smoothing', smoothingWindow.toString()); }, [smoothingWindow]);
   useEffect(() => { localStorage.setItem('veloanalytics_cp_mode', cpMode); }, [cpMode]);
@@ -102,6 +126,10 @@ export function useSharedSettings() {
     manualWPrime, setManualWPrime,
     userWeight, setUserWeight,
     weightUnit, setWeightUnit,
+    bikeWeight, setBikeWeight,
+    enableVirtualPower, setEnableVirtualPower,
+    ridingPosition, setRidingPosition,
+    surfaceType, setSurfaceType,
     maxHR, setMaxHR,
     theme, setTheme, toggleTheme,
     smoothingWindow, setSmoothingWindow,

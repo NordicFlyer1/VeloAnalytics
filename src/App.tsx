@@ -169,6 +169,10 @@ export default function App() {
     manualWPrime, setManualWPrime,
     userWeight, setUserWeight,
     weightUnit, setWeightUnit,
+    bikeWeight, setBikeWeight,
+    enableVirtualPower, setEnableVirtualPower,
+    ridingPosition, setRidingPosition,
+    surfaceType, setSurfaceType,
     maxHR, setMaxHR,
     theme, setTheme, toggleTheme,
     smoothingWindow, setSmoothingWindow,
@@ -318,13 +322,13 @@ export default function App() {
   const trainingLoadStats = React.useMemo(() => {
     if (trainingLoadData.length === 0) return { totalBikeScore: 0, avgBikeScore: 0, totalWork: 0, totalDuration: 0 };
     
-    const totalBikeScore = trainingLoadData.reduce((sum, d) => sum + d.bikeScore, 0);
-    const totalWork = trainingLoadData.reduce((sum, d) => sum + d.work, 0);
-    const totalDuration = trainingLoadData.reduce((sum, d) => sum + d.duration, 0);
+    const totalBikeScore = trainingLoadData.reduce((sum, d) => sum + (Number.isFinite(d.bikeScore) ? d.bikeScore : 0), 0);
+    const totalWork = trainingLoadData.reduce((sum, d) => sum + (Number.isFinite(d.work) ? d.work : 0), 0);
+    const totalDuration = trainingLoadData.reduce((sum, d) => sum + (Number.isFinite(d.duration) ? d.duration : 0), 0);
     
     return {
       totalBikeScore,
-      avgBikeScore: totalBikeScore / trainingLoadData.length,
+      avgBikeScore: trainingLoadData.length > 0 ? totalBikeScore / trainingLoadData.length : 0,
       totalWork,
       totalDuration
     };
@@ -492,20 +496,22 @@ export default function App() {
 
     const powers = data.map(p => p.power || 0);
     const heartRates = data.map(p => p.heartRate || 0).filter(h => h > 0);
-    const duration = (data[data.length - 1].timestamp.getTime() - data[0].timestamp.getTime()) / 1000;
+    const durationCount = (data[data.length - 1].timestamp.getTime() - data[0].timestamp.getTime()) / 1000;
+    const safeDuration = Number.isFinite(durationCount) ? durationCount : 0;
     
     const xPower = calculateXPower(data);
-    const relativeIntensity = xPower ? calculateRI(xPower, cp) : undefined;
-    const bikeScore = (xPower && relativeIntensity) ? calculateBikeScore(duration, xPower, relativeIntensity, cp) : undefined;
+    const safeCP = (cp && cp > 0) ? cp : 125;
+    const relativeIntensity = xPower !== undefined ? calculateRI(xPower, safeCP) : undefined;
+    const bikeScore = (xPower !== undefined && relativeIntensity !== undefined) ? calculateBikeScore(safeDuration, xPower, relativeIntensity, safeCP) : undefined;
 
-    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, cp));
+    const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, safeCP));
     const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
 
     setSummary(prev => prev ? ({
       ...prev,
-      xPower,
-      relativeIntensity,
-      bikeScore,
+      xPower: xPower !== undefined ? xPower : prev.xPower,
+      relativeIntensity: relativeIntensity !== undefined ? relativeIntensity : prev.relativeIntensity,
+      bikeScore: bikeScore !== undefined ? bikeScore : prev.bikeScore,
       powerZones: pZones,
       hrZones: hZones
     }) : null);
@@ -556,6 +562,11 @@ export default function App() {
       manualCP,
       manualWPrime,
       cpMode,
+      userWeight,
+      bikeWeight,
+      enableVirtualPower,
+      ridingPosition,
+      surfaceType,
       powerZoneDefinitions,
       hrZoneDefinitions
     } = settings;
@@ -566,6 +577,11 @@ export default function App() {
       manualCP,
       manualWPrime,
       cpMode,
+      userWeight,
+      bikeWeight,
+      enableVirtualPower,
+      ridingPosition,
+      surfaceType,
       powerZoneDefinitions,
       hrZoneDefinitions,
       workerCalculatePowerCurve,
@@ -1161,6 +1177,14 @@ export default function App() {
           setUserWeight={setUserWeight}
           weightUnit={weightUnit}
           setWeightUnit={setWeightUnit}
+          bikeWeight={bikeWeight}
+          setBikeWeight={setBikeWeight}
+          enableVirtualPower={enableVirtualPower}
+          setEnableVirtualPower={setEnableVirtualPower}
+          ridingPosition={ridingPosition}
+          setRidingPosition={setRidingPosition}
+          surfaceType={surfaceType}
+          setSurfaceType={setSurfaceType}
           cpWPrime={cpWPrime}
           powerZoneDefinitions={powerZoneDefinitions}
           setPowerZoneDefinitions={setPowerZoneDefinitions}

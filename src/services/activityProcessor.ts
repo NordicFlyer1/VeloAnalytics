@@ -8,9 +8,12 @@ import {
   getZonesFromDefinitions, 
   calculateAerobicDecoupling,
   DEFAULT_FALLBACK_CP,
-  DEFAULT_FALLBACK_WPRIME
+  DEFAULT_FALLBACK_WPRIME,
+  calculateVirtualPower,
+  CDA_VALUES,
+  CRR_VALUES
 } from './metrics';
-import { CyclingDataPoint, ActivitySummary, Lap, ZoneDefinition } from '../types';
+import { CyclingDataPoint, ActivitySummary, Lap, ZoneDefinition, RidingPosition, SurfaceType } from '../types';
 
 export interface ProcessingContext {
   cp: number;
@@ -18,6 +21,11 @@ export interface ProcessingContext {
   manualCP: number | null;
   manualWPrime: number | null;
   cpMode: 'manual' | 'estimated';
+  userWeight: number | null;
+  bikeWeight: number;
+  enableVirtualPower: boolean;
+  ridingPosition: RidingPosition;
+  surfaceType: SurfaceType;
   powerZoneDefinitions: ZoneDefinition[];
   hrZoneDefinitions: ZoneDefinition[];
   workerCalculatePowerCurve: (points: CyclingDataPoint[]) => Promise<any>;
@@ -38,21 +46,51 @@ export async function processActivityData(
     points[i].slope = calculateSlope(points[i - 1], points[i]);
   }
 
+  // Inject Virtual Power if enabled and data is missing
+  // This must happen BEFORE other power-based metrics are calculated
+  if (ctx.enableVirtualPower) {
+    const hasExistingPower = points.some(p => (p.power || 0) > 0);
+    
+    // Only calculate if the file doesn't already have power data
+    if (!hasExistingPower) {
+      const riderWeight = ctx.userWeight || 75; // Default 75kg if not set
+      const totalWeight = riderWeight + ctx.bikeWeight;
+      const cda = CDA_VALUES[ctx.ridingPosition];
+      const crr = CRR_VALUES[ctx.surfaceType];
+
+      for (let i = 1; i < points.length; i++) {
+        const speedMS = points[i].speed || 0;
+        const gradeFraction = (points[i].slope || 0) / 100;
+        points[i].power = calculateVirtualPower(speedMS, gradeFraction, totalWeight, cda, crr);
+      }
+      
+      // Ensure first point has something if speed exists
+      if (points.length > 0 && points[0].power === undefined) {
+        points[0].power = 0;
+      }
+    }
+  }
+
   const powers = points.map(p => p.power || 0);
   const cadences = points.map(p => p.cadence || 0).filter(c => c > 0);
   const speeds = points.map(p => p.speed || 0);
   const heartRates = points.map(p => p.heartRate || 0).filter(h => h > 0);
   const temperatures = points.map(p => p.temperature || 0).filter(t => t !== 0);
   
-  const avgPower = powers.reduce((a, b) => a + b, 0) / powers.length;
-  const maxPower = Math.max(...powers);
+  const avgPower = powers.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / powers.length;
+  const maxPower = Math.max(...powers.filter(p => Number.isFinite(p)));
   const xPower = calculateXPower(points);
-  const duration = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000;
+  
+  const startTime = points[0].timestamp.getTime();
+  const endTime = points[points.length - 1].timestamp.getTime();
+  const durationCount = (endTime - startTime) / 1000;
+  const safeDuration = Number.isFinite(durationCount) ? durationCount : 0;
   const distance = points[points.length - 1].distance || 0;
   
-  const relativeIntensity = xPower ? calculateRI(xPower, ctx.cp) : undefined;
-  const bikeScore = (xPower && relativeIntensity) ? calculateBikeScore(duration, xPower, relativeIntensity, ctx.cp) : undefined;
-  const work = (avgPower * duration) / 1000;
+  const safeCP = (ctx.cp && ctx.cp > 0) ? ctx.cp : 125;
+  const relativeIntensity = xPower !== undefined ? calculateRI(xPower, safeCP) : undefined;
+  const bikeScore = (xPower !== undefined && relativeIntensity !== undefined) ? calculateBikeScore(safeDuration, xPower, relativeIntensity, safeCP) : undefined;
+  const work = (avgPower * safeDuration) / 1000;
 
   // Total ascent calculation
   let totalAscent = 0;
@@ -127,7 +165,7 @@ export async function processActivityData(
   const summary: ActivitySummary = {
     name: fileName.replace(/\.[^/.]+$/, ""),
     startTime: points[0].timestamp,
-    duration,
+    duration: safeDuration,
     distance,
     avgPower,
     maxPower,
@@ -136,12 +174,12 @@ export async function processActivityData(
     bikeScore,
     avgHeartRate: heartRates.length > 0 ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length : undefined,
     maxHeartRate: heartRates.length > 0 ? Math.max(...heartRates) : undefined,
-    avgCadence: cadences.length > 0 ? cadences.reduce((a, b) => a + b, 0) / cadences.length : undefined,
-    maxCadence: cadences.length > 0 ? Math.max(...cadences) : undefined,
-    avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : undefined,
-    maxSpeed: speeds.length > 0 ? Math.max(...speeds) : undefined,
+    avgCadence: cadences.length > 0 ? cadences.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / cadences.length : undefined,
+    maxCadence: cadences.length > 0 ? Math.max(...cadences.filter(c => Number.isFinite(c))) : undefined,
+    avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / speeds.length : undefined,
+    maxSpeed: speeds.length > 0 ? Math.max(...speeds.filter(s => Number.isFinite(s))) : undefined,
     totalAscent,
-    avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : undefined,
+    avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / temperatures.length : undefined,
     work,
     laps,
     powerZones: pZones,
