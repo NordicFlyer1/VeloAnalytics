@@ -178,6 +178,17 @@ export default function App() {
   const handleCompare = () => {
     mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const handleActivityHistoryClick = () => {
+    if (window.innerWidth < 768) {
+      setIsHistorySidebarOpen(true);
+    } else {
+      const element = document.getElementById('history-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
   const { 
     calculatePowerCurve: workerCalculatePowerCurve, 
     calculateWPrimeBalance: workerCalculateWPrimeBalance, 
@@ -1392,6 +1403,7 @@ export default function App() {
         toggleAllPanels={toggleAllPanels}
         setShowSettings={setShowSettings}
         toggleHistorySidebar={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+        onActivityHistoryClick={handleActivityHistoryClick}
         isHistorySidebarOpen={isHistorySidebarOpen}
       />
 
@@ -1425,7 +1437,7 @@ export default function App() {
               history={history}
               selectedHistoryIds={selectedHistoryIds}
               loadFromHistory={loadFromHistory}
-              onOpenHistory={() => setIsHistorySidebarOpen(true)}
+              onOpenHistory={handleActivityHistoryClick}
             />
 
             {summary && (

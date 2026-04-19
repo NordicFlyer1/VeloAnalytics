@@ -10,6 +10,7 @@ interface SectionHeaderProps {
   isExpanded: boolean;
   onToggle: () => void;
   onExport?: () => void;
+  renderRight?: React.ReactNode;
   className?: string;
   infoContent?: {
     title: string;
@@ -24,6 +25,7 @@ export const SectionHeader = ({
   isExpanded, 
   onToggle, 
   onExport,
+  renderRight,
   className,
   infoContent
 }: SectionHeaderProps) => {
@@ -69,6 +71,7 @@ export const SectionHeader = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {renderRight}
           {onExport && isExpanded && (
             <button 
               onClick={handleExport}

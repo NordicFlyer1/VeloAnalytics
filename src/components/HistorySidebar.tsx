@@ -66,28 +66,30 @@ export const HistorySidebar = React.memo(({
         )}
       </AnimatePresence>
 
-      <div className={cn(
+      <div 
+        id="history-section"
+        className={cn(
         "bg-app-card border border-app-border rounded-3xl p-6 sm:p-8 transition-all duration-300 relative",
         isMobileView ? cn(
           "fixed top-0 right-0 h-full w-[85%] sm:w-[400px] z-[70] rounded-none border-l shadow-2xl overflow-y-auto md:relative md:w-auto md:h-auto md:rounded-3xl md:border md:shadow-none md:z-auto md:p-8",
           isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         ) : ""
       )}>
-        {isMobileView && (
-          <button 
-            onClick={onClose}
-            className="absolute top-6 right-6 p-2 hover:bg-app-bg rounded-full text-app-muted md:hidden z-10"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
-
         <SectionHeader 
           icon={History}
           title="Activity History"
           description="Manage and compare activities"
           isExpanded={isHistoryExpanded}
           onToggle={() => setIsHistoryExpanded(!isHistoryExpanded)}
+          renderRight={isMobileView && (
+            <button 
+              onClick={onClose}
+              className="p-1.5 hover:bg-app-bg rounded-lg text-app-muted md:hidden border border-transparent hover:border-app-border transition-all"
+              title="Close Panel"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
           infoContent={{
             title: "Activity History",
             description: "Your local database of rides. You can select multiple activities to compare power curves, view historical training load trends in the PMC, or permanently delete rides using the trash icon."

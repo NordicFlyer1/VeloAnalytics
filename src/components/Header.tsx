@@ -28,6 +28,7 @@ interface HeaderProps {
   toggleAllPanels: (collapsed: boolean) => void;
   setShowSettings: (show: boolean) => void;
   toggleHistorySidebar: () => void;
+  onActivityHistoryClick: () => void;
   isHistorySidebarOpen: boolean;
 }
 
@@ -45,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
   toggleAllPanels,
   setShowSettings,
   toggleHistorySidebar,
+  onActivityHistoryClick,
   isHistorySidebarOpen
 }) => {
   return (
@@ -104,16 +106,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{showUploadView ? 'Cancel' : 'Upload'}</span>
               </button>
-              <button 
-                onClick={() => toggleHistorySidebar()}
-                className={cn(
-                  "p-1.5 sm:p-2 rounded-full transition-colors border border-transparent hover:border-app-border md:hidden",
-                  isHistorySidebarOpen ? "bg-orange-500/10 border-orange-500/20 text-orange-500" : "text-app-muted hover:bg-app-card"
-                )}
-                title="Activity History"
-              >
-                <HistoryIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+            <button 
+              onClick={() => onActivityHistoryClick()}
+              className={cn(
+                "p-1.5 sm:p-2 rounded-full transition-colors border border-transparent hover:border-app-border",
+                isHistorySidebarOpen ? "bg-orange-500/10 border-orange-500/20 text-orange-500" : "text-app-muted hover:bg-app-card"
+              )}
+              title="Activity History"
+            >
+              <HistoryIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
