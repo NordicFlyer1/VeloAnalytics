@@ -107,7 +107,9 @@ export const ActivityMap = React.memo(({
               ref={mapContainerRef}
               className={cn(
                 "bg-app-bg border border-app-border rounded-2xl relative overflow-hidden group transition-all duration-500",
-                isMapMaximized ? "h-[750px] sm:h-[900px]" : "h-[450px] sm:h-[600px]"
+                isMapMaximized 
+                  ? "h-[600px] sm:h-[750px] md:h-[900px]" 
+                  : "h-[350px] sm:h-[450px] md:h-[600px]"
               )}
             >
               {/* Unified Header Bar - Stacked Top Right */}

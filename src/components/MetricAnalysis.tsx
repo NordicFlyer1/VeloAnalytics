@@ -88,12 +88,13 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Metrics</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Metrics</span>
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar -mx-1 sm:mx-0">
                   {Object.entries(metricsConfig).map(([key, config]) => {
                     const typedConfig = config as { label: string, color: string, unit: string };
+                    const isActive = activeMetrics.includes(key);
                     return (
                       <button
                         key={key}
@@ -102,26 +103,23 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                             const next = prev.includes(key) 
                               ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
                               : [...prev, key];
-                            
-                            // Sort based on metricsConfig order
                             const order = Object.keys(metricsConfig);
                             return [...next].sort((a, b) => order.indexOf(a) - order.indexOf(b));
                           });
                         }}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
-                          activeMetrics.includes(key) 
+                          "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                          isActive 
                             ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                             : "text-app-muted hover:text-app-text"
                         )}
                       >
-                        <div 
-                          className={cn(
-                            "w-2 h-2 rounded-full transition-all flex-shrink-0",
-                            activeMetrics.includes(key) ? "bg-black/40" : ""
-                          )} 
-                          style={!activeMetrics.includes(key) ? { backgroundColor: typedConfig.color } : {}} 
-                        />
+                        {!isActive && (
+                          <div 
+                            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: typedConfig.color }} 
+                          />
+                        )}
                         {typedConfig.label}
                       </button>
                     );
@@ -129,15 +127,15 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Smoothing</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Smoothing</span>
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar -mx-1 sm:mx-0">
                   {[1, 3, 10, 30, 60].map((window) => (
                     <button
                       key={window}
                       onClick={() => setSmoothingWindow(window)}
                       className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                        "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                         smoothingWindow === window 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"

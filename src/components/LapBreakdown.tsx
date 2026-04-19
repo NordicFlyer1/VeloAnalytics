@@ -44,8 +44,9 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Lap Mode</span>
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide -mx-1 sm:mx-0">
                   {[
                     { id: 'file', label: 'FILE' },
                     { id: '1km', label: '1KM' },
@@ -59,7 +60,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                       key={mode.id}
                       onClick={() => setLapMode(mode.id as any)}
                       className={cn(
-                        "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
+                        "px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
                         lapMode === mode.id 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
@@ -71,7 +72,7 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                 </div>
               </div>
 
-              <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="max-h-[50vh] md:max-h-[400px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar no-scrollbar scroll-smooth">
                 {/* Desktop Table View */}
                 <table className="w-full text-left border-collapse hidden md:table">
                   <thead className="sticky top-0 bg-app-card z-10">
@@ -119,35 +120,41 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                 </table>
 
                 {/* Mobile Card View */}
-                <div className="grid grid-cols-1 gap-4 md:hidden">
+                <div className="grid grid-cols-1 gap-3 md:hidden">
                   {currentLaps.map((lap) => (
-                    <div key={lap.id} className="bg-app-bg/50 border border-app-border rounded-2xl p-5 space-y-4">
-                      <div className="flex justify-between items-center border-b border-app-border pb-3 uppercase tracking-widest font-bold">
-                        <span className="text-sm text-orange-500">LAP #{lap.id}</span>
-                        <span className="text-xs text-app-text/60">
-                          {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')} • {(lap.distance / 1000).toFixed(2)} KM
-                        </span>
+                    <div key={lap.id} className="bg-app-bg/30 border border-app-border/60 rounded-2xl p-4 space-y-4 active:scale-[0.98] transition-all">
+                      <div className="flex justify-between items-center border-b border-app-border/40 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-widest font-black text-orange-500">LAP #{lap.id}</span>
+                          <div className="w-1 h-3 bg-app-border rounded-full" />
+                          <span className="text-[10px] uppercase tracking-widest font-bold text-app-text/80">
+                            {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-app-muted">{(lap.distance / 1000).toFixed(2)} KM</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max • xP)</span>
-                          <div className="text-xs font-bold text-app-text">{Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} / {Math.round(lap.xPower || 0)} W</div>
+                      <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] uppercase tracking-widest text-app-muted font-bold">Power (Avg/Max • xP)</span>
+                          <div className="text-[11px] font-bold text-app-text tracking-tight">
+                            {Math.round(lap.avgPower || 0)} / {Math.round(lap.maxPower || 0)} <span className="text-app-muted text-[10px] font-medium">• {Math.round(lap.xPower || 0)}W</span>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Work</span>
-                          <div className="text-xs font-bold text-orange-500">{Math.round((lap.avgPower || 0) * (lap.duration || 0) / 1000)} KJ</div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] uppercase tracking-widest text-app-muted font-bold">Energy</span>
+                          <div className="text-[11px] font-bold text-orange-500 tracking-tight">{Math.round((lap.avgPower || 0) * (lap.duration || 0) / 1000)} KJ</div>
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
-                          <div className="text-xs text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} BPM</div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] uppercase tracking-widest text-app-muted font-bold">Heart Rate</span>
+                          <div className="text-[11px] font-medium text-app-text/80">{Math.round(lap.avgHeartRate || 0)} / {Math.round(lap.maxHeartRate || 0)} <span className="text-[8px] opacity-60">BPM</span></div>
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
-                          <div className="text-xs text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} RPM</div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] uppercase tracking-widest text-app-muted font-bold">Cadence</span>
+                          <div className="text-[11px] font-medium text-app-text/80">{Math.round(lap.avgCadence || 0)} / {Math.round(lap.maxCadence || 0)} <span className="text-[8px] opacity-60">RPM</span></div>
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
-                          <div className="text-xs text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} KM/H</div>
+                        <div className="space-y-0.5 col-span-2 border-t border-app-border/20 pt-2">
+                          <span className="text-[9px] uppercase tracking-widest text-app-muted font-bold">Speed</span>
+                          <div className="text-[11px] font-medium text-app-text/80">{(lap.avgSpeed || 0).toFixed(1)} / {(lap.maxSpeed || 0).toFixed(1)} <span className="text-[8px] opacity-60">KM/H</span></div>
                         </div>
                       </div>
                     </div>

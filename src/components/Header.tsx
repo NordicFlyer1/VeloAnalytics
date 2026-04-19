@@ -65,92 +65,80 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Controls Row */}
           <div className="flex items-center justify-between md:justify-end gap-2 sm:gap-4 md:gap-6">
-            <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
-              {estimatedCp && estimatedCp > cp && !autoUpdateCP && (
-                <button 
-                  onClick={() => setCP(estimatedCp)}
-                  className="hidden lg:flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full border border-orange-500/20 transition-all group"
-                >
-                  <Zap className="w-3 h-3 text-orange-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
-                    Update CP to {estimatedCp}W?
-                  </span>
-                  <ChevronRight className="w-3 h-3 text-orange-500 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              )}
+            {/* Group 1: Data & Performance */}
+            <div className="flex items-center gap-1 sm:gap-2 bg-app-card/50 border border-app-border p-1 rounded-full shadow-sm">
               <div 
-                className="flex items-center gap-1 sm:gap-2 bg-app-card border border-app-border px-2 sm:px-3 py-1 sm:py-1.5 rounded-full"
+                className="flex items-center gap-1 sm:gap-2 px-2 py-1 rounded-full hover:bg-app-card transition-colors"
                 title="Critical Power (Watts)"
               >
                 <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                <span className="text-[10px] sm:text-xs font-medium text-app-muted hidden sm:inline">CP:</span>
                 <input 
                   type="number" 
                   value={cp} 
                   onChange={(e) => setCP(parseInt(e.target.value) || 0)}
-                  className="bg-transparent w-8 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
+                  className="bg-transparent w-9 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
                 />
-                <span className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest">W</span>
+                <span className="text-[8px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">W</span>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-1 sm:gap-2">
+              
+              <div className="w-[1px] h-3 bg-app-border" />
+
               <button 
                 onClick={() => setShowUploadView(!showUploadView)}
                 className={cn(
-                  "flex items-center gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-widest transition-all",
-                  showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "bg-app-card text-app-muted border border-app-border hover:text-app-text"
+                  "p-1.5 sm:p-2 sm:px-4 rounded-full transition-all flex items-center gap-2",
+                  showUploadView ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-app-muted hover:text-orange-500 hover:bg-orange-500/5"
                 )}
-                title={showUploadView ? "Cancel Upload" : "Upload Activity (.fit)"}
+                title={showUploadView ? "Cancel" : "Upload"}
               >
-                <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{showUploadView ? 'Cancel' : 'Upload'}</span>
+                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-widest">{showUploadView ? 'Cancel' : 'Upload'}</span>
               </button>
-            <button 
-              onClick={() => onActivityHistoryClick()}
-              className={cn(
-                "p-1.5 sm:p-2 rounded-full transition-colors border border-transparent hover:border-app-border",
-                isHistorySidebarOpen ? "bg-orange-500/10 border-orange-500/20 text-orange-500" : "text-app-muted hover:bg-app-card"
-              )}
-              title="Activity History"
-            >
-              <HistoryIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+
+              <button 
+                onClick={() => onActivityHistoryClick()}
+                className={cn(
+                  "p-1.5 sm:p-2 rounded-full transition-all",
+                  isHistorySidebarOpen ? "bg-orange-500/10 text-orange-500" : "text-app-muted hover:text-orange-500 hover:bg-orange-500/5"
+                )}
+                title="History"
+              >
+                <HistoryIcon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+            
+            {/* Group 2: View & Settings */}
+            <div className="flex items-center gap-1 bg-app-card/50 border border-app-border p-1 rounded-full shadow-sm">
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
+                title="Theme"
               >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
-                ) : (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-                )}
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : <Moon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
               </button>
-              <button 
-                onClick={() => setShowAboutModal(true)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title="Overview, Methodology & License"
-              >
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-              </button>
+              
               <button 
                 onClick={() => toggleAllPanels(areAllPanelsCollapsed)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title={areAllPanelsCollapsed ? "Expand All Panels" : "Collapse All Panels"}
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
+                title="Toggle Panels"
               >
-                {areAllPanelsCollapsed ? (
-                  <LayoutList className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
-                ) : (
-                  <Table className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
-                )}
+                {areAllPanelsCollapsed ? <LayoutList className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : <Table className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-orange-500" />}
               </button>
+
               <button 
                 onClick={() => setShowSettings(true)}
-                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors border border-transparent hover:border-app-border"
-                title="Training Settings"
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
+                title="Settings"
               >
-                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-app-muted" />
+                <Settings className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </button>
+              
+              <button 
+                onClick={() => setShowAboutModal(true)}
+                className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
+                title="About"
+              >
+                <BookOpen className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>

@@ -35,28 +35,28 @@ export const AboutModal: React.FC<AboutModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-app-card border border-app-border rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+            className="relative bg-app-card border border-app-border rounded-3xl w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            <div className="p-8 border-b border-app-border flex flex-col gap-6 bg-app-card/50 backdrop-blur-md">
+            <div className="p-5 sm:p-8 border-b border-app-border flex flex-col gap-4 sm:gap-6 bg-app-card/50 backdrop-blur-md">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold tracking-tight flex items-center gap-3">
-                  <BookOpen className="w-6 h-6 text-orange-500" />
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
+                  <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                   Performance Insights
                 </h2>
                 <button 
                   onClick={() => setShowAboutModal(false)}
-                  className="text-app-muted hover:text-app-text transition-colors text-xs font-bold uppercase tracking-widest"
+                  className="text-app-muted hover:text-app-text transition-colors text-[10px] font-bold uppercase tracking-widest px-2 py-1"
                 >
                   Close
                 </button>
               </div>
 
               {/* Capsule Tab Switcher */}
-              <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start overflow-x-auto max-w-full">
+              <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start overflow-x-auto max-w-full no-scrollbar">
                 <button
                   onClick={() => setActiveTab('overview')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                    "px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'overview' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
@@ -67,18 +67,18 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <button
                   onClick={() => setActiveTab('methodology')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                    "px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'methodology' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
                   )}
                 >
-                  Methodology
+                  Method
                 </button>
                 <button
                   onClick={() => setActiveTab('faq')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                    "px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'faq' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
@@ -89,18 +89,18 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <button
                   onClick={() => setActiveTab('license')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                    "px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                     activeTab === 'license' 
                       ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                       : "text-app-muted hover:text-app-text"
                   )}
                 >
-                  License
+                  Legal
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 sm:p-8 custom-scrollbar no-scrollbar scroll-smooth">
               <AnimatePresence mode="wait">
                 {activeTab === 'overview' ? (
                   <motion.div
@@ -109,78 +109,77 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="space-y-12"
+                    className="space-y-8 sm:space-y-12"
                   >
-                    <section className="space-y-4">
-                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Mission</h3>
-                      <p className="text-sm text-app-text/80 leading-relaxed">
+                    <section className="space-y-3 sm:space-y-4">
+                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Mission</h3>
+                      <p className="text-xs sm:text-sm text-app-text/80 leading-relaxed">
                         VeloAnalytics is built on the principle of <span className="text-app-text font-semibold">algorithmic transparency</span>. 
-                        Most cycling platforms hide their calculations behind proprietary trademarks. We believe that athletes should own their data 
-                        and understand the math that defines their fitness.
+                        We believe that athletes should own their data and understand the math that defines their fitness.
                       </p>
                     </section>
 
-                    <section className="space-y-6">
-                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Key Performance Indicators</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                    <section className="space-y-4 sm:space-y-6">
+                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 text-center sm:text-left">Key Performance Indicators</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
                             <Zap className="w-3 h-3 text-orange-500" />
                             Critical Power (CP)
                           </h4>
-                          <p className="text-[11px] text-app-muted leading-relaxed">
-                            The highest power output maintainable without fatigue. Estimated using the Monod & Scherrer linear model.
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
+                            The highest power output maintainable without fatigue. Estimated using the Monod & Scherrer model.
                           </p>
                         </div>
-                        <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
                             <TrendingUp className="w-3 h-3 text-purple-500" />
                             xPower & BikeScore
                           </h4>
-                          <p className="text-[11px] text-app-muted leading-relaxed">
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
                             Alternative to NP and TSS. Reflects physiological strain and total training dose using weighted averages.
                           </p>
                         </div>
-                        <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
                             <Activity className="w-3 h-3 text-blue-500" />
                             Fitness / Fatigue
                           </h4>
-                          <p className="text-[11px] text-app-muted leading-relaxed">
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
                             LTS (Chronic) and STS (Acute) loads derived from daily BikeScore to monitor your training form.
                           </p>
                         </div>
-                        <div className="bg-app-bg/50 p-5 rounded-2xl border border-app-border/50">
-                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
                             <Scale className="w-3 h-3 text-cyan-500" />
                             Open Governance
                           </h4>
-                          <p className="text-[11px] text-app-muted leading-relaxed">
-                            VeloAnalytics is shared under non-commercial terms to ensure the community retains the right to analyze and audit.
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
+                            Shared under non-commercial terms to ensure the community retains the right to analyze and audit.
                           </p>
                         </div>
                       </div>
                     </section>
                     
-                    <section className="space-y-4">
-                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Getting Help</h3>
-                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-6 flex gap-4">
-                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
-                          <HelpCircle className="w-5 h-5 text-black" />
+                    <section className="space-y-3 sm:space-y-4">
+                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Getting Help</h3>
+                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6 flex gap-3 sm:gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
+                          <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                         </div>
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-bold text-app-text">Contextual Help</h4>
-                          <p className="text-xs text-app-muted leading-relaxed">
-                            Look for the small <span className="text-orange-500 font-bold italic">i</span> icons next to section headers throughout the app. 
-                            Clicking them will show a quick explainer for that specific analysis block.
+                        <div className="space-y-1 sm:space-y-2">
+                          <h4 className="text-xs sm:text-sm font-bold text-app-text">Contextual Help</h4>
+                          <p className="text-[10px] sm:text-xs text-app-muted leading-relaxed">
+                            Look for the small <span className="text-orange-500 font-bold italic">i</span> icons next to section headers. 
+                            Clicking them will show a quick explainer for that block.
                           </p>
                         </div>
                       </div>
                     </section>
 
-                    <div className="pt-8 border-t border-app-border/50 text-center">
-                      <p className="text-[10px] text-app-muted italic">
-                        Explore the tabs above for full documentation, FAQs, and licensing.
+                    <div className="pt-6 sm:pt-8 border-t border-app-border/50 text-center">
+                      <p className="text-[9px] sm:text-[10px] text-app-muted italic">
+                        Explore the tabs above for full documentation.
                       </p>
                     </div>
                   </motion.div>

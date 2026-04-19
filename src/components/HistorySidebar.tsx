@@ -106,119 +106,117 @@ export const HistorySidebar = React.memo(({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center justify-between sm:justify-start gap-4">
-                  <div className="flex items-center gap-4">
-                    <div 
-                      onClick={() => {
-                        if (selectedHistoryIds.length === history.length && history.length > 0) {
-                          setSelectedHistoryIds([]);
-                        } else {
-                          setSelectedHistoryIds(history.map(h => h.id));
-                        }
-                      }}
-                      className={cn(
-                        "w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition-all",
-                        selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                      )}
-                      title={selectedHistoryIds.length === history.length ? "Deselect All" : "Select All"}
-                    >
-                      {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-3 h-3 text-black" />}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4 group cursor-pointer" 
+                    onClick={() => {
+                      if (selectedHistoryIds.length === history.length && history.length > 0) {
+                        setSelectedHistoryIds([]);
+                      } else {
+                        setSelectedHistoryIds(history.map(h => h.id));
+                      }
+                    }}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 sm:w-5 sm:h-5 rounded-md border flex items-center justify-center transition-all",
+                      selectedHistoryIds.length === history.length && history.length > 0 ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg group-hover:border-app-text/30"
+                    )}>
+                      {selectedHistoryIds.length === history.length && history.length > 0 && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" />}
                     </div>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-app-muted font-bold">Select All</span>
+                    <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold group-hover:text-app-text">Select All</span>
+                  </div>
+            
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    {selectedHistoryIds.length >= 2 && (
+                      <button 
+                        onClick={handleCompare}
+                        className="bg-orange-500 text-black px-2.5 sm:px-4 py-1.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-1.5"
+                      >
+                        <TrendingUp className="w-3 h-3" />
+                        Compare
+                      </button>
+                    )}
+                    {selectedHistoryIds.length > 0 && (
+                      <button 
+                        onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-2.5 sm:px-4 py-1.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-1.5"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    )}
+                    {history.length > 0 && (
+                      <button 
+                        onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                        className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-1 bg-app-card border border-app-border rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
+                      >
+                        <ArrowUpDown className="w-3 h-3" />
+                        {historySortOrder === 'newest' ? 'NEWEST' : 'OLDEST'}
+                      </button>
+                    )}
                   </div>
                 </div>
-          
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedHistoryIds.length >= 2 && (
-                    <button 
-                      onClick={handleCompare}
-                      className="bg-orange-500 text-black px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500 shadow-lg shadow-orange-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                    >
-                      <TrendingUp className="w-3 h-3" />
-                      Compare {selectedHistoryIds.length}
-                    </button>
-                  )}
-                  {selectedHistoryIds.length > 0 && (
-                    <button 
-                      onClick={() => removeMultipleFromHistory(selectedHistoryIds)}
-                      className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 sm:px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-red-500/20 animate-in fade-in zoom-in duration-300 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Delete {selectedHistoryIds.length}
-                    </button>
-                  )}
-                  {history.length > 0 && (
-                    <button 
-                      onClick={() => setHistorySortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                      className="flex items-center gap-2 px-3 py-1 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text transition-all"
-                      title={historySortOrder === 'newest' ? "Switch to Oldest First" : "Switch to Newest First"}
-                    >
-                      <ArrowUpDown className="w-3 h-3" />
-                      {historySortOrder === 'newest' ? 'NEWEST' : 'OLDEST'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {sortedHistory.length > 0 ? (
-                  sortedHistory.map(h => (
-                    <div 
-                      key={h.id} 
-                      onClick={() => loadFromHistory(h.id)}
-                      className={cn(
-                        "bg-app-card border rounded-xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all",
-                        summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name ? "border-orange-500 ring-1 ring-orange-500" : "border-app-border hover:border-app-border/80"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                        <div 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedHistoryIds(prev => 
-                              prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
-                            );
-                          }}
-                          className={cn(
-                            "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0",
-                            selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
-                          )}
-                        >
-                          {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold truncate">{h.name}</div>
-                          <div className="text-[10px] text-app-muted truncate">
-                            {format(new Date(h.date), 'MMM d, yyyy')} • {formatDuration(h.duration)}
-                            {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)} W AVG`}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[60vh] md:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar no-scrollbar scroll-smooth">
+                  {sortedHistory.length > 0 ? (
+                    sortedHistory.map(h => (
+                      <div 
+                        key={h.id} 
+                        onClick={() => loadFromHistory(h.id)}
+                        className={cn(
+                          "bg-app-bg/40 border rounded-2xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all active:scale-[0.98]",
+                          summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name 
+                            ? "border-orange-500/50 bg-orange-500/[0.03] ring-1 ring-orange-500/20" 
+                            : "border-app-border hover:border-app-border/80"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedHistoryIds(prev => 
+                                prev.includes(h.id) ? prev.filter(id => id !== h.id) : [...prev, h.id]
+                              );
+                            }}
+                            className={cn(
+                              "w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 active:scale-110",
+                              selectedHistoryIds.includes(h.id) ? "bg-orange-500 border-orange-500" : "border-app-border bg-app-bg"
+                            )}
+                          >
+                            {selectedHistoryIds.includes(h.id) && <Check className="w-3 h-3 text-black" />}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[11px] sm:text-xs font-bold truncate tracking-tight text-app-text">{h.name}</div>
+                            <div className="text-[9px] sm:text-[10px] text-app-muted font-medium tracking-wide">
+                              {format(new Date(h.date), 'MMM d')} • {formatDuration(h.duration)}
+                              {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W`}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                           <div className="text-right hidden sm:block font-bold">
                             <div className="text-xs text-orange-500">{Math.round(h.bikeScore || 0)}</div>
                             <div className="text-[10px] text-app-muted uppercase tracking-widest">BIKESCORE</div>
                           </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); loadFromHistory(h.id); }}
-                            className="px-2 sm:px-3 py-1 bg-orange-500 text-black rounded-full text-[10px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shadow-lg shadow-orange-500/20"
-                          >
-                            VIEW
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(h.id);
-                            }}
-                            className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                          </button>
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); loadFromHistory(h.id); }}
+                              className="px-2.5 sm:px-3 py-1 bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-black rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 border border-orange-500/20"
+                            >
+                              VIEW
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFromHistory(h.id);
+                              }}
+                              className="p-1.5 sm:p-2 hover:bg-red-500/20 rounded-xl transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
                     <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">

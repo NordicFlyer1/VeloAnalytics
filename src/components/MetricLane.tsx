@@ -126,11 +126,11 @@ export const MetricLane = React.memo(({
             <YAxis 
               yAxisId={metric}
               stroke="var(--app-muted)"
-              fontSize={8}
+              fontSize={9}
               tickLine={false}
               axisLine={false}
               domain={['auto', 'auto']}
-              width={window.innerWidth < 768 ? 30 : 45}
+              width={window.innerWidth < 768 ? 32 : 45}
               orientation="right"
               tickFormatter={(val) => config.unit === 'KJ' ? (val / 1000).toFixed(1) : Math.round(val).toString()}
             />
@@ -139,10 +139,9 @@ export const MetricLane = React.memo(({
               <ReferenceLineAny 
                 yAxisId={metric}
                 x={data[activePoint].timestamp} 
-                stroke="var(--app-text)" 
-                strokeOpacity={0.8}
-                strokeWidth={1}
-                strokeDasharray="3 3" 
+                stroke="var(--orange-500)" 
+                strokeOpacity={0.6}
+                strokeWidth={1.5}
               />
             )}
 
@@ -196,6 +195,10 @@ export const MetricLane = React.memo(({
               isAnimationActive={false}
               cursor={false}
               content={({ active, payload }) => {
+                // On mobile, the value is prominently shown in the lane header.
+                // Floating tooltips often get in the way of the finger.
+                if (window.innerWidth < 768) return null;
+                
                 if (active && payload && payload.length) {
                   const val = payload[0].value;
                   return (

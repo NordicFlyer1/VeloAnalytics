@@ -1431,7 +1431,7 @@ export default function App() {
         />
 
         {(!showUploadView && (summary || history.length > 0)) && (
-          <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <EmptyHistoryView 
               summary={summary}
               history={history}
@@ -1443,7 +1443,7 @@ export default function App() {
             {summary && (
               <>
                 {/* Overview Section */}
-                <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
+                <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
                   <SectionHeader 
                     icon={LayoutList}
                     title="Activity Overview"
@@ -1474,10 +1474,10 @@ export default function App() {
                 </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 gap-8">
+            <div className="grid grid-cols-1 gap-4 sm:gap-8">
               {/* Main Analysis Area */}
-              <div className="space-y-8">
-                <div className="space-y-8">
+              <div className="space-y-4 sm:space-y-8">
+                <div className="space-y-4 sm:space-y-8">
                   {/* Metrics Section */}
                   <MetricAnalysis 
                     isChartExpanded={isChartExpanded}

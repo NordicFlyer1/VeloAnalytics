@@ -45,15 +45,15 @@ export const SectionHeader = ({
   };
 
   return (
-    <div className={cn("mb-6", className)}>
+    <div className={cn("mb-4 sm:mb-6", className)}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-500/10 rounded-xl">
-            <Icon className="w-5 h-5 text-orange-500" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-xl">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold tracking-tight text-app-text">{title}</h3>
+              <h3 className="text-base sm:text-lg font-semibold tracking-tight text-app-text">{title}</h3>
               {infoContent && (
                 <button
                   onClick={() => setShowInfo(!showInfo)}

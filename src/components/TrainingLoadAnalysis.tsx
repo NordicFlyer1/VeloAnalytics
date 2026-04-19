@@ -70,14 +70,14 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full lg:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
                     <button
                       key={range}
                       onClick={() => setTrainingLoadRange(range)}
                       className={cn(
-                        "flex-1 md:flex-none px-4 md:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                        "flex-1 lg:flex-none px-4 lg:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                         trainingLoadRange === range 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
@@ -139,22 +139,22 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BIKESCORE</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 border-t border-app-border/50">
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter text-orange-500">{Math.round(trainingLoadStats.totalBikeScore || 0)}</div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">Total BIKESCORE</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BIKESCORE / Period</div>
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.avgBikeScore || 0)}</div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">Avg BIKESCORE</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)} KJ</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL WORK</div>
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter text-app-text">{Math.round(trainingLoadStats.totalWork || 0)} <span className="text-[9px] tracking-normal font-bold opacity-60">KJ</span></div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL WORK</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)} H</div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL TIME</div>
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter text-app-text">{Math.round((trainingLoadStats.totalDuration || 0) / 3600)} <span className="text-[9px] tracking-normal font-bold opacity-60">H</span></div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold">TOTAL TIME</div>
                 </div>
               </div>
             </div>

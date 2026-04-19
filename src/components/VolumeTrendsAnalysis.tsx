@@ -90,15 +90,15 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 {/* Range Selector - Matched with TrainingLoadSummary (Top Left) */}
-                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto">
+                <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full lg:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((r) => (
                     <button
                       key={r}
                       onClick={() => setRange(r)}
                       className={cn(
-                        "flex-1 md:flex-none px-4 md:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                        "flex-1 lg:flex-none px-4 lg:px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
                         range === r 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
@@ -110,7 +110,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                 </div>
 
                 {/* Metric Selector - Capsule style (Top Right) */}
-                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border w-full lg:w-auto overflow-x-auto no-scrollbar">
                   {metrics.map((m) => {
                     const Icon = m.icon;
                     return (
@@ -118,14 +118,14 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
                         key={m.id}
                         onClick={() => setActiveMetric(m.id)}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+                          "flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                           activeMetric === m.id 
                             ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                             : "text-app-muted hover:text-app-text"
                         )}
                       >
                         <Icon size={12} className={cn(activeMetric === m.id ? "text-black/40" : "")} style={activeMetric !== m.id ? { color: m.color } : {}} />
-                        <span className="hidden sm:inline">{m.label}</span>
+                        <span className="sm:inline">{m.label}</span>
                       </button>
                     );
                   })}
@@ -181,20 +181,20 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
               </div>
 
               {/* Summary Stats - Moved to bottom like TrainingLoadSummary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-app-border/50">
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter" style={{ color: activeMetricConfig.color }}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 border-t border-app-border/50">
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter" style={{ color: activeMetricConfig.color }}>
                     {formatValue(currentStats.total)}
-                    <span className="text-[10px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
+                    <span className="text-[9px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
                   </div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">TOTAL {activeMetricConfig.label}</div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">TOTAL {activeMetricConfig.label}</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-light tracking-tighter text-app-text">
+                <div className="text-center p-2 rounded-2xl bg-app-bg/20 border border-app-border/10 sm:bg-transparent sm:border-none">
+                  <div className="text-lg sm:text-2xl font-light tracking-tighter text-app-text">
                     {formatValue(currentStats.avg)}
-                    <span className="text-[10px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
+                    <span className="text-[9px] ml-1 uppercase font-bold opacity-70">{activeMetricConfig.unit}</span>
                   </div>
-                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">AVG / {range === 'weekly' ? 'WEEK' : range === 'monthly' ? 'MONTH' : 'YEAR'}</div>
+                  <div className="text-[9px] sm:text-[10px] text-app-muted uppercase tracking-widest font-bold text-center">AVG / {range === 'weekly' ? 'WEEK' : range === 'monthly' ? 'MONTH' : 'YEAR'}</div>
                 </div>
               </div>
             </div>
