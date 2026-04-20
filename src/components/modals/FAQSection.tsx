@@ -22,7 +22,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "What are Watts (W)?",
         beginnerAnswer: "Think of Watts as how hard you are pushing the pedals right now. It is your immediate 'energy output'—the intensity of your effort.",
-        technicalAnswer: "Watts (W) are the SI unit of power, representing the rate of energy expenditure (1 Joule per second). In cycling, it is calculated as Torque (how hard you push) × Cadence (how fast you spin).",
+        technicalAnswer: "Watts (W) are units measurement within the International System of Units (SI), representing the rate of energy expenditure (1 Joule per second). In cycling, it is calculated as Torque (how hard you push) × Cadence (how fast you spin).",
         keywords: ["power", "effort", "pushing", "intensity"]
       },
       {
@@ -39,12 +39,12 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "What is Heart Rate (HR)?",
-        beginnerAnswer: "How fast your heart is beating (BPM). It tells you how hard your internal 'engine' is working to keep up with your effort.",
+        beginnerAnswer: "How fast your heart is beating in Beats Per Minute (BPM). It tells you how hard your internal 'engine' is working to keep up with your effort.",
         technicalAnswer: "Heart Rate (measured in Beats Per Minute) is a physiological response to exercise intensity. It is affected by stroke volume, oxygen demand, temperature, and fatigue.",
         keywords: ["pulse", "bpm", "engine", "cardio", "effort"]
       },
       {
-        question: "What is Cadence (RPM)?",
+        question: "What is Cadence (Revolutions Per Minute - RPM)?",
         beginnerAnswer: "How fast your legs are spinning the pedals. Like the 'revolutions' in a car engine.",
         technicalAnswer: "Cadence is the number of full revolutions of the crank per minute. Higher cadences (85-95) generally shift the load to the cardiovascular system, while lower cadences (60-70) put more strain on the muscular system.",
         keywords: ["spinning", "pedaling", "legs", "fast", "rpm"]
@@ -63,13 +63,13 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "What does W' Balance represent?",
         beginnerAnswer: "This is your anaerobic 'battery'. It drops when you go really hard (above your speed limit/CP) and recharges when you back off.",
-        technicalAnswer: "W' represents the finite amount of work that can be performed above Critical Power. W' Balance is a dynamic model (integrating discharge and recovery) of your remaining anaerobic capacity.",
+        technicalAnswer: "W' (pronounced 'W-prime') represents the finite amount of work that can be performed above Critical Power. W' Balance is a dynamic model (integrating discharge and recovery) of your remaining anaerobic capacity.",
         keywords: ["battery", "anaerobic", "matchbook", "capacity", "sprint"]
       },
       {
-        question: "What is xPower (Normalized Power)?",
+        question: "What is xPower?",
         beginnerAnswer: "A way of measuring how hard the ride 'felt'. It gives more credit for hard sprints than for coasting, which captures the physical cost better than a simple average.",
-        technicalAnswer: "xPower (Dr. Philip Skiba) accounts for the metabolic cost of stochastic efforts. It uses a 30-second rolling average raised to the 4th power to emphasize the exponentially higher cost of high-intensity efforts.",
+        technicalAnswer: "xPower (developed by Dr. Philip Skiba) accounts for the metabolic cost of highly variable efforts. It uses a 30-second rolling average raised to the 4th power to emphasize the exponentially higher cost of high-intensity efforts.",
         keywords: ["normalized", "actual cost", "effort", "physiological cost"]
       },
       {
@@ -86,20 +86,20 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "What is Fitness (LTS)?",
         beginnerAnswer: "Your long-term 'base'. It represents how much training you've done over the last 6 weeks. Higher fitness means you can handle harder rides.",
-        technicalAnswer: "Long Term Stress (LTS) is an exponentially weighted moving average of your daily BikeScore, typically with a 42-day time constant. It is the 'CTL' equivalent in the Impulse-Response model.",
-        keywords: ["lts", "fitness", "base", "long term", "ctl"]
+        technicalAnswer: "Long Term Stress (LTS) is an exponentially weighted moving average of your daily BikeScore, typically with a 42-day time constant. It reflects your long-term fitness base and training history.",
+        keywords: ["lts", "fitness", "base", "long term"]
       },
       {
-        question: "What is Fatigue (STS)?",
+        question: "What is Fatigue (Short Term Stress - STS)?",
         beginnerAnswer: "How tired you are right now from your recent rides (last week or so).",
-        technicalAnswer: "Short Term Stress (STS) is an exponentially weighted moving average of your daily BikeScore, typically with a 7-day time constant. It represents your acute training load or 'ATL'.",
-        keywords: ["sts", "fatigue", "tired", "short term", "atl"]
+        technicalAnswer: "Short Term Stress (STS) is an exponentially weighted moving average of your daily BikeScore, typically with a 7-day time constant. It represents your current workload and recent efforts.",
+        keywords: ["sts", "fatigue", "tired", "short term"]
       },
       {
         question: "What is Form (SB)?",
         beginnerAnswer: "Your 'freshness'. If it's a positive number, you're rested and ready to race. If it's deeply negative, you're very tired and need a break.",
-        technicalAnswer: "Stress Balance (SB) is the difference between Fitness (LTS) and Fatigue (STS). A negative balance indicates a state of overload, while a positive balance indicates 'tapering' or freshness (TSB).",
-        keywords: ["sb", "form", "freshness", "rested", "tsb", "ready"]
+        technicalAnswer: "Stress Balance (SB) is the difference between Fitness (LTS) and Fatigue (STS). A negative balance indicates a state of overload, while a positive balance indicates 'tapering', freshness, and recovery.",
+        keywords: ["sb", "form", "freshness", "rested", "ready"]
       }
     ]
   },
@@ -132,13 +132,13 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "How do I upload activities?",
         beginnerAnswer: "Just click the 'Upload' button in the top bar and pick your ride files from your computer or phone.",
-        technicalAnswer: "Select industry-standard .fit files via the UploadView. Our parser extracts GPS, Power, HR, and Cadence stream data for local IndexedDB storage.",
+        technicalAnswer: "Select industry-standard .fit files via the Upload screen. Our parser extracts Global Positioning System (GPS), Power, Heart Rate, and Cadence data for local browser storage.",
         keywords: ["import", "files", "fit", "uploading"]
       },
       {
         question: "Is my data stored securely?",
-        beginnerAnswer: "Yes. Your data stays on your device in your browser's private storage. We don't see or sell your rides.",
-        technicalAnswer: "VeloAnalytics uses a local-first architecture. Data is persisted in IndexedDB. No PII or ride telemetry is transmitted to our servers beyond the initial application load.",
+        beginnerAnswer: "Yes. Your data stays on your device in your browser's private storage. We do not see, store, or sell your ride data.",
+        technicalAnswer: "VeloAnalytics uses a local-first architecture. Data is persisted in your browser's IndexedDB storage (a secure, browser-based database). No Personally Identifiable Information (PII) or ride telemetry is transmitted to our servers beyond the initial application load.",
         keywords: ["privacy", "security", "database", "storage"]
       }
     ]

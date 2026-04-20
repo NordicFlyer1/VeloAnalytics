@@ -181,7 +181,7 @@ export function calculateZones(values: number[], zones: Zone[]): ZoneDistributio
 }
 
 /**
- * Default Coggan-style power zones based on Critical Power (CP).
+ * Standard power zones based on Critical Power (CP).
  */
 export const DEFAULT_POWER_ZONES: ZoneDefinition[] = [
   { name: 'Z1 Active Recovery', percentMin: 0, percentMax: 55, color: '#94a3b8' },
@@ -218,7 +218,7 @@ export function getZonesFromDefinitions(definitions: ZoneDefinition[], threshold
 }
 
 /**
- * Default Coggan-style power zones based on Critical Power (CP).
+ * Default power zones based on Critical Power (CP).
  */
 export function getPowerZones(cp: number): Zone[] {
   return getZonesFromDefinitions(DEFAULT_POWER_ZONES, cp);
@@ -275,7 +275,7 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
 }
 
 /**
- * Calculates xPower (open-source alternative to NP)
+ * Calculates xPower
  * xPower uses a 25s Exponentially Weighted Moving Average (EWMA)
  * xPower = 4th root of (average of (25s EWMA power values ^ 4))
  */
@@ -298,7 +298,7 @@ export function calculateXPower(data: CyclingDataPoint[]): number | undefined {
 }
 
 /**
- * Calculates Relative Intensity (RI), an open-source alternative to Intensity Factor (IF).
+ * Calculates Relative Intensity (RI).
  */
 export function calculateRI(xPower: number, cp: number): number {
   if (!cp || cp <= 0 || !Number.isFinite(xPower)) return 0;
@@ -306,7 +306,7 @@ export function calculateRI(xPower: number, cp: number): number {
 }
 
 /**
- * Calculates BikeScore, an open-source alternative to training stress metrics.
+ * Calculates BikeScore.
  */
 export function calculateBikeScore(durationSec: number, xPower: number, ri: number, cp: number): number {
   if (!cp || cp <= 0 || !Number.isFinite(xPower) || !Number.isFinite(ri)) return 0;

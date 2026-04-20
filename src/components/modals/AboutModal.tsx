@@ -137,7 +137,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                             xPower & BikeScore
                           </h4>
                           <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
-                            Alternative to NP and TSS. Reflects physiological strain and total training dose using weighted averages.
+                            Reflects physiological strain and total training dose using weighted averages and intensity weighting.
                           </p>
                         </div>
                         <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
