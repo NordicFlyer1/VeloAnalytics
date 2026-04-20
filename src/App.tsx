@@ -38,7 +38,8 @@ import { useExportActions } from './hooks/useExportActions';
 import { useFileUploader } from './hooks/useFileUploader';
 import { useDataRecalculator } from './hooks/useDataRecalculator';
 
-import { exportComponentAsImage } from './lib/chartExport';
+import { ActivityOverview } from './components/analysis/ActivityOverview';
+import { ExportProgress } from './components/ui/ExportProgress';
 
 import { 
   calculateLapSummary, 
@@ -142,8 +143,6 @@ export default function App() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const lastActivePointUpdate = useRef<number>(0);
 
-  const overviewExportRef = useRef<HTMLDivElement>(null);
-
   // Custom Hooks for logic
   const smoothedData = useDataSmoothing(data, smoothingWindow);
   
@@ -216,13 +215,6 @@ export default function App() {
     if (!mapContainerRef.current) return;
     if (document.fullscreenElement) document.exitFullscreen();
     else mapContainerRef.current.requestFullscreen().catch(err => console.error(err));
-  };
-
-  const handleOverviewExport = async () => {
-    if (overviewExportRef.current) {
-      const fileName = `Velo_ActivityOverview_${new Date().getTime()}.png`;
-      await exportComponentAsImage(overviewExportRef.current, fileName);
-    }
   };
 
   // Weather service integration
@@ -381,32 +373,16 @@ export default function App() {
 
             {summary && (
               <div ref={overviewRef} className="space-y-4 sm:space-y-8">
-                {/* Overview Section */}
-                <div ref={overviewExportRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
-                  <SectionHeader 
-                    icon={LayoutList}
-                    title="Activity Overview"
-                    description="High-level performance summary and key metrics"
-                    isExpanded={isOverviewExpanded}
-                    onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
-                    onExport={handleOverviewExport}
-                  />
-                  
-                  <AnimatePresence>
-                    {isOverviewExpanded && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}>
-                        <SummaryCards 
-                          summary={summary} 
-                          data={data} 
-                          currentPMC={currentPMC} 
-                          history={history} 
-                          userWeight={userWeight} 
-                          weightUnit={weightUnit} 
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <ActivityOverview 
+                  summary={summary}
+                  data={data}
+                  currentPMC={currentPMC}
+                  history={history}
+                  userWeight={userWeight}
+                  weightUnit={weightUnit}
+                  isExpanded={isOverviewExpanded}
+                  onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                />
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-8">
                   <div className="space-y-4 sm:space-y-8">
@@ -535,28 +511,11 @@ export default function App() {
 
       <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />
 
-      {exportStatus.active && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-8 fade-in duration-500">
-          <div className="bg-app-card/90 backdrop-blur-xl border border-orange-500/30 p-5 rounded-3xl shadow-2xl min-w-[280px]">
-             <div className="flex items-center gap-4 mb-4">
-               <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center animate-pulse">
-                 <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
-               </div>
-               <div>
-                 <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 mb-0.5">Exporting Task</div>
-                 <div className="text-xs font-bold text-app-text">{exportStatus.type} Format</div>
-               </div>
-             </div>
-             <div className="h-1.5 w-full bg-app-bg/50 rounded-full overflow-hidden">
-               <motion.div 
-                 initial={{ width: 0 }} 
-                 animate={{ width: `${exportStatus.progress}%` }} 
-                 className="h-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]" 
-               />
-             </div>
-          </div>
-        </div>
-      )}
+      <ExportProgress 
+        active={exportStatus.active} 
+        type={exportStatus.type} 
+        progress={exportStatus.progress} 
+      />
     </div>
   );
 }
