@@ -234,6 +234,22 @@ export default function App() {
     baseUpdateActivityName(id, newName);
   };
 
+  const handleLoadFromHistory = useCallback((id: string) => {
+    loadFromHistory(id);
+    setIsHistorySidebarOpen(false);
+    
+    // Improved scrolling: Always attempt to go to top, but try overviewRef first
+    // Slightly longer delay to ensure the summary section renders if it was hidden
+    setTimeout(() => {
+      const overviewElement = overviewRef.current;
+      if (overviewElement) {
+        overviewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 150);
+  }, [loadFromHistory]);
+
   const smoothedData = React.useMemo(() => {
     if (smoothingWindow <= 1 || data.length === 0) return data;
 
@@ -968,12 +984,12 @@ export default function App() {
               summary={summary}
               history={history}
               selectedHistoryIds={selectedHistoryIds}
-              loadFromHistory={loadFromHistory}
+              loadFromHistory={handleLoadFromHistory}
               onOpenHistory={handleActivityHistoryClick}
             />
 
             {summary && (
-              <div ref={overviewRef}>
+              <div ref={overviewRef} className="space-y-4 sm:space-y-8">
                 {/* Overview Section */}
                 <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
                   <SectionHeader 
@@ -1179,18 +1195,7 @@ export default function App() {
           historySortOrder={historySortOrder}
           setHistorySortOrder={setHistorySortOrder}
           handleCompare={handleCompare}
-          loadFromHistory={(id) => {
-            loadFromHistory(id);
-            setIsHistorySidebarOpen(false);
-            // Small delay to allow state changes to propagate
-            setTimeout(() => {
-              if (overviewRef.current) {
-                overviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }, 100);
-          }}
+          loadFromHistory={handleLoadFromHistory}
           removeFromHistory={removeFromHistory}
           removeMultipleFromHistory={removeMultipleFromHistory}
           isOpen={isHistorySidebarOpen}
