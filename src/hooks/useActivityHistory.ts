@@ -290,6 +290,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       id,
       date: dateStr,
       name: target.name,
+      bikeId: settings.activeBikeId,
       bikeScore: target.bikeScore || 0,
       duration: target.duration,
       distance: target.distance,
@@ -352,14 +353,16 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     }
 
     if (fullSummary && fullData) {
-      const restoredSummary = {
-        ...fullSummary,
-        startTime: new Date(fullSummary.startTime),
-        laps: fullSummary.laps?.map(l => ({ ...l, startTime: new Date(l.startTime) }))
+      const restoredSummary: ActivitySummary = {
+        ...fullSummary!,
+        startTime: new Date(fullSummary!.startTime),
+        laps: fullSummary!.laps?.map(l => ({ ...l, startTime: new Date(l.startTime) }))
       };
       const restoredData = fullData.map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
 
       let cpWPrimeResult = null;
+      let readySummary: ActivitySummary = restoredSummary;
+
       if (restoredData.length > 0) {
         const ctx: ProcessingContext = {
           cp: settings.cp,
@@ -380,14 +383,15 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         };
         const processed = await processActivityData(restoredData, restoredSummary.name, ctx, restoredSummary.laps);
         cpWPrimeResult = processed.cpWPrimeResult;
+        readySummary = processed.summary;
       }
 
-      if (restoredSummary.aerobicDecoupling === undefined) {
-        restoredSummary.aerobicDecoupling = calculateAerobicDecoupling(restoredData);
+      if (readySummary.aerobicDecoupling === undefined) {
+        readySummary.aerobicDecoupling = calculateAerobicDecoupling(restoredData);
       }
 
       setCurrentActivityId(id);
-      setSummary(restoredSummary);
+      setSummary(readySummary);
       setData(restoredData);
       setCpWPrime(cpWPrimeResult);
       setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);

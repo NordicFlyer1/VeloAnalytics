@@ -10,6 +10,7 @@ This document serves as the source of truth for the visual and structural design
 - **Cards:** 
   - Light Mode: White with subtle border
   - Dark Mode: `rgba(255, 255, 255, 0.05)` (Glassmorphism effect)
+  - Radius: Use `rounded-3xl` for major modals (like Settings and About) to maintain consistency. Secondary cards (like bike profiles) should use `rounded-2xl` or matching `rounded-3xl` for a tasteful, unified look.
 - **Borders:** `var(--app-border)` (Subtle, semi-transparent)
 
 ## 2. Typography

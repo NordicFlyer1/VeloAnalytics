@@ -169,10 +169,10 @@ export default function App() {
     manualWPrime, setManualWPrime,
     userWeight, setUserWeight,
     weightUnit, setWeightUnit,
-    bikeWeight, setBikeWeight,
+    equipment, addBike, updateBike, removeBike,
+    activeBikeId, setActiveBikeId,
+    activeBike,
     enableVirtualPower, setEnableVirtualPower,
-    ridingPosition, setRidingPosition,
-    surfaceType, setSurfaceType,
     maxHR, setMaxHR,
     theme, setTheme, toggleTheme,
     smoothingWindow, setSmoothingWindow,
@@ -515,7 +515,7 @@ export default function App() {
       powerZones: pZones,
       hrZones: hZones
     }) : null);
-  }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions]);
+  }, [cp, maxHR, powerZoneDefinitions, hrZoneDefinitions, data]);
 
   // Recalculate W' Balance when CP mode or manual values change
   React.useEffect(() => {
@@ -1147,6 +1147,7 @@ export default function App() {
           loadFromHistory={(id) => {
             loadFromHistory(id);
             setIsHistorySidebarOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           removeFromHistory={removeFromHistory}
           removeMultipleFromHistory={removeMultipleFromHistory}
@@ -1177,19 +1178,22 @@ export default function App() {
           setUserWeight={setUserWeight}
           weightUnit={weightUnit}
           setWeightUnit={setWeightUnit}
-          bikeWeight={bikeWeight}
-          setBikeWeight={setBikeWeight}
+          equipment={equipment}
+          addBike={addBike}
+          updateBike={updateBike}
+          removeBike={removeBike}
+          activeBikeId={activeBikeId}
+          setActiveBikeId={setActiveBikeId}
           enableVirtualPower={enableVirtualPower}
           setEnableVirtualPower={setEnableVirtualPower}
-          ridingPosition={ridingPosition}
-          setRidingPosition={setRidingPosition}
-          surfaceType={surfaceType}
-          setSurfaceType={setSurfaceType}
           cpWPrime={cpWPrime}
           powerZoneDefinitions={powerZoneDefinitions}
           setPowerZoneDefinitions={setPowerZoneDefinitions}
           hrZoneDefinitions={hrZoneDefinitions}
           setHrZoneDefinitions={setHrZoneDefinitions}
+          smoothingWindow={smoothingWindow}
+          setSmoothingWindow={setSmoothingWindow}
+          history={history}
         />
     </div>
   );

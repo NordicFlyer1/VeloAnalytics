@@ -132,6 +132,7 @@ export interface HistoricalActivity {
   fullData?: CyclingDataPoint[];
   originalFile?: File | Blob;
   originalFileName?: string;
+  bikeId?: string; // Reference to equipment used
 }
 
 export interface FileStatus {
@@ -148,3 +149,14 @@ export interface FileStatus {
 
 export type RidingPosition = 'tops' | 'hoods' | 'drops';
 export type SurfaceType = 'road' | 'gravel' | 'mtb';
+
+export interface Equipment {
+  id: string;
+  name: string;
+  bikeWeight: number;
+  startingMileage: number; // in meters (stored)
+  ridingPosition: RidingPosition;
+  surfaceType: SurfaceType;
+  isDefault: boolean;
+  color?: string; // Visual tag
+}

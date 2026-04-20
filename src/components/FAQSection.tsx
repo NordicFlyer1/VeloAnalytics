@@ -104,6 +104,29 @@ const FAQ_DATA: FAQCategory[] = [
     ]
   },
   {
+    name: "Physics & Equipment",
+    items: [
+      {
+        question: "What is CdA (Aero Drag)?",
+        beginnerAnswer: "CdA describes how 'slippery' you are in the wind. A smaller number means you are more aerodynamic and can go faster for the same effort. It's why riding in the 'drops' is faster than sitting upright on the 'tops'.",
+        technicalAnswer: "CdA is the product of the Drag Coefficient (Cd) and Projected Frontal Area (A). It represents the effective aerodynamic area of the rider and bike. In our model, changing your Riding Position (Tops, Hoods, Drops) adjusts this constant to estimate power losses due to air density and velocity.",
+        keywords: ["cda", "drag", "aero", "wind", "aerodynamics", "position", "drops", "hoods"]
+      },
+      {
+        question: "What is Crr (Rolling Resistance)?",
+        beginnerAnswer: "Crr is how much your tires 'stick' to the ground. Rougher surfaces or knobby tires have higher resistance, making you work harder to maintain speed.",
+        technicalAnswer: "The Coefficient of Rolling Resistance (Crr) quantifies the energy lost as a tire deforms while rolling. We adjust this based on your selected Surface Type (Road, Gravel, MTB) to account for varying friction and vibration losses in the virtual power engine.",
+        keywords: ["crr", "tires", "resistance", "friction", "road", "gravel", "surface"]
+      },
+      {
+        question: "How does Equipment weight affect speed?",
+        beginnerAnswer: "Heavier bikes require more energy to accelerate and to pull uphill against gravity. On flat roads, weight matters much less than aerodynamics.",
+        technicalAnswer: "Mass directly affects the Force of Gravity (Fg = m · g · sin(θ)) and the Force of Acceleration (Fa = m · a). By defining your Bike Weight and Body Weight in settings, we can accurately calculate the power required to overcome gravitational potential energy on gradients.",
+        keywords: ["weight", "gravity", "climbing", "mass", "acceleration"]
+      }
+    ]
+  },
+  {
     name: "Platform",
     items: [
       {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ZoneDefinition, RidingPosition, SurfaceType } from '../types';
+import { ZoneDefinition, RidingPosition, SurfaceType, Equipment } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 
 export function useSharedSettings() {
@@ -34,29 +34,44 @@ export function useSharedSettings() {
     return (saved === 'kg' || saved === 'lbs') ? saved : 'kg';
   });
 
-  const [bikeWeight, setBikeWeight] = useState<number>(() => {
-    const saved = localStorage.getItem('veloanalytics_bike_weight');
-    return saved ? parseFloat(saved) : 9;
-  });
-
   const [enableVirtualPower, setEnableVirtualPower] = useState<boolean>(() => {
     const saved = localStorage.getItem('veloanalytics_virtual_power');
     return saved ? saved === 'true' : false;
   });
 
-  const [ridingPosition, setRidingPosition] = useState<RidingPosition>(() => {
-    const saved = localStorage.getItem('veloanalytics_riding_position');
-    return (saved === 'tops' || saved === 'hoods' || saved === 'drops') ? saved : 'hoods';
+  // Multiple Equipment Profiles
+  const [equipment, setEquipment] = useState<Equipment[]>(() => {
+    const saved = localStorage.getItem('veloanalytics_equipment');
+    if (saved) return JSON.parse(saved);
+
+    // Migration from old single settings if available
+    const oldWeight = localStorage.getItem('veloanalytics_bike_weight');
+    const oldPos = localStorage.getItem('veloanalytics_riding_position');
+    const oldSurf = localStorage.getItem('veloanalytics_surface_type');
+
+    return [{
+      id: 'default-bike',
+      name: 'Default Bike',
+      bikeWeight: oldWeight ? parseFloat(oldWeight) : 9,
+      startingMileage: 0,
+      ridingPosition: (oldPos === 'tops' || oldPos === 'hoods' || oldPos === 'drops') ? oldPos : 'hoods' as RidingPosition,
+      surfaceType: (oldSurf === 'road' || oldSurf === 'gravel' || oldSurf === 'mtb') ? oldSurf : 'road' as SurfaceType,
+      isDefault: true,
+      color: '#f97316'
+    }];
   });
 
-  const [surfaceType, setSurfaceType] = useState<SurfaceType>(() => {
-    const saved = localStorage.getItem('veloanalytics_surface_type');
-    return (saved === 'road' || saved === 'gravel' || saved === 'mtb') ? saved : 'road';
+  const [activeBikeId, setActiveBikeId] = useState<string>(() => {
+    const saved = localStorage.getItem('veloanalytics_active_bike_id');
+    return saved || 'default-bike';
   });
+
+  const activeBike = equipment.find(e => e.id === activeBikeId) || equipment.find(e => e.isDefault) || equipment[0];
 
   const [maxHR, setMaxHR] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_max_hr');
-    return saved ? parseInt(saved) : 190;
+    const parsed = saved ? parseInt(saved) : 190;
+    return isNaN(parsed) || parsed <= 0 ? 190 : parsed;
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -82,7 +97,13 @@ export function useSharedSettings() {
 
   const [hrZoneDefinitions, setHrZoneDefinitions] = useState<ZoneDefinition[]>(() => {
     const saved = localStorage.getItem('veloanalytics_hr_zones');
-    return saved ? JSON.parse(saved) : DEFAULT_HR_ZONES;
+    try {
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {
+      console.error('Failed to parse HR zones:', e);
+    }
+    return DEFAULT_HR_ZONES;
   });
 
   // Sync to localStorage
@@ -101,10 +122,9 @@ export function useSharedSettings() {
     else localStorage.removeItem('veloanalytics_user_weight');
   }, [userWeight]);
   useEffect(() => { localStorage.setItem('veloanalytics_weight_unit', weightUnit); }, [weightUnit]);
-  useEffect(() => { localStorage.setItem('veloanalytics_bike_weight', bikeWeight.toString()); }, [bikeWeight]);
   useEffect(() => { localStorage.setItem('veloanalytics_virtual_power', enableVirtualPower.toString()); }, [enableVirtualPower]);
-  useEffect(() => { localStorage.setItem('veloanalytics_riding_position', ridingPosition); }, [ridingPosition]);
-  useEffect(() => { localStorage.setItem('veloanalytics_surface_type', surfaceType); }, [surfaceType]);
+  useEffect(() => { localStorage.setItem('veloanalytics_equipment', JSON.stringify(equipment)); }, [equipment]);
+  useEffect(() => { localStorage.setItem('veloanalytics_active_bike_id', activeBikeId); }, [activeBikeId]);
   useEffect(() => { localStorage.setItem('veloanalytics_max_hr', maxHR.toString()); }, [maxHR]);
   useEffect(() => { localStorage.setItem('veloanalytics_smoothing', smoothingWindow.toString()); }, [smoothingWindow]);
   useEffect(() => { localStorage.setItem('veloanalytics_cp_mode', cpMode); }, [cpMode]);
@@ -119,6 +139,30 @@ export function useSharedSettings() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  const addBike = (bike: Omit<Equipment, 'id'>) => {
+    const id = `bike-${Date.now()}`;
+    setEquipment(prev => [...prev, { ...bike, id }]);
+  };
+
+  const updateBike = (id: string, updates: Partial<Equipment>) => {
+    setEquipment(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+  };
+
+  const removeBike = (id: string) => {
+    if (equipment.length <= 1) return; // Must have at least one
+    setEquipment(prev => {
+      const filtered = prev.filter(e => e.id !== id);
+      if (activeBikeId === id) setActiveBikeId(filtered[0].id);
+      return filtered;
+    });
+  };
+
+  // Legacy compatibility for components using single fields
+  // In a real app we'd refactor them to use activeBike
+  const bikeWeight = activeBike?.bikeWeight || 9;
+  const ridingPosition = activeBike?.ridingPosition || 'hoods';
+  const surfaceType = activeBike?.surfaceType || 'road';
+
   return {
     cp, setCP,
     autoUpdateCP, setAutoUpdateCP,
@@ -126,10 +170,13 @@ export function useSharedSettings() {
     manualWPrime, setManualWPrime,
     userWeight, setUserWeight,
     weightUnit, setWeightUnit,
-    bikeWeight, setBikeWeight,
+    equipment, setEquipment, addBike, updateBike, removeBike,
+    activeBikeId, setActiveBikeId,
+    activeBike,
+    bikeWeight, // compatibility
+    ridingPosition, // compatibility
+    surfaceType, // compatibility
     enableVirtualPower, setEnableVirtualPower,
-    ridingPosition, setRidingPosition,
-    surfaceType, setSurfaceType,
     maxHR, setMaxHR,
     theme, setTheme, toggleTheme,
     smoothingWindow, setSmoothingWindow,
