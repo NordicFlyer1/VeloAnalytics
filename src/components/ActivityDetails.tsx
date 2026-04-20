@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Info, Pencil, Check, XCircle, FileDown, Download } from 'lucide-react';
+import { Info, Pencil, Check, XCircle, FileDown, Download, Table } from 'lucide-react';
 import { SectionHeader } from './SectionHeader';
 import { ActivitySummary } from '../types';
 import { formatNumericalDuration } from '../lib/utils';
+import { exportToCSV } from '../lib/csvExport';
 import { format } from 'date-fns';
 
 interface ActivityDetailsProps {
@@ -21,6 +22,7 @@ interface ActivityDetailsProps {
   weightUnit: 'kg' | 'lbs';
   exportOriginal: () => void;
   exportGPX: () => void;
+  exportFullCSV: () => void;
 }
 
 export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
@@ -37,9 +39,37 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
   userWeight,
   weightUnit,
   exportOriginal,
-  exportGPX
+  exportGPX,
+  exportFullCSV
 }) => {
   if (!summary) return null;
+
+  const handleExportSummaryCSV = () => {
+    if (!summary) return;
+    
+    const data = [{
+      Name: summary.name,
+      Date: format(new Date(summary.startTime), 'yyyy-MM-dd HH:mm:ss'),
+      Duration: formatNumericalDuration(summary.duration),
+      Distance: (summary.distance / 1000).toFixed(2),
+      xPower: Math.round(summary.xPower || 0),
+      BikeScore: Math.round(summary.bikeScore || 0),
+      RelIntensity: (summary.relativeIntensity || 0).toFixed(2),
+      AvgPower: Math.round(summary.avgPower || 0),
+      MaxPower: Math.round(summary.maxPower || 0),
+      AvgHR: Math.round(summary.avgHeartRate || 0),
+      MaxHR: Math.round(summary.maxHeartRate || 0),
+      AvgCadence: Math.round(summary.avgCadence || 0),
+      MaxCadence: Math.round(summary.maxCadence || 0),
+      AvgSpeed: (summary.avgSpeed || 0).toFixed(1),
+      MaxSpeed: (summary.maxSpeed || 0).toFixed(1),
+      Work_KJ: Math.round(summary.work || 0),
+      ElevationGain_M: Math.round(summary.totalAscent || 0)
+    }];
+
+    const fileName = `Velo_Details_${summary.name || 'Activity'}_${new Date().getTime()}.csv`;
+    exportToCSV(data, fileName);
+  };
 
   return (
     <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -49,6 +79,8 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
         description="Key performance indicators and summary statistics"
         isExpanded={isDetailsExpanded}
         onToggle={() => setIsDetailsExpanded(!isDetailsExpanded)}
+        onExport={handleExportSummaryCSV}
+        exportTitle="Activity Summary CSV"
         infoContent={{
           title: "Activity Details",
           description: "High-level summary of your session, including duration, distance, total work (KJ), and normalized metrics like xPower and BikeScore™."
@@ -192,20 +224,30 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button 
                 onClick={exportOriginal}
-                className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card/80 border border-app-border hover:border-orange-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all group"
+                title="Download Original File"
               >
-                <FileDown className="w-3 h-3 text-orange-500" />
+                <FileDown className="w-3 h-3 text-orange-500 group-hover:scale-110 transition-transform" />
                 ORIGINAL
               </button>
               <button 
                 onClick={exportGPX}
-                className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all"
+                className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card/80 border border-app-border hover:border-orange-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all group"
+                title="Download GPX File"
               >
-                <Download className="w-3 h-3 text-orange-500" />
+                <Download className="w-3 h-3 text-orange-500 group-hover:scale-110 transition-transform" />
                 GPX
+              </button>
+              <button 
+                onClick={exportFullCSV}
+                className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card/80 border border-app-border hover:border-orange-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all group"
+                title="Download Full Activity CSV"
+              >
+                <Table className="w-3 h-3 text-orange-500 group-hover:scale-110 transition-transform" />
+                CSV
               </button>
             </div>
           </motion.div>

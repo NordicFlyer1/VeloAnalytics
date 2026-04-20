@@ -195,6 +195,7 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const mmpCurveRef = useRef<HTMLDivElement>(null);
+  const overviewRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
 
@@ -833,6 +834,39 @@ export default function App() {
     setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
   };
 
+  const exportFullCSV = async () => {
+    if (data.length === 0) return;
+    setExportStatus({ active: true, type: 'CSV', progress: 0 });
+    
+    try {
+      const exportData = data.map(p => ({
+        Timestamp: p.timestamp ? format(p.timestamp, 'yyyy-MM-dd HH:mm:ss') : '',
+        Power: p.power !== undefined ? Math.round(p.power) : '',
+        HeartRate: p.heartRate !== undefined ? Math.round(p.heartRate) : '',
+        Cadence: p.cadence !== undefined ? Math.round(p.cadence) : '',
+        Speed_KMH: p.speed !== undefined ? p.speed.toFixed(1) : '',
+        Distance_M: p.distance !== undefined ? p.distance.toFixed(1) : '',
+        Altitude_M: p.altitude !== undefined ? p.altitude.toFixed(1) : '',
+        Latitude: p.latitude || '',
+        Longitude: p.longitude || '',
+        Slope: p.slope !== undefined ? p.slope.toFixed(1) : '',
+        Temp: p.temperature !== undefined ? Math.round(p.temperature) : '',
+        WPrimeBalance: p.wPrimeBalance !== undefined ? Math.round(p.wPrimeBalance) : ''
+      }));
+
+      const { exportToCSV } = await import('./lib/csvExport');
+      const fileName = `Velo_FullData_${summary?.name || 'Activity'}_${new Date().getTime()}.csv`;
+      
+      setExportStatus(prev => ({ ...prev, progress: 50 }));
+      exportToCSV(exportData, fileName);
+      setExportStatus(prev => ({ ...prev, progress: 100 }));
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
+    }
+  };
+
   const gpsPoints = React.useMemo(() => data
     .filter(p => p.latitude && p.longitude)
     .map(p => [p.latitude!, p.longitude!] as [number, number]), [data]);
@@ -939,7 +973,7 @@ export default function App() {
             />
 
             {summary && (
-              <>
+              <div ref={overviewRef}>
                 {/* Overview Section */}
                 <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
                   <SectionHeader 
@@ -1054,6 +1088,7 @@ export default function App() {
                   weightUnit={weightUnit}
                   exportOriginal={exportOriginal}
                   exportGPX={exportGPX}
+                  exportFullCSV={exportFullCSV}
                 />
 
                 <WPrimeAnalysis 
@@ -1129,7 +1164,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Activity History Section */}
@@ -1147,7 +1182,14 @@ export default function App() {
           loadFromHistory={(id) => {
             loadFromHistory(id);
             setIsHistorySidebarOpen(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Small delay to allow state changes to propagate
+            setTimeout(() => {
+              if (overviewRef.current) {
+                overviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }, 100);
           }}
           removeFromHistory={removeFromHistory}
           removeMultipleFromHistory={removeMultipleFromHistory}

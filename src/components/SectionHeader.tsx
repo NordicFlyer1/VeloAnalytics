@@ -10,6 +10,7 @@ interface SectionHeaderProps {
   isExpanded: boolean;
   onToggle: () => void;
   onExport?: () => void;
+  exportTitle?: string;
   renderRight?: React.ReactNode;
   className?: string;
   infoContent?: {
@@ -25,6 +26,7 @@ export const SectionHeader = ({
   isExpanded, 
   onToggle, 
   onExport,
+  exportTitle,
   renderRight,
   className,
   infoContent
@@ -80,7 +82,7 @@ export const SectionHeader = ({
                 "p-2 bg-app-card border border-app-border rounded-full text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed",
                 isExporting && "animate-pulse"
               )}
-              title="Download as PNG"
+              title={exportTitle || "Download as PNG"}
             >
               <Download className={cn("w-3.5 h-3.5 group-hover:scale-110 transition-transform", isExporting && "animate-bounce")} />
             </button>

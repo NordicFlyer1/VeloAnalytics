@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutList } from 'lucide-react';
+import { LayoutList, Table } from 'lucide-react';
 import { SectionHeader } from './SectionHeader';
 import { Lap } from '../types';
 import { cn } from '../lib/utils';
+import { exportToCSV } from '../lib/csvExport';
 
 interface LapBreakdownProps {
   isLapsExpanded: boolean;
@@ -20,6 +21,29 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
   lapMode,
   setLapMode
 }) => {
+  const handleExportCSV = () => {
+    if (!currentLaps || !currentLaps.length) return;
+
+    const exportData = currentLaps.map(lap => ({
+      Lap: lap.id,
+      Time: `${Math.floor(lap.duration / 60)}:${(lap.duration % 60).toString().padStart(2, '0')}`,
+      'Distance (KM)': (lap.distance / 1000).toFixed(2),
+      'Avg Power (W)': Math.round(lap.avgPower || 0),
+      'Max Power (W)': Math.round(lap.maxPower || 0),
+      'xPower (W)': Math.round(lap.xPower || 0),
+      'Work (KJ)': Math.round((lap.avgPower || 0) * (lap.duration || 0) / 1000),
+      'Avg HR (BPM)': Math.round(lap.avgHeartRate || 0),
+      'Max HR (BPM)': Math.round(lap.maxHeartRate || 0),
+      'Avg Cadence (RPM)': Math.round(lap.avgCadence || 0),
+      'Max Cadence (RPM)': Math.round(lap.maxCadence || 0),
+      'Avg Speed (KM/H)': (lap.avgSpeed || 0).toFixed(1),
+      'Max Speed (KM/H)': (lap.maxSpeed || 0).toFixed(1)
+    }));
+
+    const fileName = `Velo_Laps_${lapMode.toUpperCase()}_${new Date().getTime()}.csv`;
+    exportToCSV(exportData, fileName);
+  };
+
   return (
     <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
@@ -45,30 +69,49 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
           >
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Lap Mode</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide -mx-1 sm:mx-0">
-                  {[
-                    { id: 'file', label: 'FILE' },
-                    { id: '1km', label: '1KM' },
-                    { id: '5km', label: '5KM' },
-                    { id: '10km', label: '10KM' },
-                    { id: '1min', label: '1MIN' },
-                    { id: '5min', label: '5MIN' },
-                    { id: '10min', label: '10MIN' }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setLapMode(mode.id as any)}
-                      className={cn(
-                        "px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
-                        lapMode === mode.id 
-                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
-                          : "text-app-muted hover:text-app-text"
-                      )}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between sm:justify-start gap-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Lap Mode</span>
+                  <button 
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-app-bg/50 hover:bg-app-card border border-app-border rounded-full text-[9px] font-bold uppercase tracking-widest transition-all text-orange-500 hover:text-orange-400 sm:hidden"
+                  >
+                    <Table className="w-3 h-3" />
+                    CSV
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide -mx-1 sm:mx-0 flex-1">
+                    {[
+                      { id: 'file', label: 'FILE' },
+                      { id: '1km', label: '1KM' },
+                      { id: '5km', label: '5KM' },
+                      { id: '10km', label: '10KM' },
+                      { id: '1min', label: '1MIN' },
+                      { id: '5min', label: '5MIN' },
+                      { id: '10min', label: '10MIN' }
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        onClick={() => setLapMode(mode.id as any)}
+                        className={cn(
+                          "px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
+                          lapMode === mode.id 
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                            : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={handleExportCSV}
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-app-bg/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all text-orange-500 hover:text-orange-400 group"
+                    title="Export Laps to CSV"
+                  >
+                    <Table className="w-3 h-3 transition-transform group-hover:scale-110" />
+                    <span>CSV</span>
+                  </button>
                 </div>
               </div>
 

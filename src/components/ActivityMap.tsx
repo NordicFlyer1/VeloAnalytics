@@ -81,14 +81,29 @@ export const ActivityMap = React.memo(({
   setShowTransit,
   googleMapRef
 }: ActivityMapProps) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  const handleExportMap = async () => {
+    if (!cardRef.current) return;
+    try {
+      const { exportComponentAsImage } = await import('../lib/chartExport');
+      const timestamp = data.length > 0 && data[0].timestamp ? new Date(data[0].timestamp).getTime() : new Date().getTime();
+      await exportComponentAsImage(cardRef.current, `Velo_Map_${timestamp}.png`);
+    } catch (err) {
+      console.error('Failed to export map image:', err);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
+    <div ref={cardRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={MapIcon}
         title="Activity Map"
         description="GPS track visualization with interactive data point inspection"
         isExpanded={isMapExpanded}
         onToggle={() => setIsMapExpanded(!isMapExpanded)}
+        onExport={handleExportMap}
+        exportTitle="Download Map PNG"
         infoContent={{
           title: "Activity Map",
           description: "A geographical view of your effort. Synchronized with the charts, so you can see exactly where on the route a specific metric peak or drop occurred."

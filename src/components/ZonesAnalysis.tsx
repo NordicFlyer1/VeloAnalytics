@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart3 } from 'lucide-react';
 import { SectionHeader } from './SectionHeader';
 import { ActivitySummary } from '../types';
+import { exportComponentAsImage } from '../lib/chartExport';
 
 interface ZonesAnalysisProps {
   isZonesExpanded: boolean;
@@ -15,14 +16,24 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
   setIsZonesExpanded,
   summary
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (containerRef.current) {
+      const fileName = `Velo_Zones_${summary?.name || 'Activity'}_${new Date().getTime()}.png`;
+      await exportComponentAsImage(containerRef.current, fileName);
+    }
+  };
+
   return (
-    <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Training Zones"
         description="Time distribution"
         isExpanded={isZonesExpanded}
         onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
+        onExport={handleExport}
         infoContent={{
           title: "Training Zones",
           description: "Distributes your total ride time into Power and Heart Rate zones. Essential for verifying if the session met its specific training objectives."
