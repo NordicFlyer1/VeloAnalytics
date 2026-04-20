@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart3 } from 'lucide-react';
-import { SectionHeader } from './SectionHeader';
-import { ActivitySummary } from '../types';
-import { exportComponentAsImage } from '../lib/chartExport';
+import { SectionHeader } from '../ui/SectionHeader';
+import { ActivitySummary } from '../../types';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface ZonesAnalysisProps {
   isZonesExpanded: boolean;

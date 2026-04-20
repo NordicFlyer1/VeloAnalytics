@@ -12,7 +12,7 @@ import {
   ChevronRight,
   History as HistoryIcon 
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '../../lib/utils';
 
 interface HeaderProps {
   estimatedCp: number | null;

@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LayoutList, Table } from 'lucide-react';
-import { SectionHeader } from './SectionHeader';
-import { Lap } from '../types';
-import { cn } from '../lib/utils';
-import { exportToCSV } from '../lib/csvExport';
+import { SectionHeader } from '../ui/SectionHeader';
+import { Lap } from '../../types';
+import { cn } from '../../lib/utils';
+import { exportToCSV } from '../../lib/csvExport';
 
 interface LapBreakdownProps {
   isLapsExpanded: boolean;

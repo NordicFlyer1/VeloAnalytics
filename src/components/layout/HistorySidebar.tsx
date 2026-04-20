@@ -10,9 +10,9 @@ import {
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, formatDuration } from '../lib/utils';
-import { HistoricalActivity, ActivitySummary } from '../types';
-import { SectionHeader } from './SectionHeader';
+import { cn, formatDuration } from '../../lib/utils';
+import { HistoricalActivity, ActivitySummary } from '../../types';
+import { SectionHeader } from '../ui/SectionHeader';
 
 interface HistorySidebarProps {
   isHistoryExpanded: boolean;

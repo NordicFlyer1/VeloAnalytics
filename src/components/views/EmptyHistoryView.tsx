@@ -1,6 +1,6 @@
 import React from 'react';
 import { History } from 'lucide-react';
-import { HistoricalActivity } from '../types';
+import { HistoricalActivity } from '../../types';
 
 interface EmptyHistoryViewProps {
   summary: any;

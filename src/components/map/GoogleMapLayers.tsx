@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMap as useGoogleMap } from '@vis.gl/react-google-maps';
-import { CyclingDataPoint } from '../types';
+import { CyclingDataPoint } from '../../types';
 
 interface GoogleMapPolylineProps {
   points: { lat: number; lng: number }[];

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMap as useLeafletMap } from 'react-leaflet';
 import L from 'leaflet';
-import { CyclingDataPoint } from '../types';
+import { CyclingDataPoint } from '../../types';
 
 interface MapBoundsProps {
   points: [number, number][];

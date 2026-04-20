@@ -10,9 +10,9 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { SectionHeader } from './SectionHeader';
-import { cn } from '../lib/utils';
-import { exportComponentAsImage } from '../lib/chartExport';
+import { SectionHeader } from '../ui/SectionHeader';
+import { cn } from '../../lib/utils';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface TrainingLoadAnalysisProps {
   isTrainingLoadExpanded: boolean;

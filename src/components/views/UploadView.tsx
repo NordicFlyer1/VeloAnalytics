@@ -1,8 +1,8 @@
 import React from 'react';
 import { Upload, Loader2, CheckCircle2, XCircle, Activity } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { FileStatus, ActivitySummary, CyclingDataPoint } from '../types';
-import { estimateCPWPrime } from '../services/metrics';
+import { cn } from '../../lib/utils';
+import { FileStatus, ActivitySummary, CyclingDataPoint } from '../../types';
+import { estimateCPWPrime } from '../../services/metrics';
 
 interface UploadViewProps {
   showUploadView: boolean;

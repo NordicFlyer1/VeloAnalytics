@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
-import { cn } from '../lib/utils';
-import { WeatherData, CyclingDataPoint } from '../types';
-import { SectionHeader } from './SectionHeader';
-import { WeatherCard } from './WeatherCard';
+import { cn } from '../../lib/utils';
+import { WeatherData, CyclingDataPoint } from '../../types';
+import { SectionHeader } from '../ui/SectionHeader';
+import { WeatherCard } from '../ui/WeatherCard';
 import { MapBounds } from './MapBounds';
 import { 
   GoogleMapPolyline, 
@@ -86,7 +86,7 @@ export const ActivityMap = React.memo(({
   const handleExportMap = async () => {
     if (!cardRef.current) return;
     try {
-      const { exportComponentAsImage } = await import('../lib/chartExport');
+      const { exportComponentAsImage } = await import('../../lib/chartExport');
       const timestamp = data.length > 0 && data[0].timestamp ? new Date(data[0].timestamp).getTime() : new Date().getTime();
       await exportComponentAsImage(cardRef.current, `Velo_Map_${timestamp}.png`);
     } catch (err) {

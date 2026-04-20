@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Info, Pencil, Check, XCircle, FileDown, Download, Table } from 'lucide-react';
-import { SectionHeader } from './SectionHeader';
-import { ActivitySummary } from '../types';
-import { formatNumericalDuration } from '../lib/utils';
-import { exportToCSV } from '../lib/csvExport';
+import { SectionHeader } from '../ui/SectionHeader';
+import { ActivitySummary } from '../../types';
+import { formatNumericalDuration } from '../../lib/utils';
+import { exportToCSV } from '../../lib/csvExport';
 import { format } from 'date-fns';
 
 interface ActivityDetailsProps {

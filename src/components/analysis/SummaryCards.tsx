@@ -11,8 +11,8 @@ import {
   TrendingUp, 
   Thermometer 
 } from 'lucide-react';
-import { cn, formatDuration } from '../lib/utils';
-import { ActivitySummary, PMCDataPoint, HistoricalActivity } from '../types';
+import { cn, formatDuration } from '../../lib/utils';
+import { ActivitySummary, PMCDataPoint, HistoricalActivity } from '../../types';
 
 interface SummaryCardsProps {
   summary: ActivitySummary;

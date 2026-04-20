@@ -15,7 +15,21 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    // Tauri bundle optimization
+    clearScreen: false,
+    envPrefix: ['VITE_', 'TAURI_PLATFORM', 'TAURI_ARCH', 'TAURI_FAMILY', 'TAURI_VERSION', 'TAURI_ENV_DEBUG'],
+    build: {
+      // Support for Tauri
+      target: process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
+      // Minification behavior
+      minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
+      sourcemap: !!process.env.TAURI_DEBUG,
+    },
     server: {
+      // Tauri specific settings
+      port: 1420,
+      strictPort: true,
+      host: true,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

@@ -11,9 +11,9 @@ import {
   Legend, 
   Line 
 } from 'recharts';
-import { SectionHeader } from './SectionHeader';
-import { ActivitySummary, PowerCurvePoint } from '../types';
-import { exportComponentAsImage } from '../lib/chartExport';
+import { SectionHeader } from '../ui/SectionHeader';
+import { ActivitySummary, PowerCurvePoint } from '../../types';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface PowerCurveAnalysisProps {
   isPowerCurveExpanded: boolean;

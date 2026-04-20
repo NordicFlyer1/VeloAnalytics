@@ -10,8 +10,8 @@ import {
   ReferenceLine, 
   ReferenceArea 
 } from 'recharts';
-import { cn } from '../lib/utils';
-import { getZonesFromDefinitions, DEFAULT_FALLBACK_CP } from '../services/metrics';
+import { cn } from '../../lib/utils';
+import { getZonesFromDefinitions, DEFAULT_FALLBACK_CP } from '../../services/metrics';
 
 const ReferenceAreaAny = ReferenceArea as any;
 const ReferenceLineAny = ReferenceLine as any;

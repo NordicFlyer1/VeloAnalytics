@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Thermometer, Wind, Droplets } from 'lucide-react';
-import { WeatherData } from '../types';
-import { cn } from '../lib/utils';
+import { WeatherData } from '../../types';
+import { cn } from '../../lib/utils';
 
 interface WeatherCardProps {
   weather: WeatherData | null;

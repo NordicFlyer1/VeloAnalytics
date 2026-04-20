@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, Target, Eye } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { RidingPosition, SurfaceType, Equipment, ZoneDefinition, HistoricalActivity } from '../types';
+import { cn } from '../../lib/utils';
+import { RidingPosition, SurfaceType, Equipment, ZoneDefinition, HistoricalActivity } from '../../types';
 
 interface SettingsModalProps {
   showSettings: boolean;

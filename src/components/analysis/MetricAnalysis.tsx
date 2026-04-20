@@ -1,11 +1,11 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart3 } from 'lucide-react';
-import { SectionHeader } from './SectionHeader';
+import { SectionHeader } from '../ui/SectionHeader';
 import { MetricLane } from './MetricLane';
-import { cn } from '../lib/utils';
-import { CyclingDataPoint, ZoneDefinition } from '../types';
-import { exportComponentAsImage } from '../lib/chartExport';
+import { cn } from '../../lib/utils';
+import { CyclingDataPoint, ZoneDefinition } from '../../types';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface MetricAnalysisProps {
   isChartExpanded: boolean;
