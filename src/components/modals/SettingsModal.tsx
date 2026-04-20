@@ -476,6 +476,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
 
                             <div className="space-y-2">
+                              <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Starting Odometer</label>
+                              <div className="flex items-center bg-app-bg px-4 py-2 rounded-full border border-app-border focus-within:border-orange-500/30">
+                                <input 
+                                  type="number" 
+                                  step="1"
+                                  value={Math.round(bike.startingMileage / 1000)}
+                                  onChange={(e) => updateBike(bike.id, { startingMileage: (parseFloat(e.target.value) || 0) * 1000 })}
+                                  className="bg-transparent text-xs font-bold w-full focus:outline-none"
+                                />
+                                <span className="text-[10px] text-app-muted font-bold uppercase">KM</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
                               <div className="flex items-center gap-1.5 ml-1">
                                 <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Aero Position</label>
                                 <div className="group relative">
