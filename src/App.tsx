@@ -38,6 +38,8 @@ import { useExportActions } from './hooks/useExportActions';
 import { useFileUploader } from './hooks/useFileUploader';
 import { useDataRecalculator } from './hooks/useDataRecalculator';
 
+import { exportComponentAsImage } from './lib/chartExport';
+
 import { 
   calculateLapSummary, 
   getZonesFromDefinitions, 
@@ -140,6 +142,8 @@ export default function App() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const lastActivePointUpdate = useRef<number>(0);
 
+  const overviewExportRef = useRef<HTMLDivElement>(null);
+
   // Custom Hooks for logic
   const smoothedData = useDataSmoothing(data, smoothingWindow);
   
@@ -212,6 +216,13 @@ export default function App() {
     if (!mapContainerRef.current) return;
     if (document.fullscreenElement) document.exitFullscreen();
     else mapContainerRef.current.requestFullscreen().catch(err => console.error(err));
+  };
+
+  const handleOverviewExport = async () => {
+    if (overviewExportRef.current) {
+      const fileName = `Velo_ActivityOverview_${new Date().getTime()}.png`;
+      await exportComponentAsImage(overviewExportRef.current, fileName);
+    }
   };
 
   // Weather service integration
@@ -371,13 +382,14 @@ export default function App() {
             {summary && (
               <div ref={overviewRef} className="space-y-4 sm:space-y-8">
                 {/* Overview Section */}
-                <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
+                <div ref={overviewExportRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
                   <SectionHeader 
                     icon={LayoutList}
                     title="Activity Overview"
                     description="High-level performance summary and key metrics"
                     isExpanded={isOverviewExpanded}
                     onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                    onExport={handleOverviewExport}
                   />
                   
                   <AnimatePresence>
@@ -472,18 +484,18 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            <HistorySidebar 
+              isHistoryExpanded={dashboardState.isHistoryExpanded} setIsHistoryExpanded={dashboardState.setIsHistoryExpanded}
+              selectedHistoryIds={selectedHistoryIds} setSelectedHistoryIds={setSelectedHistoryIds}
+              history={history} sortedHistory={sortedHistory} summary={summary}
+              historySortOrder={historySortOrder} setHistorySortOrder={setHistorySortOrder}
+              handleCompare={handleCompare} loadFromHistory={handleLoadFromHistory}
+              removeFromHistory={removeFromHistory} removeMultipleFromHistory={removeMultipleFromHistory}
+              isOpen={isHistorySidebarOpen} onClose={() => setIsHistorySidebarOpen(false)}
+            />
           </div>
         )}
-
-        <HistorySidebar 
-          isHistoryExpanded={dashboardState.isHistoryExpanded} setIsHistoryExpanded={dashboardState.setIsHistoryExpanded}
-          selectedHistoryIds={selectedHistoryIds} setSelectedHistoryIds={setSelectedHistoryIds}
-          history={history} sortedHistory={sortedHistory} summary={summary}
-          historySortOrder={historySortOrder} setHistorySortOrder={setHistorySortOrder}
-          handleCompare={handleCompare} loadFromHistory={handleLoadFromHistory}
-          removeFromHistory={removeFromHistory} removeMultipleFromHistory={removeMultipleFromHistory}
-          isOpen={isHistorySidebarOpen} onClose={() => setIsHistorySidebarOpen(false)}
-        />
       </main>
 
       <SettingsModal 
