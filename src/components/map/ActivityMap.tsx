@@ -8,13 +8,14 @@ import {
   CheckCircle2,
   Car,
   Bike,
-  Bus
+  Bus,
+  Image
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
 import { cn } from '../../lib/utils';
 import { WeatherData, CyclingDataPoint } from '../../types';
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { WeatherCard } from '../ui/WeatherCard';
 import { MapBounds } from './MapBounds';
 import { 
@@ -94,6 +95,14 @@ export const ActivityMap = React.memo(({
     }
   };
 
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: handleExportMap
+    }
+  ];
+
   return (
     <div ref={cardRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
@@ -102,8 +111,7 @@ export const ActivityMap = React.memo(({
         description="GPS track visualization with interactive data point inspection"
         isExpanded={isMapExpanded}
         onToggle={() => setIsMapExpanded(!isMapExpanded)}
-        onExport={handleExportMap}
-        exportTitle="Download Map PNG"
+        exportActions={exportActions}
         infoContent={{
           title: "Activity Map",
           description: "A geographical view of your effort. Synchronized with the charts, so you can see exactly where on the route a specific metric peak or drop occurred."
@@ -128,7 +136,7 @@ export const ActivityMap = React.memo(({
               )}
             >
               {/* Unified Header Bar - Stacked Top Right */}
-              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2 pointer-events-none">
+              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 flex flex-col items-end gap-2 pointer-events-none export-ignore">
                 <div className="pointer-events-auto flex items-center gap-2">
                   <div className="bg-app-bg/90 backdrop-blur-md p-1 rounded-full border border-app-border flex items-center gap-1 shadow-lg">
                     <button 
@@ -197,13 +205,13 @@ export const ActivityMap = React.memo(({
                           setIsPointLocked(false);
                           setActivePoint(null);
                         }}
-                        className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
+                        className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md export-ignore"
                         title="Clear Highlight"
                       >
                         <CheckCircle2 className="w-4 h-4 text-orange-500" />
                       </button>
                     )}
-                    <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
+                    <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2 export-ignore">
                       <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                         {(['roadmap', 'terrain'] as const).map((t) => (
                           <button
@@ -334,7 +342,7 @@ export const ActivityMap = React.memo(({
                             <CheckCircle2 className="w-4 h-4 text-orange-500" />
                           </button>
                         )}
-                        <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2">
+                        <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2 export-ignore">
                           <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                             {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
                               <button

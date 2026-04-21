@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutList, Table } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { LayoutList, Table, Image } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { Lap } from '../../types';
 import { cn } from '../../lib/utils';
 import { exportToCSV } from '../../lib/csvExport';
@@ -21,6 +21,8 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
   lapMode,
   setLapMode
 }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
   const handleExportCSV = () => {
     if (!currentLaps || !currentLaps.length) return;
 
@@ -44,14 +46,34 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
     exportToCSV(exportData, fileName);
   };
 
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const { exportComponentAsImage } = await import('../../lib/chartExport');
+          const fileName = `Velo_Laps_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Table Data (CSV)',
+      icon: Table,
+      onClick: handleExportCSV
+    }
+  ];
+
   return (
-    <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={LayoutList}
         title="Lap Breakdown"
         description="Detailed performance metrics for individual segments"
         isExpanded={isLapsExpanded}
         onToggle={() => setIsLapsExpanded(!isLapsExpanded)}
+        exportActions={exportActions}
         infoContent={{
           title: "Lap Breakdown",
           description: "Comprehensive analysis of automatic and manual segments. Provides granular statistics for each lap including duration, distance, intensity (relative and absolute), power distribution, heart rate response, and total work performed."
@@ -68,16 +90,9 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 export-ignore">
                 <div className="flex items-center justify-between sm:justify-start gap-4">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Lap Mode</span>
-                  <button 
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-app-bg/50 hover:bg-app-card border border-app-border rounded-full text-[9px] font-bold uppercase tracking-widest transition-all text-orange-500 hover:text-orange-400 sm:hidden"
-                  >
-                    <Table className="w-3 h-3" />
-                    CSV
-                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex overflow-x-auto pb-1 sm:pb-0 items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar scrollbar-hide -mx-1 sm:mx-0 flex-1">
@@ -104,14 +119,6 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
                       </button>
                     ))}
                   </div>
-                  <button 
-                    onClick={handleExportCSV}
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-app-bg/50 hover:bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest transition-all text-orange-500 hover:text-orange-400 group"
-                    title="Export Laps to CSV"
-                  >
-                    <Table className="w-3 h-3 transition-transform group-hover:scale-110" />
-                    <span>CSV</span>
-                  </button>
                 </div>
               </div>
 

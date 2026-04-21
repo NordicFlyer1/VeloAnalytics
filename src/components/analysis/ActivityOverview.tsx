@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutList } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Image, LayoutTemplate, LayoutList } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { SummaryCards } from './SummaryCards';
 import { exportComponentAsImage } from '../../lib/chartExport';
 import { ActivitySummary, PMCDataPoint, HistoricalActivity } from '../../types';
@@ -27,24 +27,41 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
   isExpanded,
   onToggle
 }) => {
-  const exportRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (exportRef.current) {
-      const fileName = `Velo_ActivityOverview_${new Date().getTime()}.png`;
-      await exportComponentAsImage(exportRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_Overview_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Summary Only (PNG)',
+      icon: LayoutTemplate,
+      onClick: async () => {
+        if (summaryRef.current) {
+          const fileName = `Velo_Overview_Summary_${new Date().getTime()}.png`;
+          await exportComponentAsImage(summaryRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
-    <div ref={exportRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
+    <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-8">
       <SectionHeader 
         icon={LayoutList}
         title="Activity Overview"
         description="High-level performance summary and key metrics"
         isExpanded={isExpanded}
         onToggle={onToggle}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Activity Overview",
           description: "High-level performance summary and key metrics including xPower, BikeScore™, and relative intensity."
@@ -60,14 +77,16 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <SummaryCards 
-              summary={summary} 
-              data={data} 
-              currentPMC={currentPMC} 
-              history={history} 
-              userWeight={userWeight} 
-              weightUnit={weightUnit} 
-            />
+            <div ref={summaryRef}>
+              <SummaryCards 
+                summary={summary} 
+                data={data} 
+                currentPMC={currentPMC} 
+                history={history} 
+                userWeight={userWeight} 
+                weightUnit={weightUnit} 
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

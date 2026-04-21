@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BarChart3, Activity, Clock, Mountain } from 'lucide-react';
+import { BarChart3, Activity, Clock, Mountain, Image } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { cn } from '../../lib/utils';
 import { exportComponentAsImage } from '../../lib/chartExport';
 
@@ -60,10 +60,18 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
 
   const handleExport = async () => {
     if (containerRef.current) {
-      const fileName = `Velo_VolumeTrends_${range}_${activeMetric}_${new Date().getTime()}.png`;
+      const fileName = `Velo_VolumeTrends_Full_${new Date().getTime()}.png`;
       await exportComponentAsImage(containerRef.current, fileName);
     }
   };
+
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: handleExport
+    }
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -73,7 +81,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
         description="Historical analysis of distance, time, and elevation gain"
         isExpanded={isExpanded}
         onToggle={() => setIsExpanded(!isExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Volume Trends",
           description: "Analyzes your weekly and monthly activity volume. Tracks total distance, elevation gain, and time to ensure consistent training progression."
@@ -90,7 +98,7 @@ export const VolumeTrendsAnalysis: React.FC<VolumeTrendsAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 export-ignore">
                 {/* Range Selector - Matched with TrainingLoadSummary (Top Left) */}
                 <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full lg:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((r) => (

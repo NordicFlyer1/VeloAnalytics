@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Image } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -10,7 +10,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { cn } from '../../lib/utils';
 import { exportComponentAsImage } from '../../lib/chartExport';
 
@@ -38,12 +38,18 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (containerRef.current) {
-      const fileName = `Velo_TrainingLoad_${trainingLoadRange}_${new Date().getTime()}.png`;
-      await exportComponentAsImage(containerRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_TrainingLoad_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -53,7 +59,7 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
         description="Weekly and monthly aggregation of training stress and volume"
         isExpanded={isTrainingLoadExpanded}
         onToggle={() => setIsTrainingLoadExpanded(!isTrainingLoadExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Training Load",
           description: "Quantifies the physiological cost of your workouts using BikeScore™. Monitors accumulated stress over different time windows to ensure balanced training."
@@ -70,7 +76,7 @@ export const TrainingLoadAnalysis: React.FC<TrainingLoadAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 export-ignore">
                 <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full lg:w-auto">
                   {(['weekly', 'monthly', 'yearly'] as const).map((range) => (
                     <button

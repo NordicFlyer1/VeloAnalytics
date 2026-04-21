@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TrendingUp, Zap } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Image, ChartArea, TrendingUp, Zap } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { MetricLane } from './MetricLane';
 import { cn } from '../../lib/utils';
 import { CyclingDataPoint } from '../../types';
@@ -39,13 +39,30 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
   setCpMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (containerRef.current) {
-      const fileName = `Velo_WPrimeAnalysis_${new Date().getTime()}.png`;
-      await exportComponentAsImage(containerRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_WPrime_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Chart Area (PNG)',
+      icon: ChartArea,
+      onClick: async () => {
+        if (chartAreaRef.current) {
+          const fileName = `Velo_WPrime_Chart_${new Date().getTime()}.png`;
+          await exportComponentAsImage(chartAreaRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -55,7 +72,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
         description="Anaerobic capacity utilization and recovery tracking"
         isExpanded={isWPrimeExpanded}
         onToggle={() => setIsWPrimeExpanded(!isWPrimeExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "W' Balance",
           description: "Your real-time anaerobic capacity reservoir (W'). It depletes when your power output exceeds Critical Power (CP) and recovers when you ride below it. The recovery model is fatigue-adjusted, meaning it becomes less efficient over the duration of long rides."
@@ -71,7 +88,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
             transition={{ duration: 0.3 }}
           >
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
+              <div ref={chartAreaRef} className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
                 {/* Power Lane */}
                 <MetricLane 
                   metric="power"
@@ -133,7 +150,7 @@ export const WPrimeAnalysis: React.FC<WPrimeAnalysisProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10">
+              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10 export-ignore">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Analysis Mode</span>
                 <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
                   <button 

@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BarChart3 } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Image, ChartBar, BarChart3 } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { ActivitySummary } from '../../types';
 import { exportComponentAsImage } from '../../lib/chartExport';
 
@@ -17,13 +17,30 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
   summary
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (containerRef.current) {
-      const fileName = `Velo_Zones_${summary?.name || 'Activity'}_${new Date().getTime()}.png`;
-      await exportComponentAsImage(containerRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_Zones_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Zones Only (PNG)',
+      icon: ChartBar,
+      onClick: async () => {
+        if (contentRef.current) {
+          const fileName = `Velo_Zones_Only_${new Date().getTime()}.png`;
+          await exportComponentAsImage(contentRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -33,7 +50,7 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
         description="Time distribution"
         isExpanded={isZonesExpanded}
         onToggle={() => setIsZonesExpanded(!isZonesExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Training Zones",
           description: "Distributes your total ride time into Power and Heart Rate zones. Essential for verifying if the session met its specific training objectives."
@@ -49,7 +66,7 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+            <div ref={contentRef} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               <div className="space-y-6">
                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Power Zones</h4>
                 <div className="space-y-3">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap } from 'lucide-react';
+import { Zap, Image } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -11,7 +11,7 @@ import {
   Legend, 
   Line 
 } from 'recharts';
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { ActivitySummary, PowerCurvePoint } from '../../types';
 import { exportComponentAsImage } from '../../lib/chartExport';
 
@@ -40,12 +40,18 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
   mmpCurveRef,
   theme
 }) => {
-  const handleExport = async () => {
-    if (mmpCurveRef.current) {
-      const fileName = `Velo_PowerCurve_${summary?.name || 'Activity'}_${new Date().getTime()}.png`;
-      await exportComponentAsImage(mmpCurveRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (mmpCurveRef.current) {
+          const fileName = `Velo_PowerCurve_${summary?.name || 'Activity'}_${new Date().getTime()}.png`;
+          await exportComponentAsImage(mmpCurveRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={mmpCurveRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -55,7 +61,7 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
         description="Peak power output across different time durations"
         isExpanded={isPowerCurveExpanded}
         onToggle={() => setIsPowerCurveExpanded(!isPowerCurveExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Power Curve",
           description: "Compares your maximum power outputs across all durations (from 1s to 60m) against your 90-day and all-time bests to identify strengths and peaks."
@@ -72,7 +78,7 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between export-ignore">
                 {selectedHistoryIds.length >= 2 && (
                   <div className="flex items-center gap-4">
                     <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold">

@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Info, Pencil, Check, XCircle, FileDown, Download, Table } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Image, Table, FileDown, Download, Info, Pencil, Check, XCircle } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { ActivitySummary } from '../../types';
-import { formatNumericalDuration } from '../../lib/utils';
+import { formatNumericalDuration, cn } from '../../lib/utils';
 import { exportToCSV } from '../../lib/csvExport';
 import { format } from 'date-fns';
 
@@ -71,6 +71,24 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
     exportToCSV(data, fileName);
   };
 
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Summary (CSV)',
+      icon: Table,
+      onClick: handleExportSummaryCSV
+    },
+    {
+      label: 'Original File',
+      icon: FileDown,
+      onClick: exportOriginal
+    },
+    {
+      label: 'GPX File',
+      icon: Download,
+      onClick: exportGPX
+    }
+  ];
+
   return (
     <div className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
@@ -79,8 +97,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
         description="Key performance indicators and summary statistics"
         isExpanded={isDetailsExpanded}
         onToggle={() => setIsDetailsExpanded(!isDetailsExpanded)}
-        onExport={handleExportSummaryCSV}
-        exportTitle="Activity Summary CSV"
+        exportActions={exportActions}
         infoContent={{
           title: "Activity Details",
           description: "High-level summary of your session, including duration, distance, total work (KJ), and normalized metrics like xPower and BikeScore™."
@@ -144,7 +161,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
                         setEditedName(summary.name);
                         setIsEditingName(true);
                       }}
-                      className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors"
+                      className="p-1 hover:bg-app-card rounded text-app-muted hover:text-orange-500 transition-colors export-ignore"
                       title="Edit Activity Name"
                     >
                       <Pencil className="w-3 h-3" />
@@ -224,7 +241,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 export-ignore">
               <button 
                 onClick={exportOriginal}
                 className="flex items-center justify-center gap-2 py-3 bg-app-card/50 hover:bg-app-card/80 border border-app-border hover:border-orange-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all group"

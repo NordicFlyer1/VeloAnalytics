@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BarChart3 } from 'lucide-react';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Image, ChartArea, BarChart3 } from 'lucide-react';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { MetricLane } from './MetricLane';
 import { cn } from '../../lib/utils';
 import { CyclingDataPoint, ZoneDefinition } from '../../types';
@@ -53,13 +53,30 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
   setCpMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (containerRef.current) {
-      const fileName = `Velo_MetricAnalysis_${new Date().getTime()}.png`;
-      await exportComponentAsImage(containerRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_MetricAnalysis_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Chart Area (PNG)',
+      icon: ChartArea,
+      onClick: async () => {
+        if (chartAreaRef.current) {
+          const fileName = `Velo_MetricAnalysis_Chart_${new Date().getTime()}.png`;
+          await exportComponentAsImage(chartAreaRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -69,7 +86,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
         description="Deep dive into your performance data with synchronized charts"
         isExpanded={isChartExpanded}
         onToggle={() => setIsChartExpanded(!isChartExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "Metric Analysis",
           description: "Explore point-by-point data for Power, W' Balance, Heart Rate, Cadence, Speed, Altitude, and Slope. Use the smoothing controls to filter out raw data noise and find significant trends."
@@ -84,7 +101,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6 export-ignore">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Metrics</span>
                 <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar -mx-1 sm:mx-0">
@@ -144,7 +161,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
+            <div ref={chartAreaRef} className="flex flex-col border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/20">
               {activeMetrics.map((metric, index) => (
                 <MetricLane 
                   key={metric}
@@ -185,7 +202,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             </div>
 
             {activeMetrics.includes('power') && (
-              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10">
+              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10 export-ignore">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Analysis Mode</span>
                 <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
                   <button 

@@ -3,14 +3,20 @@ import { ChevronUp, ChevronDown, Info, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 
+export interface ExportAction {
+  label: string;
+  onClick: () => Promise<void> | void;
+  icon?: React.ElementType;
+  className?: string;
+}
+
 interface SectionHeaderProps {
   icon: React.ElementType;
   title: string;
   description?: string;
   isExpanded: boolean;
   onToggle: () => void;
-  onExport?: () => void;
-  exportTitle?: string;
+  exportActions?: ExportAction[];
   renderRight?: React.ReactNode;
   className?: string;
   infoContent?: {
@@ -25,24 +31,22 @@ export const SectionHeader = ({
   description, 
   isExpanded, 
   onToggle, 
-  onExport,
-  exportTitle,
+  exportActions,
   renderRight,
   className,
   infoContent
 }: SectionHeaderProps) => {
   const [showInfo, setShowInfo] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExport = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onExport) {
-      setIsExporting(true);
-      try {
-        await onExport();
-      } finally {
-        setIsExporting(false);
-      }
+  const handleAction = async (action: ExportAction) => {
+    setShowExportMenu(false);
+    setIsExporting(true);
+    try {
+      await action.onClick();
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -60,7 +64,7 @@ export const SectionHeader = ({
                 <button
                   onClick={() => setShowInfo(!showInfo)}
                   className={cn(
-                    "p-1 rounded-md transition-all cursor-help",
+                    "p-1 rounded-md transition-all cursor-help export-ignore",
                     showInfo ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-app-muted hover:text-orange-500 hover:bg-orange-500/5 focus:outline-none"
                   )}
                   title={`What is ${title}?`}
@@ -74,22 +78,68 @@ export const SectionHeader = ({
         </div>
         <div className="flex items-center gap-2">
           {renderRight}
-          {onExport && isExpanded && (
-            <button 
-              onClick={handleExport}
-              disabled={isExporting}
-              className={cn(
-                "p-2 bg-app-card border border-app-border rounded-full text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed",
-                isExporting && "animate-pulse"
-              )}
-              title={exportTitle || "Download as PNG"}
-            >
-              <Download className={cn("w-3.5 h-3.5 group-hover:scale-110 transition-transform", isExporting && "animate-bounce")} />
-            </button>
+          
+          {/* Export Dropdown */}
+          {exportActions && exportActions.length > 0 && isExpanded && (
+            <div className="relative export-ignore">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExportMenu(!showExportMenu);
+                }}
+                disabled={isExporting}
+                className={cn(
+                  "p-2 bg-app-card border border-app-border rounded-full text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed",
+                  (isExporting || showExportMenu) && "text-orange-500 border-orange-500/30"
+                )}
+                title="Export Options"
+              >
+                <Download className={cn("w-3.5 h-3.5 group-hover:scale-110 transition-transform", isExporting && "animate-bounce")} />
+              </button>
+
+              <AnimatePresence>
+                {showExportMenu && (
+                  <>
+                    {/* Backdrop for closing */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowExportMenu(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-app-card/90 backdrop-blur-xl border border-app-border rounded-2xl shadow-2xl p-1 z-50 overflow-hidden"
+                    >
+                      <div className="px-3 py-2 border-b border-app-border/50 mb-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-app-muted opacity-60">Export Section</span>
+                      </div>
+                      {exportActions.map((action, idx) => {
+                        const ActionIcon = action.icon || Download;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleAction(action)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-left transition-all hover:bg-orange-500 hover:text-black group",
+                              action.className
+                            )}
+                          >
+                            <ActionIcon className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
+                            {action.label}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           )}
+
           <button 
             onClick={onToggle}
-            className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group"
+            className="px-3 py-1.5 bg-app-card border border-app-border rounded-full text-[10px] font-bold uppercase tracking-widest text-orange-500/60 hover:text-orange-500 hover:border-orange-500/30 transition-all flex items-center gap-2 group export-ignore"
           >
             {isExpanded ? (
               <>
@@ -113,7 +163,7 @@ export const SectionHeader = ({
             animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
             exit={{ height: 0, opacity: 0, marginTop: 0 }}
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className="overflow-hidden"
+            className="overflow-hidden export-ignore"
           >
             <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-6 relative">
               <button 

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LineChart as LineChartIcon } from 'lucide-react';
+import { LineChart as LineChartIcon, Image } from 'lucide-react';
 import { 
   ComposedChart, 
   Bar, 
@@ -14,7 +14,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { format } from 'date-fns';
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { cn } from '../../lib/utils';
 import { exportComponentAsImage } from '../../lib/chartExport';
 
@@ -41,12 +41,18 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (containerRef.current) {
-      const fileName = `Velo_PMCAnalysis_${pmcDateRange}_${new Date().getTime()}.png`;
-      await exportComponentAsImage(containerRef.current, fileName);
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Full Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_PMC_Full_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
     }
-  };
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -56,7 +62,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
         description="Performance Management Chart showing fitness, fatigue, and form"
         isExpanded={isPmcExpanded}
         onToggle={() => setIsPmcExpanded(!isPmcExpanded)}
-        onExport={handleExport}
+        exportActions={exportActions}
         infoContent={{
           title: "PMC Analysis",
           description: "Tracks Long-Term Stress (Fitness), Short-Term Stress (Fatigue), and Stress Balance (Form) over time based on your training load (BikeScore™) history."
@@ -73,7 +79,7 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
             className="overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 export-ignore">
                 {/* Range Selector - Aligned under Title (Top Left) */}
                 <div className="flex items-center gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border w-full md:w-auto overflow-x-auto sm:overflow-x-visible">
                   {[

@@ -32,6 +32,11 @@ export async function exportComponentAsImage(
       pixelRatio: 3, // High DPI for crispness
       fontEmbedCSS: '',
       cacheBust: true,
+      // Exclude UI elements that shouldn't be in the snapshot (like buttons/menus)
+      filter: (node: HTMLElement) => {
+        const isIgnore = node.classList?.contains('export-ignore');
+        return !isIgnore;
+      },
       style: {
         transition: 'none',
         animation: 'none',
