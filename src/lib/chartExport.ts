@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image';
+import { toCanvas } from 'html-to-image';
 
 /**
  * Capture a DOM element as a PNG and trigger a download.
@@ -9,15 +9,29 @@ export async function exportComponentAsImage(
   fileName: string = 'velo-chart.png'
 ) {
   try {
-    // Generate data URL from the element
-    const dataUrl = await toPng(element, {
+    // 1. Brief delay to let click animations or layout shifts settle
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 2. Add a temporary style to disable ALL transitions and animations on children
+    // This prevents "motion blur" ghosting
+    const style = document.createElement('style');
+    style.innerHTML = `
+      * {
+        transition: none !important;
+        animation: none !important;
+        transition-property: none !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 3. Capture to Canvas first (more stable for rasterizing complex CSS effects)
+    const canvas = await toCanvas(element, {
       backgroundColor: 'transparent',
-      // Better quality for high-DPI displays
-      pixelRatio: 2,
-      // Ensure all font styles are captured correctly
+      pixelRatio: 3, // High DPI for crispness
       fontEmbedCSS: '',
       cacheBust: true,
-      // Prevent transitions from causing "motion blur" during capture
       style: {
         transition: 'none',
         animation: 'none',
@@ -25,7 +39,13 @@ export async function exportComponentAsImage(
       }
     });
 
-    // Standard browser download approach
+    // 4. Cleanup the temporary styles immediately after capture
+    document.head.removeChild(style);
+
+    // 5. Convert canvas to PNG Data URL
+    const dataUrl = canvas.toDataURL('image/png', 1.0);
+
+    // 6. Standard browser download approach
     const link = document.createElement('a');
     link.download = fileName;
     link.href = dataUrl;
