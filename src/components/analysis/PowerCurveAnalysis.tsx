@@ -23,7 +23,7 @@ interface PowerCurveAnalysisProps {
   summary: ActivitySummary | null;
   allTimeBestCurve: PowerCurvePoint[];
   rolling90DayBestCurve: PowerCurvePoint[];
-  getComparisonCurves: () => { name: string, curve: PowerCurvePoint[] }[];
+  getComparisonCurves: () => { id: string, name: string, curve: PowerCurvePoint[] }[];
   mmpCurveRef: React.RefObject<HTMLDivElement>;
   theme: 'light' | 'dark';
 }
@@ -112,7 +112,7 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
 
                       comparisons.forEach(comp => {
                         const p = comp.curve.find(cp => cp.duration === d);
-                        if (p) point[comp.name] = p.power;
+                        if (p) point[comp.id] = p.power;
                       });
                       
                       return point;
@@ -174,9 +174,9 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                     
                     {getComparisonCurves().map((comp, i) => (
                       <Line 
-                        key={comp.name}
+                        key={comp.id}
                         type="monotone" 
-                        dataKey={comp.name} 
+                        dataKey={comp.id} 
                         name={comp.name} 
                         stroke={['#3b82f6', '#10b981', '#a855f7', '#f43f5e'][i % 4]} 
                         strokeWidth={1.5} 

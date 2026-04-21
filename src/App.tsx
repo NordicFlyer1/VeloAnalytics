@@ -168,7 +168,12 @@ export default function App() {
   useDataRecalculator(data, setData, summary, setSummary, settings, cpWPrime, workers.calculateWPrimeBalance);
 
   // Handlers
-  const handleCompare = () => mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleCompare = () => {
+    setIsPowerCurveExpanded(true);
+    setTimeout(() => {
+      mmpCurveRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
 
   const handleActivityHistoryClick = () => {
     if (window.innerWidth < 768) {
@@ -312,7 +317,7 @@ export default function App() {
   const getComparisonCurves = useCallback(() => {
     return history
       .filter(h => selectedHistoryIds.includes(h.id))
-      .map(h => ({ name: h.name, curve: h.fullSummary?.powerCurve || [] }))
+      .map(h => ({ id: h.id, name: h.name, curve: h.powerCurve || h.fullSummary?.powerCurve || [] }))
       .filter(h => h.curve.length > 0);
   }, [history, selectedHistoryIds]);
 
