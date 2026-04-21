@@ -12,12 +12,17 @@ export async function exportComponentAsImage(
     // Generate data URL from the element
     const dataUrl = await toPng(element, {
       backgroundColor: 'transparent',
-      style: {
-        borderRadius: '0',
-      },
+      // Better quality for high-DPI displays
+      pixelRatio: 2,
       // Ensure all font styles are captured correctly
       fontEmbedCSS: '',
       cacheBust: true,
+      // Prevent transitions from causing "motion blur" during capture
+      style: {
+        transition: 'none',
+        animation: 'none',
+        transform: 'none'
+      }
     });
 
     // Standard browser download approach
