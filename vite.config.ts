@@ -24,6 +24,8 @@ export default defineConfig(({mode}) => {
       // Minification behavior
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       sourcemap: !!process.env.TAURI_DEBUG,
+      // Increase limit for complex React apps
+      chunkSizeWarningLimit: 1000,
       // Code splitting to address large chunk warnings
       rollupOptions: {
         output: {
@@ -38,8 +40,11 @@ export default defineConfig(({mode}) => {
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
               }
-              if (id.includes('leaflet')) {
+              if (id.includes('leaflet') || id.includes('google-maps')) {
                 return 'vendor-maps';
+              }
+              if (id.includes('fit-file-parser') || id.includes('react-markdown')) {
+                return 'vendor-utils';
               }
               return 'vendor';
             }
