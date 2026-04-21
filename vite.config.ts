@@ -24,6 +24,28 @@ export default defineConfig(({mode}) => {
       // Minification behavior
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       sourcemap: !!process.env.TAURI_DEBUG,
+      // Code splitting to address large chunk warnings
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('recharts') || id.includes('d3')) {
+                return 'vendor-charts';
+              }
+              if (id.includes('framer-motion') || id.includes('motion')) {
+                return 'vendor-animation';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('leaflet')) {
+                return 'vendor-maps';
+              }
+              return 'vendor';
+            }
+          }
+        }
+      }
     },
     server: {
       // Tauri specific settings

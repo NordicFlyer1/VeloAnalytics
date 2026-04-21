@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ActivitySummary, CyclingDataPoint } from '../types';
 import { getActivityData } from '../services/storage';
+import { exportToCSV } from '../lib/csvExport';
 
 export interface ExportStatus {
   active: boolean;
@@ -151,7 +152,6 @@ export const useExportActions = (
         WPrimeBalance: p.wPrimeBalance !== undefined ? Math.round(p.wPrimeBalance) : ''
       }));
 
-      const { exportToCSV } = await import('../lib/csvExport');
       const fileName = `Velo_FullData_${summary?.name || 'Activity'}_${new Date().getTime()}.csv`;
       
       setExportStatus(prev => ({ ...prev, progress: 50 }));
