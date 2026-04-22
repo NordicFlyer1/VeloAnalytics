@@ -127,6 +127,35 @@ const FAQ_DATA: FAQCategory[] = [
     ]
   },
   {
+    name: "AI Intelligence",
+    items: [
+      {
+        question: "What can the Velo Coach see?",
+        beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your 6-week fitness trends and can search your history.",
+        technicalAnswer: "The coach context includes CP, W' Balance, and full ActivitySummary metrics (NP, RI, BikeScore, KJ, Aerobic Decoupling). It also receives sensor statistical aggregates (Avg/Max Power, HR, Cadence, Speed), PMC indices (LTS, STS, SB), and a searchable index of historical ride metadata.",
+        keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent"]
+      },
+      {
+        question: "Is my performance data sent to AI companies?",
+        beginnerAnswer: "Only when you use the 'Velo Coach' feature. Your raw ride files are never sent; only a text summary of your stats is shared with the AI provider (like Google or OpenAI) to generate your coaching response.",
+        technicalAnswer: "Data is processed locally. When a chat message is sent, a distilled text summary is generated and sent via a direct client-side HTTPS request to the selected AI vendor (Gemini/OpenAI/Anthropic). Your raw binary .fit files and full sensor data never leave your browser.",
+        keywords: ["security", "privacy", "sharing", "google", "openai"]
+      },
+      {
+        question: "Can I use my own local LLM (Ollama/LM Studio)?",
+        beginnerAnswer: "Yes! If you run AI on your own computer, you can connect VeloAnalytics to it. This keeps 100% of your data on your own machine.",
+        technicalAnswer: "VeloAnalytics supports OpenAI-compatible local APIs. By setting the Provider to Local LLM and pointing the URL to your local instance (e.g. http://localhost:11434), the app communicates with your local hardware using the fetch API with CORS headers.",
+        keywords: ["ollama", "lm-studio", "local", "privacy", "offline"]
+      },
+      {
+        question: "How do I ask about a specific ride from the past?",
+        beginnerAnswer: "Just tell the coach which ride you mean! You can say 'Analyze my MyWhoosh ride' or use the date like 'How was my ride on 2026_04_13?'.",
+        technicalAnswer: "The coach context includes an index of historical rides with their 'originalFileName'. Because the app follows a YYYY_MM_DD naming convention, the AI can correlate your text query to specific data summaries in the context index.",
+        keywords: ["search", "history", "naming", "whoosh", "date"]
+      }
+    ]
+  },
+  {
     name: "Platform",
     items: [
       {

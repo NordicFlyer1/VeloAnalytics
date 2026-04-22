@@ -6,8 +6,12 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
   geminiApiKey: '',
   geminiModel: 'gemini-3-flash-preview',
+  openaiApiKey: '',
+  openaiModel: 'gpt-4o',
+  anthropicApiKey: '',
+  anthropicModel: 'claude-3-5-sonnet-20240620',
   localUrl: 'http://localhost:11434',
-  localModel: 'phi3',
+  localModel: 'phi4',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights.'
 };
 

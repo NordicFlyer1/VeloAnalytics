@@ -533,6 +533,8 @@ export default function App() {
         summary={summary}
         currentPMC={currentPMC}
         history={history}
+        cp={cp}
+        wPrime={manualWPrime || 15000}
       />
 
       <ExportProgress 

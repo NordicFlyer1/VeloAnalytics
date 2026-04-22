@@ -16,6 +16,8 @@ interface IntelligenceDrawerProps {
   summary: ActivitySummary | null;
   currentPMC: PMCDataPoint | null;
   history: HistoricalActivity[];
+  cp: number;
+  wPrime: number;
 }
 
 export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
@@ -24,7 +26,9 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   aiSettings,
   summary,
   currentPMC,
-  history
+  history,
+  cp,
+  wPrime
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -57,7 +61,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     setIsTyping(true);
 
     try {
-      const context = buildCoachContext(summary, currentPMC, history.length);
+      const context = buildCoachContext(summary, currentPMC, history, cp, wPrime);
       const response = await getCoachResponse(aiSettings, newMessages, context);
 
       const assistantMessage: ChatMessage = {

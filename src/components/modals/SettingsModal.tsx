@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
-  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare 
+  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare, Sparkles 
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { 
@@ -595,88 +595,120 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 <div className="flex flex-col gap-6">
                   {/* Provider Selection */}
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
-                    <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
-                      {(['gemini', 'ollama', 'lm-studio'] as const).map(p => (
+                    <div className="flex flex-wrap bg-app-bg/50 p-1 rounded-2xl border border-app-border gap-1">
+                      {(['gemini', 'openai', 'anthropic', 'ollama', 'lm-studio'] as const).map(p => (
                         <button
                           key={p}
                           onClick={() => updateAiSettings({ provider: p })}
                           className={cn(
-                            "flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2",
+                            "flex-1 min-w-[80px] py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2",
                             aiSettings.provider === p ? "bg-orange-500 text-black shadow-md shadow-orange-500/20" : "text-app-muted hover:text-app-text"
                           )}
                         >
                           {p === 'gemini' && <Globe className="w-3.5 h-3.5" />}
+                          {p === 'openai' && <Sparkles className="w-3.5 h-3.5" />}
+                          {p === 'anthropic' && <Brain className="w-3.5 h-3.5" />}
                           {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
                           {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
                           <span className="hidden sm:inline">{p.replace('-', ' ')}</span>
-                          <span className="sm:hidden">{p === 'gemini' ? 'G' : p === 'ollama' ? 'O' : 'LM'}</span>
+                          <span className="sm:hidden">{p === 'gemini' ? 'G' : p === 'openai' ? 'Op' : p === 'anthropic' ? 'An' : p === 'ollama' ? 'OL' : 'LM'}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Gemini API Key */}
-                  {aiSettings.provider === 'gemini' && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Gemini API Key</label>
-                      <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
-                        <Key className="w-4 h-4 text-orange-500" />
-                        <input 
-                          type="password" 
-                          placeholder="Paste API key here..."
-                          value={aiSettings.geminiApiKey} 
-                          onChange={(e) => updateAiSettings({ geminiApiKey: e.target.value })}
-                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                        />
+                  {/* Cloud API Key Settings */}
+                  {['gemini', 'openai', 'anthropic'].includes(aiSettings.provider) && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">
+                          {aiSettings.provider.toUpperCase()} API Key
+                        </label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Key className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="password" 
+                            placeholder={`Enter ${aiSettings.provider} key...`}
+                            value={
+                              aiSettings.provider === 'gemini' ? aiSettings.geminiApiKey :
+                              aiSettings.provider === 'openai' ? aiSettings.openaiApiKey :
+                              aiSettings.anthropicApiKey
+                            } 
+                            onChange={(e) => {
+                              const key = e.target.value;
+                              if (aiSettings.provider === 'gemini') updateAiSettings({ geminiApiKey: key });
+                              else if (aiSettings.provider === 'openai') updateAiSettings({ openaiApiKey: key });
+                              else updateAiSettings({ anthropicApiKey: key });
+                            }}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
                       </div>
-                      <p className="text-[10px] text-app-muted font-medium ml-1">Data is stored locally in your browser. Never shared with VeloAnalytics servers.</p>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Model Name</label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Brain className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="text" 
+                            placeholder={
+                              aiSettings.provider === 'gemini' ? "gemini-3-flash-preview" :
+                              aiSettings.provider === 'openai' ? "gpt-4o" : "claude-3-5-sonnet-20240620"
+                            }
+                            value={
+                              aiSettings.provider === 'gemini' ? aiSettings.geminiModel :
+                              aiSettings.provider === 'openai' ? aiSettings.openaiModel :
+                              aiSettings.anthropicModel
+                            } 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (aiSettings.provider === 'gemini') updateAiSettings({ geminiModel: val });
+                              else if (aiSettings.provider === 'openai') updateAiSettings({ openaiModel: val });
+                              else updateAiSettings({ anthropicModel: val });
+                            }}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-app-muted font-medium ml-1">Private tokens used to communicate directly with AI vendors over HTTPS.</p>
                     </div>
                   )}
 
-                  {/* Local URL */}
-                  {aiSettings.provider !== 'gemini' && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Server URL</label>
-                      <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
-                        <Globe className="w-4 h-4 text-orange-500" />
-                        <input 
-                          type="text" 
-                          placeholder={aiSettings.provider === 'ollama' ? "http://localhost:11434" : "http://localhost:1234"}
-                          value={aiSettings.localUrl} 
-                          onChange={(e) => updateAiSettings({ localUrl: e.target.value })}
-                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                        />
+                  {/* Local Server Settings */}
+                  {['ollama', 'lm-studio'].includes(aiSettings.provider) && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Server URL</label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Globe className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="text" 
+                            placeholder={aiSettings.provider === 'ollama' ? "http://localhost:11434" : "http://localhost:1234"}
+                            value={aiSettings.localUrl} 
+                            onChange={(e) => updateAiSettings({ localUrl: e.target.value })}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                        <p className="text-[10px] text-app-muted font-medium ml-1">Private connection to your local machine hardware.</p>
                       </div>
-                      <p className="text-[10px] text-app-muted font-medium ml-1">Ensure CORS "Allow Cross-Origin" is enabled in your local AI host.</p>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Model ID</label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Cpu className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="text" 
+                            placeholder="phi4, llama3.1, etc."
+                            value={aiSettings.localModel} 
+                            onChange={(e) => updateAiSettings({ localModel: e.target.value })}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
-
-                  {/* Model Name */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Model Name</label>
-                    <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
-                      <Brain className="w-4 h-4 text-orange-500" />
-                      {aiSettings.provider === 'gemini' ? (
-                        <input 
-                          type="text" 
-                          placeholder="gemini-3-flash-preview"
-                          value={aiSettings.geminiModel} 
-                          onChange={(e) => updateAiSettings({ geminiModel: e.target.value })}
-                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                        />
-                      ) : (
-                        <input 
-                          type="text" 
-                          placeholder="phi3, llama3, etc."
-                          value={aiSettings.localModel} 
-                          onChange={(e) => updateAiSettings({ localModel: e.target.value })}
-                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
-                        />
-                      )}
-                    </div>
-                  </div>
 
                   {/* System Prompt */}
                   <div className="space-y-2">
