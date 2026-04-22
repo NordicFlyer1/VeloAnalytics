@@ -40,6 +40,13 @@ The coach is programmed to understand the relationships between these metrics. F
 *   **BikeScore** vs **KJ** highlights the "quality" of work (intensity vs volume).
 *   **Form (TSB)** is the primary driver for "Ready to Race" vs "Need Recovery" advice.
 
+### History Search & AI Synergy
+The **Activity History Panel** now features an advanced search bar. This serves as a vital bridge to AI analysis:
+1.  **Filter by Metric**: You can search your library for specific values like "BikeScore 150" or "280W".
+2.  **Date/File Verification**: Quickly isolate a ride by its naming convention (e.g., "2026_04_13") to confirm the exact data is loaded.
+3.  **Targeted Queries**: Once filtered, you can ask the coach: *"Analyze my MyWhoosh ride from the 13th that had 120 BikeScore."* 
+This synergy allows you to navigate thousands of rides locally and extract precise AI insights instantly.
+
 ### Security Model:
 *   **Local Processing**: All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
 *   **Direct-to-Vendor**: Your API keys are used to talk directly to Google/OpenAI/Anthropic. They are stored in your encrypted local browser storage.

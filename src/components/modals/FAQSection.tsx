@@ -165,6 +165,24 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["import", "files", "fit", "uploading"]
       },
       {
+        question: "What is the Activity History search syntax?",
+        beginnerAnswer: "You can find specific rides instantly using prefixes! Try typing 'score:100' to see only rides with that stress score, 'watts:250' for specific power efforts, or 'time:1h' for ride length. You can also search by 'date:2026' or 'file:Lunch'.",
+        technicalAnswer: "The history search engine uses strict field-mapping. Supported prefixes include: score: (BikeScore), watts: (Avg Power), time: (Duration), date: (Activity Date), file: (Original Filename), and name: (Activity Name). Combinations like 'MyWhoosh score:120' are supported using AND logic.",
+        keywords: ["search", "filter", "syntax", "how to", "commands", "prefix", "format", "find", "score", "watts", "time", "date"]
+      },
+      {
+        question: "How do I find a specific ride in my long history?",
+        beginnerAnswer: "Use the search bar in the Activity History panel! You can search generally by name, or use strict commands like 'score:90', 'watts:250', or 'time:1h' to be more precise.",
+        technicalAnswer: "The search supports a tokenized syntax. You can use prefixes like score:, bikescore:, watts:, p:, w:, date:, name:, file:, and time: to filter specific data fields without ambiguity.",
+        keywords: ["search", "filter", "find", "history", "bikescore", "power", "wattage", "duration", "time", "syntax"]
+      },
+      {
+        question: "Can I search for metrics like BikeScore or Power?",
+        beginnerAnswer: "Yes! High-performance search is built-in. If you want to find all rides where you hit a certain stress level or power average, just type the number into the history search bar.",
+        technicalAnswer: "The activity filter performs string-based matching across numerical fields (BikeScore, AvgPower) and temporal fields. This allows users to cross-reference performance peaks without manually scrolling through months of data.",
+        keywords: ["bikescore", "power", "search", "filter", "metrics", "stats"]
+      },
+      {
         question: "Is my data stored securely?",
         beginnerAnswer: "Yes. Your data stays on your device in your browser's private storage. We do not see, store, or sell your ride data.",
         technicalAnswer: "VeloAnalytics uses a local-first architecture. Data is persisted in your browser's IndexedDB storage (a secure, browser-based database). No Personally Identifiable Information (PII) or ride telemetry is transmitted to our servers beyond the initial application load.",

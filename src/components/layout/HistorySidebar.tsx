@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   History, 
@@ -7,7 +7,8 @@ import {
   Trash2, 
   ArrowUpDown, 
   Activity,
-  X
+  X,
+  Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, formatDuration } from '../../lib/utils';
@@ -50,6 +51,72 @@ export const HistorySidebar = React.memo(({
   onClose
 }: HistorySidebarProps) => {
   const isMobileView = isOpen !== undefined;
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredHistory = useMemo(() => {
+    if (!searchQuery.trim()) return sortedHistory;
+    
+    // 1. Parse the search query into tokens
+    // Supports: "score:50", "watts:200", and generic "lunch"
+    const rawTerms = searchQuery.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+    
+    const filters: { field?: string; value: string }[] = rawTerms.map(term => {
+      if (term.includes(':')) {
+        const [field, ...valParts] = term.split(':');
+        return { field, value: valParts.join(':') };
+      }
+      return { value: term };
+    });
+
+    return sortedHistory.filter(h => {
+      // 2. Every token in the search must match
+      return filters.every(filter => {
+        const { field, value } = filter;
+        
+        // Prepare comparison data
+        const bikeScore = h.bikeScore?.toString() || '';
+        const avgPower = h.avgPower?.toString() || '';
+        const name = (h.name || '').toLowerCase();
+        const date = (h.date || '').toLowerCase();
+        const fileName = (h.originalFileName || '').toLowerCase();
+        const duration = formatDuration(h.duration).toLowerCase();
+
+        // If field-specific filter (e.g., "score:90")
+        if (field) {
+          switch (field) {
+            case 'score':
+            case 'bikescore':
+              return bikeScore.startsWith(value) || bikeScore === value;
+            case 'watts':
+            case 'power':
+            case 'w':
+            case 'p':
+              return avgPower.startsWith(value) || avgPower === value;
+            case 'name':
+              return name.includes(value);
+            case 'date':
+              return date.includes(value);
+            case 'file':
+              return fileName.includes(value);
+            case 'time':
+            case 'duration':
+              return duration.includes(value);
+            default:
+              // Unknown field? Fallback to generic search for this value
+              return (name + date + fileName + bikeScore + avgPower + duration).includes(value);
+          }
+        }
+
+        // Generic search (matches any field)
+        return name.includes(value) || 
+               date.includes(value) || 
+               fileName.includes(value) || 
+               bikeScore.includes(value) || 
+               avgPower.includes(value) || 
+               duration.includes(value);
+      });
+    });
+  }, [sortedHistory, searchQuery]);
 
   return (
     <>
@@ -106,6 +173,26 @@ export const HistorySidebar = React.memo(({
             className="overflow-hidden"
           >
             <div className="space-y-6">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-muted" />
+                  <input 
+                    type="text"
+                    placeholder="Search terms or 'score:90', 'watts:250', 'time:1h'..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-app-bg/50 border border-app-border rounded-2xl py-2.5 pl-10 pr-4 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-app-muted/50"
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-app-bg rounded-full text-app-muted"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-2 sm:gap-4 group cursor-pointer" 
                     onClick={() => {
@@ -157,8 +244,8 @@ export const HistorySidebar = React.memo(({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[60vh] md:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar no-scrollbar scroll-smooth">
-                  {sortedHistory.length > 0 ? (
-                    sortedHistory.map(h => (
+                  {filteredHistory.length > 0 ? (
+                    filteredHistory.map(h => (
                       <div 
                         key={h.id} 
                         onClick={() => loadFromHistory(h.id)}
@@ -220,10 +307,10 @@ export const HistorySidebar = React.memo(({
                 ) : (
                   <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-50 bg-app-card/30 rounded-2xl border border-dashed border-app-border">
                     <div className="w-12 h-12 bg-app-card rounded-full flex items-center justify-center mb-4 border border-app-border">
-                      <Activity className="w-6 h-6 text-app-muted" />
+                      <Search className="w-6 h-6 text-app-muted" />
                     </div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2">No activities yet</p>
-                    <p className="text-[10px] text-app-muted max-w-[200px]">Upload a FIT file to start analyzing your performance data.</p>
+                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2">No matches found</p>
+                    <p className="text-[10px] text-app-muted max-w-[200px]">Try searching for a different date or activity name.</p>
                   </div>
                 )}
               </div>
