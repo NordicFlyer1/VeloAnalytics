@@ -4,7 +4,7 @@ import { Image, LayoutTemplate, LayoutList } from 'lucide-react';
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { SummaryCards } from './SummaryCards';
 import { exportComponentAsImage } from '../../lib/chartExport';
-import { ActivitySummary, PMCDataPoint, HistoricalActivity } from '../../types';
+import { ActivitySummary, PMCDataPoint, HistoricalActivity, Equipment } from '../../types';
 
 interface ActivityOverviewProps {
   summary: ActivitySummary;
@@ -13,6 +13,9 @@ interface ActivityOverviewProps {
   history: HistoricalActivity[];
   userWeight?: number | null;
   weightUnit?: 'kg' | 'lbs';
+  equipment: Equipment[];
+  currentActivityId: string | null;
+  updateActivityBike: (id: string, bikeId: string) => void;
   isExpanded: boolean;
   onToggle: () => void;
 }
@@ -24,6 +27,9 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
   history,
   userWeight,
   weightUnit,
+  equipment,
+  currentActivityId,
+  updateActivityBike,
   isExpanded,
   onToggle
 }) => {
@@ -85,6 +91,9 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
                 history={history} 
                 userWeight={userWeight} 
                 weightUnit={weightUnit} 
+                equipment={equipment}
+                currentActivityId={currentActivityId}
+                updateActivityBike={updateActivityBike}
               />
             </div>
           </motion.div>

@@ -22,6 +22,7 @@ export interface ProcessingContext {
   manualWPrime: number | null;
   cpMode: 'manual' | 'estimated';
   userWeight: number | null;
+  weightUnit: 'kg' | 'lbs';
   bikeWeight: number;
   enableVirtualPower: boolean;
   ridingPosition: RidingPosition;
@@ -53,14 +54,30 @@ export async function processActivityData(
     
     // Only calculate if the file doesn't already have power data
     if (!hasExistingPower) {
-      const riderWeight = ctx.userWeight || 75; // Default 75kg if not set
+      // WEIGHT CONVERSION: Physics formula requires KG
+      let riderWeight = ctx.userWeight || 75; 
+      if (ctx.weightUnit === 'lbs') {
+        riderWeight = riderWeight / 2.20462;
+      }
       const totalWeight = riderWeight + ctx.bikeWeight;
       const cda = CDA_VALUES[ctx.ridingPosition];
       const crr = CRR_VALUES[ctx.surfaceType];
 
-      for (let i = 1; i < points.length; i++) {
+      // Slope smoothing: Use a 5-point moving average for grade calculation to prevent spikes from GPS noise
+      const windowSize = 5;
+      for (let i = 0; i < points.length; i++) {
+        let sumSlope = 0;
+        let count = 0;
+        for (let j = Math.max(0, i - windowSize); j <= i; j++) {
+          sumSlope += points[j].slope || 0;
+          count++;
+        }
+        const smoothedSlope = sumSlope / count;
+        
+        // Clamp grade to reasonable physics limits (+/- 25%)
+        const gradeFraction = Math.max(-0.25, Math.min(0.25, smoothedSlope / 100));
+        
         const speedMS = points[i].speed || 0;
-        const gradeFraction = (points[i].slope || 0) / 100;
         points[i].power = calculateVirtualPower(speedMS, gradeFraction, totalWeight, cda, crr);
       }
       

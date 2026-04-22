@@ -81,7 +81,8 @@ export default function App() {
     loadFromHistory,
     removeFromHistory: baseRemoveFromHistory,
     removeMultipleFromHistory: baseRemoveMultipleFromHistory,
-    updateActivityName: baseUpdateActivityName
+    updateActivityName: baseUpdateActivityName,
+    updateActivityBike
   } = useActivityHistory({ workers, settings });
 
   const {
@@ -385,6 +386,9 @@ export default function App() {
                   history={history}
                   userWeight={userWeight}
                   weightUnit={weightUnit}
+                  equipment={settings.equipment}
+                  currentActivityId={currentActivityId}
+                  updateActivityBike={updateActivityBike}
                   isExpanded={isOverviewExpanded}
                   onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
                 />

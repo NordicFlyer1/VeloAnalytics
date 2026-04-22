@@ -19,7 +19,12 @@ interface HistoryHookDeps {
 export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
-    return saved ? JSON.parse(saved) : [];
+    const parsed = saved ? JSON.parse(saved) : [];
+    // Migration: Ensure every activity has a bikeId, defaulting to 'default-bike' if missing
+    return parsed.map((h: any) => ({
+      ...h,
+      bikeId: h.bikeId || 'default-bike'
+    }));
   });
 
   const [data, setData] = useState<CyclingDataPoint[]>([]);
@@ -371,6 +376,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
           manualWPrime: settings.manualWPrime,
           cpMode: settings.cpMode,
           userWeight: settings.userWeight,
+          weightUnit: settings.weightUnit,
           bikeWeight: settings.bikeWeight,
           enableVirtualPower: settings.enableVirtualPower,
           ridingPosition: settings.ridingPosition,
@@ -445,6 +451,15 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     }
   }, [currentActivityId, summary]);
 
+  const updateActivityBike = useCallback((id: string, bikeId: string) => {
+    setHistory(prev => prev.map(h => {
+      if (h.id === id) {
+        return { ...h, bikeId };
+      }
+      return h;
+    }));
+  }, []);
+
   return {
     history, setHistory,
     data, setData,
@@ -474,6 +489,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     loadFromHistory,
     removeFromHistory,
     removeMultipleFromHistory,
-    updateActivityName
+    updateActivityName,
+    updateActivityBike
   };
 }

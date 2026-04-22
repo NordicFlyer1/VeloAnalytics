@@ -32,6 +32,7 @@ export const useFileUploader = (
       manualWPrime: settings.manualWPrime,
       cpMode: settings.cpMode,
       userWeight: settings.userWeight,
+      weightUnit: settings.weightUnit,
       bikeWeight: settings.bikeWeight,
       enableVirtualPower: settings.enableVirtualPower,
       ridingPosition: settings.ridingPosition,

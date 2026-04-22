@@ -17,6 +17,19 @@ export const CRR_VALUES = {
 
 /**
  * Calculates virtual power for a single data point based on physics.
+ * 
+ * The formula used follows standard environmental physics:
+ * P_total = P_gravity + P_rolling + P_aero
+ * 
+ * 1. Gravity: P_g = mass * g * grade * velocity
+ * 2. Rolling: P_r = mass * g * Crr * velocity
+ * 3. Aero: P_a = 0.5 * CdA * rho * velocity^3
+ * 
+ * Where:
+ * - g: 9.80665 m/s²
+ * - rho (air density): 1.226 kg/m³
+ * - Crr: Rolling Resistance coefficient
+ * - CdA: Drag area (Cd * Area)
  */
 export function calculateVirtualPower(
   speedMS: number, 
