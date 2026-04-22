@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, Target, Eye } from 'lucide-react';
+import { 
+  Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
+  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare 
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { RidingPosition, SurfaceType, Equipment, ZoneDefinition, HistoricalActivity } from '../../types';
+import { 
+  RidingPosition, SurfaceType, Equipment, ZoneDefinition, 
+  HistoricalActivity, AISettings 
+} from '../../types';
 
 interface SettingsModalProps {
   showSettings: boolean;
@@ -40,9 +46,13 @@ interface SettingsModalProps {
   smoothingWindow: number;
   setSmoothingWindow: (n: number) => void;
   history: HistoricalActivity[];
+
+  // AI Props
+  aiSettings: AISettings;
+  updateAiSettings: (updates: Partial<AISettings>) => void;
 }
 
-type Tab = 'general' | 'zones' | 'equipment';
+type Tab = 'general' | 'zones' | 'equipment' | 'intelligence';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   showSettings,
@@ -76,7 +86,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setHrZoneDefinitions,
   smoothingWindow,
   setSmoothingWindow,
-  history
+  history,
+  aiSettings,
+  updateAiSettings
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('general');
 
@@ -114,7 +126,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Tab Navigation - Aligned to About Modal Capsule style */}
         <div className="px-6 sm:px-8 py-5 border-b border-app-border bg-app-card/30">
           <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start w-fit max-w-full overflow-x-auto no-scrollbar">
-            {(['general', 'zones', 'equipment'] as const).map((tab) => (
+            {(['general', 'zones', 'equipment', 'intelligence'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -570,6 +582,116 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+              </motion.div>
+            )}
+            {activeTab === 'intelligence' && (
+              <motion.div
+                key="intelligence"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-8"
+              >
+                <div className="flex flex-col gap-6">
+                  {/* Provider Selection */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
+                    <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                      {(['gemini', 'ollama', 'lm-studio'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => updateAiSettings({ provider: p })}
+                          className={cn(
+                            "flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2",
+                            aiSettings.provider === p ? "bg-orange-500 text-black shadow-md shadow-orange-500/20" : "text-app-muted hover:text-app-text"
+                          )}
+                        >
+                          {p === 'gemini' && <Globe className="w-3.5 h-3.5" />}
+                          {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
+                          {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
+                          <span className="hidden sm:inline">{p.replace('-', ' ')}</span>
+                          <span className="sm:hidden">{p === 'gemini' ? 'G' : p === 'ollama' ? 'O' : 'LM'}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gemini API Key */}
+                  {aiSettings.provider === 'gemini' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Gemini API Key</label>
+                      <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                        <Key className="w-4 h-4 text-orange-500" />
+                        <input 
+                          type="password" 
+                          placeholder="Paste API key here..."
+                          value={aiSettings.geminiApiKey} 
+                          onChange={(e) => updateAiSettings({ geminiApiKey: e.target.value })}
+                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                        />
+                      </div>
+                      <p className="text-[10px] text-app-muted font-medium ml-1">Data is stored locally in your browser. Never shared with VeloAnalytics servers.</p>
+                    </div>
+                  )}
+
+                  {/* Local URL */}
+                  {aiSettings.provider !== 'gemini' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Server URL</label>
+                      <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                        <Globe className="w-4 h-4 text-orange-500" />
+                        <input 
+                          type="text" 
+                          placeholder={aiSettings.provider === 'ollama' ? "http://localhost:11434" : "http://localhost:1234"}
+                          value={aiSettings.localUrl} 
+                          onChange={(e) => updateAiSettings({ localUrl: e.target.value })}
+                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                        />
+                      </div>
+                      <p className="text-[10px] text-app-muted font-medium ml-1">Ensure CORS "Allow Cross-Origin" is enabled in your local AI host.</p>
+                    </div>
+                  )}
+
+                  {/* Model Name */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Model Name</label>
+                    <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                      <Brain className="w-4 h-4 text-orange-500" />
+                      {aiSettings.provider === 'gemini' ? (
+                        <input 
+                          type="text" 
+                          placeholder="gemini-3-flash-preview"
+                          value={aiSettings.geminiModel} 
+                          onChange={(e) => updateAiSettings({ geminiModel: e.target.value })}
+                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                        />
+                      ) : (
+                        <input 
+                          type="text" 
+                          placeholder="phi3, llama3, etc."
+                          value={aiSettings.localModel} 
+                          onChange={(e) => updateAiSettings({ localModel: e.target.value })}
+                          className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* System Prompt */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Coach Persona (System Prompt)</label>
+                    <div className="flex gap-3 bg-app-bg/50 border border-app-border rounded-3xl px-5 py-4 focus-within:border-orange-500/50 transition-colors">
+                      <MessageSquare className="w-4 h-4 text-orange-500 shrink-0 mt-1" />
+                      <textarea 
+                        rows={12}
+                        value={aiSettings.systemPrompt} 
+                        onChange={(e) => updateAiSettings({ systemPrompt: e.target.value })}
+                        className="bg-transparent w-full text-sm font-medium focus:outline-none resize-y min-h-[300px] leading-relaxed custom-scrollbar"
+                        placeholder="Define how the coach should speak..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

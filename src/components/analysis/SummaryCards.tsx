@@ -58,7 +58,7 @@ export const SummaryCards = React.memo(({
               <select 
                 value={activeBike?.id || ''}
                 onChange={(e) => currentActivityId && updateActivityBike(currentActivityId, e.target.value)}
-                className="w-full bg-transparent text-xl sm:text-2xl md:text-3xl font-light tracking-tighter appearance-none cursor-pointer focus:outline-none pr-8 truncate"
+                className="w-full bg-transparent text-base sm:text-lg md:text-xl font-bold tracking-tight appearance-none cursor-pointer focus:outline-none pr-8 truncate"
               >
                 {equipment.map(bike => (
                   <option key={bike.id} value={bike.id} className="bg-app-card text-app-text text-sm">{bike.name}</option>

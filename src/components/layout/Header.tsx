@@ -10,7 +10,8 @@ import {
   Table, 
   Settings, 
   ChevronRight,
-  History as HistoryIcon 
+  History as HistoryIcon,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -30,6 +31,8 @@ interface HeaderProps {
   toggleHistorySidebar: () => void;
   onActivityHistoryClick: () => void;
   isHistorySidebarOpen: boolean;
+  showIntelligence: boolean;
+  setShowIntelligence: (show: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,7 +50,9 @@ export const Header: React.FC<HeaderProps> = ({
   setShowSettings,
   toggleHistorySidebar,
   onActivityHistoryClick,
-  isHistorySidebarOpen
+  isHistorySidebarOpen,
+  showIntelligence,
+  setShowIntelligence
 }) => {
   return (
     <header className="border-b border-app-border bg-app-bg/50 backdrop-blur-md sticky top-0 z-50">
@@ -123,6 +128,20 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Toggle Panels"
               >
                 {areAllPanelsCollapsed ? <LayoutList className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : <Table className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-orange-500" />}
+              </button>
+
+              <button 
+                onClick={() => setShowIntelligence(!showIntelligence)}
+                className={cn(
+                  "p-1.5 sm:p-2 sm:px-3 rounded-full transition-all flex items-center gap-1.5",
+                  showIntelligence 
+                    ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                    : "text-app-muted hover:text-orange-500 hover:bg-orange-500/5"
+                )}
+                title="Velo Coach"
+              >
+                <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                <span className="hidden lg:inline text-[9px] font-bold uppercase tracking-widest">Coach</span>
               </button>
 
               <button 

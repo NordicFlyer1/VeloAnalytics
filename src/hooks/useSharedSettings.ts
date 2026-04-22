@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
-import { ZoneDefinition, RidingPosition, SurfaceType, Equipment } from '../types';
+import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
+
+const DEFAULT_AI_SETTINGS: AISettings = {
+  provider: 'gemini',
+  geminiApiKey: '',
+  geminiModel: 'gemini-3-flash-preview',
+  localUrl: 'http://localhost:11434',
+  localModel: 'phi3',
+  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights.'
+};
 
 export function useSharedSettings() {
   const [cp, setCP] = useState(() => {
@@ -106,6 +115,11 @@ export function useSharedSettings() {
     return DEFAULT_HR_ZONES;
   });
 
+  const [aiSettings, setAiSettings] = useState<AISettings>(() => {
+    const saved = localStorage.getItem('veloanalytics_ai_settings');
+    return saved ? { ...DEFAULT_AI_SETTINGS, ...JSON.parse(saved) } : DEFAULT_AI_SETTINGS;
+  });
+
   // Sync to localStorage
   useEffect(() => { localStorage.setItem('veloanalytics_cp', cp.toString()); }, [cp]);
   useEffect(() => { localStorage.setItem('veloanalytics_autoupdate_cp', autoUpdateCP.toString()); }, [autoUpdateCP]);
@@ -130,6 +144,7 @@ export function useSharedSettings() {
   useEffect(() => { localStorage.setItem('veloanalytics_cp_mode', cpMode); }, [cpMode]);
   useEffect(() => { localStorage.setItem('veloanalytics_power_zones', JSON.stringify(powerZoneDefinitions)); }, [powerZoneDefinitions]);
   useEffect(() => { localStorage.setItem('veloanalytics_hr_zones', JSON.stringify(hrZoneDefinitions)); }, [hrZoneDefinitions]);
+  useEffect(() => { localStorage.setItem('veloanalytics_ai_settings', JSON.stringify(aiSettings)); }, [aiSettings]);
   
   useEffect(() => {
     localStorage.setItem('veloanalytics_theme', theme);
@@ -138,6 +153,10 @@ export function useSharedSettings() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  const updateAiSettings = (updates: Partial<AISettings>) => {
+    setAiSettings(prev => ({ ...prev, ...updates }));
+  };
 
   const addBike = (bike: Omit<Equipment, 'id'>) => {
     const id = `bike-${Date.now()}`;
@@ -182,6 +201,7 @@ export function useSharedSettings() {
     smoothingWindow, setSmoothingWindow,
     cpMode, setCpMode,
     powerZoneDefinitions, setPowerZoneDefinitions,
-    hrZoneDefinitions, setHrZoneDefinitions
+    hrZoneDefinitions, setHrZoneDefinitions,
+    aiSettings, updateAiSettings
   };
 }

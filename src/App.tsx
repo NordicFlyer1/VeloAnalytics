@@ -25,6 +25,7 @@ import { EmptyHistoryView } from './components/views/EmptyHistoryView';
 import { SectionHeader } from './components/ui/SectionHeader';
 import { SummaryCards } from './components/analysis/SummaryCards';
 import { HistorySidebar } from './components/layout/HistorySidebar';
+import { IntelligenceDrawer } from './components/analysis/IntelligenceDrawer';
 
 const ActivityMap = React.lazy(() => import('./components/map/ActivityMap').then(m => ({ default: m.ActivityMap })));
 
@@ -131,6 +132,7 @@ export default function App() {
   const [lapMode, setLapMode] = useState<'file' | '1km' | '5km' | '10km' | '1min' | '5min' | '10min'>('file');
   const [showUploadView, setShowUploadView] = useState(false);
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+  const [showIntelligence, setShowIntelligence] = useState(false);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'terrain' | 'hybrid'>('roadmap');
   const [showTraffic, setShowTraffic] = useState(false);
   const [showBicycling, setShowBicycling] = useState(false);
@@ -342,6 +344,8 @@ export default function App() {
         toggleHistorySidebar={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
         onActivityHistoryClick={handleActivityHistoryClick}
         isHistorySidebarOpen={isHistorySidebarOpen}
+        showIntelligence={showIntelligence}
+        setShowIntelligence={setShowIntelligence}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -516,9 +520,20 @@ export default function App() {
         smoothingWindow={smoothingWindow}
         setSmoothingWindow={settings.setSmoothingWindow}
         history={history}
+        aiSettings={settings.aiSettings}
+        updateAiSettings={settings.updateAiSettings}
       />
 
       <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />
+
+      <IntelligenceDrawer 
+        isOpen={showIntelligence}
+        onClose={() => setShowIntelligence(false)}
+        aiSettings={settings.aiSettings}
+        summary={summary}
+        currentPMC={currentPMC}
+        history={history}
+      />
 
       <ExportProgress 
         active={exportStatus.active} 

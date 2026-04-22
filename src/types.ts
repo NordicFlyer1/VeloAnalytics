@@ -150,6 +150,24 @@ export interface FileStatus {
 export type RidingPosition = 'tops' | 'hoods' | 'drops';
 export type SurfaceType = 'road' | 'gravel' | 'mtb';
 
+export type AIProvider = 'gemini' | 'ollama' | 'lm-studio';
+
+export interface AISettings {
+  provider: AIProvider;
+  geminiApiKey: string;
+  geminiModel: string;
+  localUrl: string;
+  localModel: string;
+  systemPrompt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 export interface Equipment {
   id: string;
   name: string;
