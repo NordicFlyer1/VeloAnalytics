@@ -68,28 +68,46 @@ async function callGemini(settings: AISettings, messages: ChatMessage[]): Promis
  * Handles communication with Local OpenAI-compatible APIs (Ollama / LM Studio)
  */
 async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promise<string> {
-  const url = `${settings.localUrl}/v1/chat/completions`;
+  const baseUrl = settings.localUrl.endsWith('/') ? settings.localUrl.slice(0, -1) : settings.localUrl;
+  const url = `${baseUrl}/v1/chat/completions`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: settings.localModel,
-      messages: [
-        { role: 'system', content: settings.systemPrompt },
-        ...messages.map(m => ({ role: m.role, content: m.content }))
-      ],
-      temperature: 0.7,
-    })
-  });
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: settings.localModel || 'local-model',
+        messages: [
+          { role: 'system', content: settings.systemPrompt },
+          ...messages.map(m => ({ role: m.role, content: m.content }))
+        ],
+        temperature: 0.7,
+        stream: false, // Ensure we get a single JSON object back
+      })
+    });
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Local AI error: ${err}`);
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Local AI error (${response.status}): ${err}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data || !data.choices || !data.choices[0]?.message?.content) {
+      console.error('Unexpected Local AI Response:', data);
+      throw new Error('Local AI returned an empty or malformed response. Check if the model is loaded in LM Studio.');
+    }
+
+    return data.choices[0].message.content;
+  } catch (err) {
+    if (err instanceof Error) {
+      if (err.message.includes('Failed to fetch')) {
+        throw new Error(`Could not connect to LM Studio at ${settings.localUrl}. Ensure the server is started and "CORS" is enabled.`);
+      }
+      throw err;
+    }
+    throw new Error('An unknown error occurred while talking to the local coach.');
   }
-
-  const json = await response.json();
-  return json.choices[0].message.content;
 }
 
 /**
