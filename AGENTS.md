@@ -74,3 +74,8 @@ This document serves as the source of truth for the visual and structural design
 - **Speed:** Cyan (`#06b6d4`)
 - **Altitude:** Amber (`#f59e0b`)
 - **Slope:** Slate (`#64748b`)
+
+## 12. Mobile Responsiveness & Patterns
+- **Capsule Sliders:** For selection groups with many items (e.g., AI Providers), use a horizontal scroll pattern on mobile: `flex overflow-x-auto no-scrollbar whitespace-nowrap`. This maintains the "Capsule" aesthetic without breaking the layout or forcing awkward abbreviations.
+- **Touch Targets:** Maintain a minimum height of `py-2.5` (approx 40-44px) for all interactive elements.
+- **Scroll Indication:** Ensure the container has enough padding/gap so that the next item is partially visible, indicating scrollability.

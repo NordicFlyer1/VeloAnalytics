@@ -597,24 +597,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {/* Provider Selection */}
                   <div className="space-y-4">
                     <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
-                    <div className="flex flex-wrap bg-app-bg/50 p-1 rounded-2xl border border-app-border gap-1">
+                    <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border max-w-full overflow-x-auto no-scrollbar gap-1">
                       {(['gemini', 'openai', 'anthropic', 'ollama', 'lm-studio'] as const).map(p => (
                         <button
-                          key={p}
-                          onClick={() => updateAiSettings({ provider: p })}
-                          className={cn(
-                            "flex-1 min-w-[80px] py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2",
-                            aiSettings.provider === p ? "bg-orange-500 text-black shadow-md shadow-orange-500/20" : "text-app-muted hover:text-app-text"
-                          )}
-                        >
-                          {p === 'gemini' && <Globe className="w-3.5 h-3.5" />}
-                          {p === 'openai' && <Sparkles className="w-3.5 h-3.5" />}
-                          {p === 'anthropic' && <Brain className="w-3.5 h-3.5" />}
-                          {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
-                          {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
-                          <span className="hidden sm:inline">{p.replace('-', ' ')}</span>
-                          <span className="sm:hidden">{p === 'gemini' ? 'G' : p === 'openai' ? 'Op' : p === 'anthropic' ? 'An' : p === 'ollama' ? 'OL' : 'LM'}</span>
-                        </button>
+                           key={p}
+                           onClick={() => updateAiSettings({ provider: p })}
+                           className={cn(
+                             "px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap",
+                             aiSettings.provider === p ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" : "text-app-muted hover:text-app-text"
+                           )}
+                         >
+                           {p === 'gemini' && <Globe className="w-3.5 h-3.5" />}
+                           {p === 'openai' && <Sparkles className="w-3.5 h-3.5" />}
+                           {p === 'anthropic' && <Brain className="w-3.5 h-3.5" />}
+                           {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
+                           {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
+                           <span>{p.replace('-', ' ')}</span>
+                         </button>
                       ))}
                     </div>
                   </div>
