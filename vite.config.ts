@@ -8,8 +8,9 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     // Base path for deployment
-    // Use './' for maximum compatibility (Tauri, Previews, Static Hosting)
-    base: './',
+    // Use './' for Tauri/Offline bundles and AI Studio previews to ensure relative asset loading
+    // Use '/' for production Vercel/Web deployments
+    base: process.env.TAURI_PLATFORM || mode === 'development' ? './' : '/',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },

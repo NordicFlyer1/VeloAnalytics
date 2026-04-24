@@ -24,6 +24,7 @@ import {
   GoogleMapBicyclingLayer, 
   GoogleMapTransitLayer 
 } from './GoogleMapLayers';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface ActivityMapProps {
   isMapExpanded: boolean;
@@ -87,7 +88,6 @@ export const ActivityMap = React.memo(({
   const handleExportMap = async () => {
     if (!cardRef.current) return;
     try {
-      const { exportComponentAsImage } = await import('../../lib/chartExport');
       const timestamp = data.length > 0 && data[0].timestamp ? new Date(data[0].timestamp).getTime() : new Date().getTime();
       await exportComponentAsImage(cardRef.current, `Velo_Map_${timestamp}.png`);
     } catch (err) {

@@ -5,6 +5,7 @@ import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { Lap } from '../../types';
 import { cn } from '../../lib/utils';
 import { exportToCSV } from '../../lib/csvExport';
+import { exportComponentAsImage } from '../../lib/chartExport';
 
 interface LapBreakdownProps {
   isLapsExpanded: boolean;
@@ -52,7 +53,6 @@ export const LapBreakdown: React.FC<LapBreakdownProps> = ({
       icon: Image,
       onClick: async () => {
         if (containerRef.current) {
-          const { exportComponentAsImage } = await import('../../lib/chartExport');
           const fileName = `Velo_Laps_Full_${new Date().getTime()}.png`;
           await exportComponentAsImage(containerRef.current, fileName);
         }
