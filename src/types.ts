@@ -160,8 +160,10 @@ export interface AISettings {
   openaiModel: string;
   anthropicApiKey: string;
   anthropicModel: string;
-  localUrl: string;
-  localModel: string;
+  ollamaUrl: string;
+  ollamaModel: string;
+  lmStudioUrl: string;
+  lmStudioModel: string;
   systemPrompt: string;
 }
 

@@ -10,8 +10,10 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   openaiModel: 'gpt-4o',
   anthropicApiKey: '',
   anthropicModel: 'claude-3-5-sonnet-20240620',
-  localUrl: 'http://localhost:11434',
-  localModel: 'phi4',
+  ollamaUrl: 'http://localhost:11434',
+  ollamaModel: 'phi4',
+  lmStudioUrl: 'http://localhost:1234',
+  lmStudioModel: 'phi4',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights.'
 };
 
@@ -121,7 +123,23 @@ export function useSharedSettings() {
 
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem('veloanalytics_ai_settings');
-    return saved ? { ...DEFAULT_AI_SETTINGS, ...JSON.parse(saved) } : DEFAULT_AI_SETTINGS;
+    if (!saved) return DEFAULT_AI_SETTINGS;
+    
+    try {
+      const parsed = JSON.parse(saved);
+      // Migration: split localUrl/localModel into ollama/lmStudio fields if they exist from old version
+      if (parsed.localUrl && !parsed.ollamaUrl) {
+        parsed.ollamaUrl = parsed.localUrl;
+        parsed.lmStudioUrl = parsed.localUrl;
+      }
+      if (parsed.localModel && !parsed.ollamaModel) {
+        parsed.ollamaModel = parsed.localModel;
+        parsed.lmStudioModel = parsed.localModel;
+      }
+      return { ...DEFAULT_AI_SETTINGS, ...parsed };
+    } catch (e) {
+      return DEFAULT_AI_SETTINGS;
+    }
   });
 
   // Sync to localStorage

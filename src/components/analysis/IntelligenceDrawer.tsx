@@ -122,7 +122,13 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     <span className="text-[10px] text-app-muted uppercase font-bold tracking-widest">
-                      {aiSettings.provider} • {aiSettings.provider === 'gemini' ? aiSettings.geminiModel : aiSettings.localModel}
+                      {aiSettings.provider} • {
+                        aiSettings.provider === 'gemini' ? aiSettings.geminiModel : 
+                        aiSettings.provider === 'openai' ? aiSettings.openaiModel :
+                        aiSettings.provider === 'anthropic' ? aiSettings.anthropicModel :
+                        aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
+                        aiSettings.lmStudioModel
+                      }
                     </span>
                   </div>
                 </div>

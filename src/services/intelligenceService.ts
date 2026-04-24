@@ -167,7 +167,11 @@ async function callAnthropic(settings: AISettings, messages: ChatMessage[]): Pro
  * Handles communication with Local OpenAI-compatible APIs (Ollama / LM Studio)
  */
 async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promise<string> {
-  const baseUrl = settings.localUrl.endsWith('/') ? settings.localUrl.slice(0, -1) : settings.localUrl;
+  const provider = settings.provider;
+  const rawUrl = provider === 'ollama' ? settings.ollamaUrl : settings.lmStudioUrl;
+  const model = provider === 'ollama' ? settings.ollamaModel : settings.lmStudioModel;
+  
+  const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
   const url = `${baseUrl}/v1/chat/completions`;
 
   try {
@@ -175,7 +179,7 @@ async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promi
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: settings.localModel || 'local-model',
+        model: model || 'local-model',
         messages: [
           { role: 'system', content: settings.systemPrompt },
           ...messages.map(m => ({ role: m.role, content: m.content }))
@@ -194,14 +198,16 @@ async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promi
     
     if (!data || !data.choices || !data.choices[0]?.message?.content) {
       console.error('Unexpected Local AI Response:', data);
-      throw new Error('Local AI returned an empty or malformed response. Check if the model is loaded in LM Studio.');
+      const hostName = provider === 'ollama' ? 'Ollama' : 'LM Studio';
+      throw new Error(`${hostName} returned an empty or malformed response. Check if the model is loaded.`);
     }
 
     return data.choices[0].message.content;
   } catch (err) {
     if (err instanceof Error) {
       if (err.message.includes('Failed to fetch')) {
-        throw new Error(`Could not connect to LM Studio at ${settings.localUrl}. Ensure the server is started and "CORS" is enabled.`);
+        const hostName = provider === 'ollama' ? 'Ollama' : 'LM Studio';
+        throw new Error(`Could not connect to ${hostName} at ${rawUrl}. Ensure the server is started and "CORS" is enabled.`);
       }
       throw err;
     }

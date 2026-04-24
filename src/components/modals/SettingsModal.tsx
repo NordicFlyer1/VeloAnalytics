@@ -680,14 +680,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {['ollama', 'lm-studio'].includes(aiSettings.provider) && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="space-y-2">
-                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Server URL</label>
+                        <div className="flex items-center justify-between ml-1">
+                          <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Local Server URL</label>
+                          <button 
+                            onClick={() => {
+                              if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: 'http://localhost:11434' });
+                              else updateAiSettings({ lmStudioUrl: 'http://localhost:1234' });
+                            }}
+                            className="text-[9px] text-orange-500 hover:text-orange-600 font-bold uppercase tracking-widest transition-colors"
+                          >
+                            Reset Default
+                          </button>
+                        </div>
                         <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
                           <Globe className="w-4 h-4 text-orange-500" />
                           <input 
                             type="text" 
                             placeholder={aiSettings.provider === 'ollama' ? "http://localhost:11434" : "http://localhost:1234"}
-                            value={aiSettings.localUrl} 
-                            onChange={(e) => updateAiSettings({ localUrl: e.target.value })}
+                            value={aiSettings.provider === 'ollama' ? aiSettings.ollamaUrl : aiSettings.lmStudioUrl} 
+                            onChange={(e) => {
+                              if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: e.target.value });
+                              else updateAiSettings({ lmStudioUrl: e.target.value });
+                            }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />
                         </div>
@@ -701,8 +715,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <input 
                             type="text" 
                             placeholder="phi4, llama3.1, etc."
-                            value={aiSettings.localModel} 
-                            onChange={(e) => updateAiSettings({ localModel: e.target.value })}
+                            value={aiSettings.provider === 'ollama' ? aiSettings.ollamaModel : aiSettings.lmStudioModel} 
+                            onChange={(e) => {
+                              if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaModel: e.target.value });
+                              else updateAiSettings({ lmStudioModel: e.target.value });
+                            }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />
                         </div>
