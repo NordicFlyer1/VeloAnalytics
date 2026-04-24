@@ -7,6 +7,10 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
+    // Base path for deployment
+    // Use './' for Tauri/Offline bundles and AI Studio previews to ensure relative asset loading
+    // Use '/' for production Vercel/Web deployments
+    base: process.env.TAURI_PLATFORM || mode === 'development' ? './' : '/',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
@@ -19,8 +23,8 @@ export default defineConfig(({mode}) => {
     clearScreen: false,
     envPrefix: ['VITE_', 'TAURI_PLATFORM', 'TAURI_ARCH', 'TAURI_FAMILY', 'TAURI_VERSION', 'TAURI_ENV_DEBUG'],
     build: {
-      // Support for Tauri
-      target: process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
+      // Support for Tauri and modern browsers
+      target: mode === 'production' && !process.env.TAURI_PLATFORM ? 'es2022' : (process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : 'safari13'),
       // Minification behavior
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       sourcemap: !!process.env.TAURI_DEBUG,

@@ -69,10 +69,12 @@ export function buildCoachContext(
  * Handles communication with Cloud-based Gemini
  */
 async function callGemini(settings: AISettings, messages: ChatMessage[]): Promise<string> {
+  // Check settings first, then import.meta.env, then process.env (for NodeJS/Build time)
   const apiKey = 
     settings.geminiApiKey || 
-    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-    (process.env.GEMINI_API_KEY as string);
+    import.meta.env.VITE_GEMINI_API_KEY || 
+    (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined) ||
+    (globalThis as any).GEMINI_API_KEY;
   
   if (!apiKey) {
     throw new Error('Gemini API key is required. Please set VITE_GEMINI_API_KEY in .env or provide it in Settings.');
