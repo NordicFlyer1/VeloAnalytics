@@ -77,7 +77,8 @@ export async function processActivityData(
         // Clamp grade to reasonable physics limits (+/- 25%)
         const gradeFraction = Math.max(-0.25, Math.min(0.25, smoothedSlope / 100));
         
-        const speedMS = points[i].speed || 0;
+        const speedKMH = points[i].speed || 0;
+        const speedMS = speedKMH / 3.6;
         points[i].power = calculateVirtualPower(speedMS, gradeFraction, totalWeight, cda, crr);
       }
       

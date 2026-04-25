@@ -29,7 +29,7 @@ export function buildCoachContext(
       context += `- Cadence: Avg ${Math.round(summary.avgCadence)} RPM, Max ${Math.round(summary.maxCadence || 0)} RPM\n`;
     }
     if (summary.avgSpeed) {
-      context += `- Speed: Avg ${(summary.avgSpeed * 3.6).toFixed(1)} km/h, Max ${(summary.maxSpeed ? summary.maxSpeed * 3.6 : 0).toFixed(1)} km/h\n`;
+      context += `- Speed: Avg ${summary.avgSpeed.toFixed(1)} km/h, Max ${(summary.maxSpeed || 0).toFixed(1)} km/h\n`;
     }
     if (summary.totalAscent !== undefined) {
       context += `- Elevation: Total Ascent ${Math.round(summary.totalAscent)}m\n`;
@@ -229,7 +229,7 @@ export async function getCoachResponse(
     const lastMsgIdx = messagesWithContext.length - 1;
     const lastMsg = { ...messagesWithContext[lastMsgIdx] };
     if (lastMsg.role === 'user') {
-      lastMsg.content = `[Context: ${context.replace(/\n/g, ' ')}]\n\nQuestion: ${lastMsg.content}`;
+      lastMsg.content = `Context Info:\n${context}\n\nUser Question: ${lastMsg.content}`;
       messagesWithContext[lastMsgIdx] = lastMsg;
     }
   }

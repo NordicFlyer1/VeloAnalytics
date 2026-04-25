@@ -683,8 +683,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Local Server URL</label>
                           <button 
                             onClick={() => {
-                              if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: 'http://localhost:11434' });
-                              else updateAiSettings({ lmStudioUrl: 'http://localhost:1234' });
+                              if (aiSettings.provider === 'ollama') {
+                                updateAiSettings({ 
+                                  ollamaUrl: 'http://127.0.0.1:11434',
+                                  ollamaModel: 'gemma3:4b'
+                                });
+                              } else {
+                                updateAiSettings({ 
+                                  lmStudioUrl: 'http://127.0.0.1:1234',
+                                  lmStudioModel: 'phi-4-mini-instruct'
+                                });
+                              }
                             }}
                             className="text-[9px] text-orange-500 hover:text-orange-600 font-bold uppercase tracking-widest transition-colors"
                           >
@@ -695,7 +704,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <Globe className="w-4 h-4 text-orange-500" />
                           <input 
                             type="text" 
-                            placeholder={aiSettings.provider === 'ollama' ? "http://localhost:11434" : "http://localhost:1234"}
+                            placeholder={aiSettings.provider === 'ollama' ? "http://127.0.0.1:11434" : "http://127.0.0.1:1234"}
                             value={aiSettings.provider === 'ollama' ? aiSettings.ollamaUrl : aiSettings.lmStudioUrl} 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: e.target.value });
@@ -708,12 +717,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Local Model ID</label>
+                        <div className="flex items-center justify-between ml-1">
+                          <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Local Model ID</label>
+                          <button 
+                            onClick={() => {
+                              if (aiSettings.provider === 'ollama') {
+                                updateAiSettings({ 
+                                  ollamaUrl: 'http://127.0.0.1:11434',
+                                  ollamaModel: 'gemma3:4b'
+                                });
+                              } else {
+                                updateAiSettings({ 
+                                  lmStudioUrl: 'http://127.0.0.1:1234',
+                                  lmStudioModel: 'phi-4-mini-instruct'
+                                });
+                              }
+                            }}
+                            className="text-[9px] text-orange-500 hover:text-orange-600 font-bold uppercase tracking-widest transition-colors"
+                          >
+                            Reset Default
+                          </button>
+                        </div>
                         <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
                           <Cpu className="w-4 h-4 text-orange-500" />
                           <input 
                             type="text" 
-                            placeholder="phi4, llama3.1, etc."
+                            placeholder={aiSettings.provider === 'ollama' ? "gemma3:4b" : "phi-4-mini-instruct"}
                             value={aiSettings.provider === 'ollama' ? aiSettings.ollamaModel : aiSettings.lmStudioModel} 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaModel: e.target.value });
