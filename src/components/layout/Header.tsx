@@ -79,7 +79,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
                 <input 
                   type="number" 
-                  value={cp} 
+                  value={cp || ''} 
+                  placeholder="250"
                   onChange={(e) => setCP(parseInt(e.target.value) || 0)}
                   className="bg-transparent w-9 sm:w-12 text-[10px] sm:text-xs font-bold focus:outline-none text-orange-400"
                 />

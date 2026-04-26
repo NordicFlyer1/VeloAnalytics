@@ -10,18 +10,20 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   openaiModel: 'gpt-4o',
   anthropicApiKey: '',
   anthropicModel: 'claude-3-5-sonnet-20240620',
-  ollamaUrl: 'http://localhost:11434',
-  ollamaModel: 'phi4',
-  lmStudioUrl: 'http://localhost:1234',
-  lmStudioModel: 'phi4',
+  ollamaUrl: 'http://127.0.0.1:11434',
+  ollamaModel: 'gemma3:4b',
+  lmStudioUrl: 'http://127.0.0.1:1234',
+  lmStudioModel: 'phi-4-mini-instruct',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights.'
 };
 
 export function useSharedSettings() {
   const [cp, setCP] = useState(() => {
     const saved = localStorage.getItem('veloanalytics_cp');
-    const parsed = saved ? parseInt(saved) : 125;
-    return isNaN(parsed) ? 125 : parsed;
+    const parsed = saved ? parseInt(saved) : 250;
+    // Migration: If the value is the old default 125, update it to 250
+    if (parsed === 125) return 250;
+    return isNaN(parsed) ? 250 : parsed;
   });
 
   const [autoUpdateCP, setAutoUpdateCP] = useState(() => {

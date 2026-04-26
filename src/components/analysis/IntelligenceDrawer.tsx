@@ -188,7 +188,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                         : "bg-app-card border border-app-border text-app-text rounded-tl-none"
                     )}>
                       {m.role === 'user' ? (
-                        <p>{m.content.includes('[Context:') ? m.content.split('\n\nQuestion: ')[1] : m.content}</p>
+                        <p>{m.content.includes('Context Info:') ? m.content.split('\n\nUser Question: ')[1] : m.content}</p>
                       ) : (
                         <Markdown>{m.content}</Markdown>
                       )}

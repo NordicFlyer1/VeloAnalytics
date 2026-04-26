@@ -105,7 +105,7 @@ export async function processActivityData(
   const safeDuration = Number.isFinite(durationCount) ? durationCount : 0;
   const distance = points[points.length - 1].distance || 0;
   
-  const safeCP = (ctx.cp && ctx.cp > 0) ? ctx.cp : 125;
+  const safeCP = (ctx.cp && ctx.cp > 0) ? ctx.cp : 250;
   const relativeIntensity = xPower !== undefined ? calculateRI(xPower, safeCP) : undefined;
   const bikeScore = (xPower !== undefined && relativeIntensity !== undefined) ? calculateBikeScore(safeDuration, xPower, relativeIntensity, safeCP) : undefined;
   const work = (avgPower * safeDuration) / 1000;

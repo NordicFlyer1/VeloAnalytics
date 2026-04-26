@@ -161,7 +161,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <Zap className="w-4 h-4 text-orange-500" />
                       <input 
                         type="number" 
-                        value={cp} 
+                        value={cp || ''} 
+                        placeholder="250"
                         onChange={(e) => setCP(parseInt(e.target.value) || 0)}
                         className="bg-transparent w-full text-sm font-bold focus:outline-none"
                       />
@@ -352,7 +353,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <span className="text-[10px] text-app-muted font-bold">%</span>
                           </div>
                           <div className="text-xs text-app-text w-24 text-right font-mono font-bold tracking-tight shrink-0">
-                            {Math.round((z.percentMin / 100) * (cp || 125))} – {z.percentMax >= 999 ? '∞' : Math.round((z.percentMax / 100) * (cp || 125))} <span className="text-[9px] uppercase">W</span>
+                            {Math.round((z.percentMin / 100) * (cp || 250))} – {z.percentMax >= 999 ? '∞' : Math.round((z.percentMax / 100) * (cp || 250))} <span className="text-[9px] uppercase">W</span>
                           </div>
                         </div>
                       </div>

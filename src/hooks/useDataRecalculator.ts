@@ -40,7 +40,7 @@ export const useDataRecalculator = (
     const safeDuration = Number.isFinite(durationCount) ? durationCount : 0;
     
     const xPower = calculateXPower(data);
-    const safeCP = (cp && cp > 0) ? cp : 125;
+    const safeCP = (cp && cp > 0) ? cp : 250;
     const relativeIntensity = xPower !== undefined ? calculateRI(xPower, safeCP) : undefined;
     const bikeScore = (xPower !== undefined && relativeIntensity !== undefined) ? calculateBikeScore(safeDuration, xPower, relativeIntensity, safeCP) : undefined;
 
