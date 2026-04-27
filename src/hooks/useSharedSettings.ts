@@ -14,7 +14,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
-  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights.'
+  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards.'
 };
 
 export function useSharedSettings() {

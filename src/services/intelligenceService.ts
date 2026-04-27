@@ -18,7 +18,7 @@ export function buildCoachContext(
   if (summary) {
     context += `\nLatest Activity Details (${summary.name}):\n`;
     context += `- Core: ${(summary.distance / 1000).toFixed(1)}km, ${Math.round(summary.duration / 60)}min duration\n`;
-    context += `- Intensity: NP ${Math.round(summary.xPower || 0)}W, RI ${summary.relativeIntensity?.toFixed(2)}, BikeScore ${Math.round(summary.bikeScore || 0)}\n`;
+    context += `- Intensity: xPower ${Math.round(summary.xPower || 0)}W, RI ${summary.relativeIntensity?.toFixed(2)}, BikeScore ${Math.round(summary.bikeScore || 0)}\n`;
     context += `- Work: ${summary.work?.toFixed(0)} KJ total energy expenditure\n`;
     
     context += `- Power: Avg ${Math.round(summary.avgPower || 0)}W, Max ${Math.round(summary.maxPower || 0)}W\n`;
