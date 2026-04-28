@@ -130,7 +130,13 @@ const FAQ_DATA: FAQCategory[] = [
     name: "AI Intelligence",
     items: [
       {
-        question: "What can the Velo Coach see?",
+        question: "How do I set up External API Keys (Maps/Weather)?",
+        beginnerAnswer: "You can paste your Google Maps and OpenWeatherMap keys directly into the Intelligence tab in Settings. This lets you see maps and weather stats for your rides.",
+        technicalAnswer: "VeloAnalytics implements a priority-based waterfall for secrets. It first looks in the Settings Panel (localStorage). If empty, it falls back to build-time environment variables (VITE_GOOGLE_MAPS_API_KEY, VITE_OPENWEATHERMAP_API_KEY). This allows for easy local development while maintaining flexible BYOK (Bring Your Own Key) capabilities.",
+        keywords: ["api", "keys", "google maps", "weather", "secrets", "environment"]
+      },
+      {
+        question: "What is the Velo Coach?",
         beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your 6-week fitness trends and can search your history.",
         technicalAnswer: "The coach context includes CP, W' Balance, and full ActivitySummary metrics (NP, RI, BikeScore, KJ, Aerobic Decoupling). It also receives sensor statistical aggregates (Avg/Max Power, HR, Cadence, Speed), PMC indices (LTS, STS, SB), and a searchable index of historical ride metadata.",
         keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent"]
@@ -187,6 +193,23 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "Yes. Your data stays on your device in your browser's private storage. We do not see, store, or sell your ride data.",
         technicalAnswer: "VeloAnalytics uses a local-first architecture. Data is persisted in your browser's IndexedDB storage (a secure, browser-based database). No Personally Identifiable Information (PII) or ride telemetry is transmitted to our servers beyond the initial application load.",
         keywords: ["privacy", "security", "database", "storage"]
+      }
+    ]
+  },
+  {
+    name: "Maintenance & Portability",
+    items: [
+      {
+        question: "How do I backup my data and settings?",
+        beginnerAnswer: "Go to the Maintenance tab in Settings and click 'Download Config'. This saves your history, metrics, and secret keys into a single file on your computer.",
+        technicalAnswer: "The 'Export Settings' function serializes your Entire Local Application State—including localStorage keys, historical activity summaries, and metric snapshots—into a veloanalytics_config_backup.json file. This ensures you never lose your data even if you clear your browser cache.",
+        keywords: ["backup", "export", "download", "save", "config", "json"]
+      },
+      {
+        question: "How do I restore a backup from another device?",
+        beginnerAnswer: "In the Maintenance tab, click 'Select Backup File' and choose your previously saved JSON file. The app will reload and all your rides and settings will be restored instantly.",
+        technicalAnswer: "The 'Import Settings' function parses the provided JSON blob, validates core fields, and atomic-writes the entire configuration back into localStorage. A window reload is triggered to ensure all React hooks and state Managers across the application context sync with the newly restored data.",
+        keywords: ["restore", "import", "upload", "recovery", "migration"]
       }
     ]
   }

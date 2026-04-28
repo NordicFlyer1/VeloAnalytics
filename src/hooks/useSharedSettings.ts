@@ -157,7 +157,10 @@ export function useSharedSettings() {
     }
   });
 
-  // Export / Import Settings
+  /**
+   * Export Settings
+   * Serializes the entire application state (settings + history + metrics) into a JSON file for backup.
+   */
   const exportSettings = () => {
     const config = {
       cp,
@@ -193,6 +196,11 @@ export function useSharedSettings() {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Import Settings
+   * Parses a JSON backup and restores the application state to localStorage.
+   * Triggers a window reload to ensure all application contexts are synchronized.
+   */
   const importSettings = (json: string) => {
     try {
       const config = JSON.parse(json);

@@ -778,7 +778,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  {/* External API Keys */}
+                  {/* External API Keys 
+                      Implementation Note: These keys follow a priority waterfall.
+                      1. Settings Panel (Local Storage)
+                      2. Build-time ENV variables (VITE_*)
+                  */}
                   <div className="space-y-6 pt-4 border-t border-app-border/30">
                     <div className="flex items-center gap-2 mb-2">
                       <Globe className="w-4 h-4 text-orange-500" />
@@ -830,6 +834,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-10"
               >
+                {/* 
+                   Maintenance & Portability Section
+                   Provides mechanisms for full application state backup and restoration.
+                */}
                 <div className="space-y-6">
                   <div className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>
