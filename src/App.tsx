@@ -522,6 +522,8 @@ export default function App() {
         history={history}
         aiSettings={settings.aiSettings}
         updateAiSettings={settings.updateAiSettings}
+        exportSettings={settings.exportSettings}
+        importSettings={settings.importSettings}
       />
 
       <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />

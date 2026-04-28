@@ -50,9 +50,13 @@ interface SettingsModalProps {
   // AI Props
   aiSettings: AISettings;
   updateAiSettings: (updates: Partial<AISettings>) => void;
+
+  // Maintenance Props
+  exportSettings: () => void;
+  importSettings: (json: string) => boolean;
 }
 
-type Tab = 'general' | 'zones' | 'equipment' | 'intelligence';
+type Tab = 'general' | 'zones' | 'equipment' | 'intelligence' | 'maintenance';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   showSettings,
@@ -88,9 +92,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setSmoothingWindow,
   history,
   aiSettings,
-  updateAiSettings
+  updateAiSettings,
+  exportSettings,
+  importSettings
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const getBikeMileage = (bike: Equipment) => {
     const historicalDist = history
@@ -126,7 +133,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Tab Navigation - Aligned to About Modal Capsule style */}
         <div className="px-6 sm:px-8 py-5 border-b border-app-border bg-app-card/30">
           <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start w-fit max-w-full overflow-x-auto no-scrollbar">
-            {(['general', 'zones', 'equipment', 'intelligence'] as const).map((tab) => (
+            {(['general', 'zones', 'equipment', 'intelligence', 'maintenance'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -768,6 +775,144 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="bg-transparent w-full text-sm font-medium focus:outline-none resize-y min-h-[300px] leading-relaxed custom-scrollbar"
                         placeholder="Define how the coach should speak..."
                       />
+                    </div>
+                  </div>
+
+                  {/* External API Keys */}
+                  <div className="space-y-6 pt-4 border-t border-app-border/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Globe className="w-4 h-4 text-orange-500" />
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-app-text">External Infrastructure</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Google Maps API Key</label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Globe className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="password" 
+                            placeholder="VITE_GOOGLE_MAPS_API_KEY fallback..."
+                            value={aiSettings.googleMapsApiKey || ''} 
+                            onChange={(e) => updateAiSettings({ googleMapsApiKey: e.target.value })}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">OpenWeatherMap API Key</label>
+                        <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                          <Plus className="w-4 h-4 text-orange-500" />
+                          <input 
+                            type="password" 
+                            placeholder="VITE_OPENWEATHERMAP_API_KEY fallback..."
+                            value={aiSettings.openWeatherMapApiKey || ''} 
+                            onChange={(e) => updateAiSettings({ openWeatherMapApiKey: e.target.value })}
+                            className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-app-muted font-medium ml-1">
+                      These keys prioritize the Settings Panel (Local Storage). If empty, the app falls back to build-time environment variables defined in your .env or the Vercel dashboard.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'maintenance' && (
+              <motion.div
+                key="maintenance"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-10"
+              >
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>
+                    <p className="text-[11px] text-app-muted leading-relaxed">
+                      Download your entire application environment (including history, metrics, and keys) into a single JSON file. You can restore this file to any VeloAnalytics instance.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Export Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                          <Check className="w-5 h-5 text-orange-500" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Full Backup</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Export everything</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={exportSettings}
+                        className="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500/20"
+                      >
+                        Download Config
+                      </button>
+                    </div>
+
+                    {/* Import Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                          <Activity className="w-5 h-5 text-indigo-500" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Restore State</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Import backup file</span>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept=".json"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const content = event.target?.result as string;
+                                const success = importSettings(content);
+                                if (success) setImportStatus('success');
+                                else setImportStatus('error');
+                              };
+                              reader.readAsText(file);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        />
+                        <button 
+                          className={cn(
+                            "w-full px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border",
+                            importStatus === 'success' ? "bg-green-500 text-black border-green-500" :
+                            importStatus === 'error' ? "bg-red-500 text-white border-red-500" :
+                            "bg-app-card border-app-border text-app-muted hover:text-app-text"
+                          )}
+                        >
+                          {importStatus === 'success' ? 'Settings Imported!' :
+                           importStatus === 'error' ? 'Invalid File Format' :
+                           'Select Backup File'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-3xl bg-orange-500/5 border border-orange-500/20">
+                  <div className="flex gap-4">
+                    <Info className="w-5 h-5 text-orange-500 shrink-0" />
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-orange-500">Security Implementation</h4>
+                      <p className="text-[11px] text-app-muted leading-relaxed">
+                        VeloAnalytics follows a "Private-First" architecture. All secrets are stored directly in your browser's <code className="bg-app-bg/50 px-1 rounded">localStorage</code> or served via your private build environment. We never proxy your data through third-party servers. Your keys remain yours.
+                      </p>
                     </div>
                   </div>
                 </div>

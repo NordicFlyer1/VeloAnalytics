@@ -94,8 +94,8 @@ export const PowerCurveAnalysis: React.FC<PowerCurveAnalysisProps> = ({
                 )}
               </div>
               
-              <div className="h-[400px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[400px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={400}>
                   <LineChart data={(() => {
                     const durations = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600];
                     const comparisons = getComparisonCurves();

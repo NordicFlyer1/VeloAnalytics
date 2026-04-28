@@ -89,8 +89,8 @@ export const MetricLane = React.memo(({
         )}
       </div>
 
-      <div style={{ height }} className="w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div style={{ height }} className="w-full min-w-0">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={height}>
           <AreaChart 
             data={data}
             syncId={syncId}

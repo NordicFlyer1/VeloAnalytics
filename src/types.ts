@@ -165,6 +165,8 @@ export interface AISettings {
   lmStudioUrl: string;
   lmStudioModel: string;
   systemPrompt: string;
+  googleMapsApiKey?: string;
+  openWeatherMapApiKey?: string;
 }
 
 export interface ChatMessage {

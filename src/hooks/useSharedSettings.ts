@@ -4,17 +4,19 @@ import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
-  geminiApiKey: '',
-  geminiModel: 'gemini-3-flash-preview',
-  openaiApiKey: '',
+  geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
+  geminiModel: 'gemini-1.5-pro', // Changed to pro as default for clinical precision
+  openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   openaiModel: 'gpt-4o',
-  anthropicApiKey: '',
-  anthropicModel: 'claude-3-5-sonnet-20240620',
+  anthropicApiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+  anthropicModel: import.meta.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20240620',
   ollamaUrl: 'http://127.0.0.1:11434',
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
-  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards.'
+  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards.',
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+  openWeatherMapApiKey: import.meta.env.VITE_OPENWEATHERMAP_API_KEY || ''
 };
 
 export function useSharedSettings() {
@@ -138,11 +140,92 @@ export function useSharedSettings() {
         parsed.ollamaModel = parsed.localModel;
         parsed.lmStudioModel = parsed.localModel;
       }
-      return { ...DEFAULT_AI_SETTINGS, ...parsed };
+
+      // Merge with defaults to ensure environment waterfall works if field is empty string
+      const merged = { ...DEFAULT_AI_SETTINGS, ...parsed };
+      
+      // Secondary fallback check: if saved value is an empty string but env has a value, use env
+      if (!parsed.geminiApiKey && DEFAULT_AI_SETTINGS.geminiApiKey) merged.geminiApiKey = DEFAULT_AI_SETTINGS.geminiApiKey;
+      if (!parsed.openaiApiKey && DEFAULT_AI_SETTINGS.openaiApiKey) merged.openaiApiKey = DEFAULT_AI_SETTINGS.openaiApiKey;
+      if (!parsed.anthropicApiKey && DEFAULT_AI_SETTINGS.anthropicApiKey) merged.anthropicApiKey = DEFAULT_AI_SETTINGS.anthropicApiKey;
+      if (!parsed.googleMapsApiKey && DEFAULT_AI_SETTINGS.googleMapsApiKey) merged.googleMapsApiKey = DEFAULT_AI_SETTINGS.googleMapsApiKey;
+      if (!parsed.openWeatherMapApiKey && DEFAULT_AI_SETTINGS.openWeatherMapApiKey) merged.openWeatherMapApiKey = DEFAULT_AI_SETTINGS.openWeatherMapApiKey;
+
+      return merged;
     } catch (e) {
       return DEFAULT_AI_SETTINGS;
     }
   });
+
+  // Export / Import Settings
+  const exportSettings = () => {
+    const config = {
+      cp,
+      autoUpdateCP,
+      manualCP,
+      manualWPrime,
+      userWeight,
+      weightUnit,
+      enableVirtualPower,
+      equipment,
+      activeBikeId,
+      maxHR,
+      theme,
+      smoothingWindow,
+      cpMode,
+      powerZoneDefinitions,
+      hrZoneDefinitions,
+      aiSettings,
+      // Also include history if the user wants a full backup
+      history: JSON.parse(localStorage.getItem('veloanalytics_history') || '[]'),
+      // Metrics snapshots for consistency
+      metrics: JSON.parse(localStorage.getItem('veloanalytics_metrics_snapshots') || '[]')
+    };
+
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `veloanalytics_config_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const importSettings = (json: string) => {
+    try {
+      const config = JSON.parse(json);
+      
+      if (config.cp !== undefined) setCP(config.cp);
+      if (config.autoUpdateCP !== undefined) setAutoUpdateCP(config.autoUpdateCP);
+      if (config.manualCP !== undefined) setManualCP(config.manualCP);
+      if (config.manualWPrime !== undefined) setManualWPrime(config.manualWPrime);
+      if (config.userWeight !== undefined) setUserWeight(config.userWeight);
+      if (config.weightUnit !== undefined) setWeightUnit(config.weightUnit);
+      if (config.enableVirtualPower !== undefined) setEnableVirtualPower(config.enableVirtualPower);
+      if (config.equipment !== undefined) setEquipment(config.equipment);
+      if (config.activeBikeId !== undefined) setActiveBikeId(config.activeBikeId);
+      if (config.maxHR !== undefined) setMaxHR(config.maxHR);
+      if (config.theme !== undefined) setTheme(config.theme);
+      if (config.smoothingWindow !== undefined) setSmoothingWindow(config.smoothingWindow);
+      if (config.cpMode !== undefined) setCpMode(config.cpMode);
+      if (config.powerZoneDefinitions !== undefined) setPowerZoneDefinitions(config.powerZoneDefinitions);
+      if (config.hrZoneDefinitions !== undefined) setHrZoneDefinitions(config.hrZoneDefinitions);
+      if (config.aiSettings !== undefined) setAiSettings(config.aiSettings);
+      
+      // Full data restoration
+      if (config.history) localStorage.setItem('veloanalytics_history', JSON.stringify(config.history));
+      if (config.metrics) localStorage.setItem('veloanalytics_metrics_snapshots', JSON.stringify(config.metrics));
+      
+      // Reload page to ensure all hooks/states across the app pick up the new localStorage contents
+      window.location.reload();
+      return true;
+    } catch (e) {
+      console.error('Import failed:', e);
+      return false;
+    }
+  };
 
   // Sync to localStorage
   useEffect(() => { localStorage.setItem('veloanalytics_cp', cp.toString()); }, [cp]);
@@ -226,6 +309,7 @@ export function useSharedSettings() {
     cpMode, setCpMode,
     powerZoneDefinitions, setPowerZoneDefinitions,
     hrZoneDefinitions, setHrZoneDefinitions,
-    aiSettings, updateAiSettings
+    aiSettings, updateAiSettings,
+    exportSettings, importSettings
   };
 }
