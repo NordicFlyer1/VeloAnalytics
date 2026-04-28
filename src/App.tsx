@@ -227,7 +227,7 @@ export default function App() {
 
   // Weather service integration
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
-    const apiKey = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
+    const apiKey = settings.aiSettings.openWeatherMapApiKey || import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
     if (!apiKey) return;
     setIsWeatherLoading(true);
     try {
@@ -244,7 +244,7 @@ export default function App() {
         });
       }
     } catch (e) { console.error(e); } finally { setIsWeatherLoading(false); }
-  }, []);
+  }, [settings.aiSettings.openWeatherMapApiKey]);
 
   React.useEffect(() => {
     if (data.length > 0) {
@@ -420,6 +420,7 @@ export default function App() {
                         mapType={mapType} setMapType={setMapType} theme={theme} data={data}
                         showTraffic={showTraffic} setShowTraffic={setShowTraffic} showBicycling={showBicycling} setShowBicycling={setShowBicycling}
                         showTransit={showTransit} setShowTransit={setShowTransit} googleMapRef={googleMapRef}
+                        aiSettings={settings.aiSettings}
                       />
                     </Suspense>
                     

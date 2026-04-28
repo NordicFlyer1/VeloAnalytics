@@ -69,7 +69,21 @@ The coach understands your naming conventions and historical data.
 
 ---
 
-## 5. Maintenance & Portability
+## 5. Environment & Platform Portability
+
+### Web (Vercel/Standard Browser)
+*   **State:** Persistent across sessions via `localStorage`. 
+*   **Behavior:** If you clear your browser cache/site data, your keys and history will be lost unless you have exported a backup.
+*   **Key Protection:** Use your hosting provider's (e.g., Vercel) dashboard to manage fallback environment variables.
+
+### Desktop (Tauri/Standalone)
+*   **State:** Persistent. Tauri manages the webview's storage consistently.
+*   **Build Fallbacks:** If building a redistribution binary, you can include a `.env` file at the root. Vite will bake these into the app as Priority 2 fallbacks.
+*   **User Priority:** Even in the desktop binary, a user can override the built-in keys via the Settings > Intelligence panel.
+
+---
+
+## 6. Maintenance & Portability
 
 ### Export / Import Settings
 *   **Functionality:** Found in Settings > Maintenance.

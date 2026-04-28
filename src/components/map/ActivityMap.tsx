@@ -14,7 +14,7 @@ import {
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
 import { cn } from '../../lib/utils';
-import { WeatherData, CyclingDataPoint } from '../../types';
+import { WeatherData, CyclingDataPoint, AISettings } from '../../types';
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { WeatherCard } from '../ui/WeatherCard';
 import { MapBounds } from './MapBounds';
@@ -53,6 +53,7 @@ interface ActivityMapProps {
   showTransit: boolean;
   setShowTransit: (show: boolean) => void;
   googleMapRef: React.RefObject<any>;
+  aiSettings: AISettings;
 }
 
 export const ActivityMap = React.memo(({
@@ -81,9 +82,12 @@ export const ActivityMap = React.memo(({
   setShowBicycling,
   showTransit,
   setShowTransit,
-  googleMapRef
+  googleMapRef,
+  aiSettings
 }: ActivityMapProps) => {
   const cardRef = React.useRef<HTMLDivElement>(null);
+
+  const googleMapsKey = aiSettings.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   const handleExportMap = async () => {
     if (!cardRef.current) return;
@@ -326,8 +330,8 @@ export const ActivityMap = React.memo(({
                     </MapContainer>
                   </div>
                 ) : (
-                  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-                    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                  googleMapsKey ? (
+                    <APIProvider apiKey={googleMapsKey}>
                       <div className="w-full h-full relative">
                         {activePoint !== null && (
                           <button 
@@ -501,7 +505,7 @@ export const ActivityMap = React.memo(({
                       <MapIcon className="w-12 h-12 text-app-muted mb-4" />
                       <h3 className="text-lg font-bold mb-2">Google Maps API Key Missing</h3>
                       <p className="text-sm text-app-muted max-w-md">
-                        Please provide a VITE_GOOGLE_MAPS_API_KEY in your environment variables to use Google Maps.
+                        Please provide a Google Maps API Key in **Settings &gt; Intelligence** or your environment variables to use Google Maps.
                         Falling back to OpenStreetMap.
                       </p>
                       <button 
