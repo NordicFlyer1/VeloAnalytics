@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkle, Brain, X, Send, History, Trash2, 
-  ArrowRight, Info, Activity, TrendingUp, Zap, AlertCircle
+  ArrowRight, Info, Activity, TrendingUp, Zap, AlertCircle,
+  Download
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn } from '../../lib/utils';
@@ -82,6 +83,22 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   const clearChat = () => {
     setMessages([]);
     setError(null);
+  };
+
+  const downloadResponse = (content: string, timestamp: Date) => {
+    const dateStr = timestamp.toISOString().split('T')[0];
+    const timeStr = timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
+    const filename = `velo-coach-insight-${dateStr}-${timeStr}.md`;
+    
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const quickActions = [
@@ -182,7 +199,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                     )}
                   >
                     <div className={cn(
-                      "p-4 rounded-2xl text-sm leading-relaxed prose prose-invert prose-orange max-w-none prose-sm",
+                      "p-4 rounded-2xl text-sm leading-relaxed prose prose-invert prose-orange max-w-none prose-sm group relative",
                       m.role === 'user' 
                         ? "bg-orange-500 text-black font-bold shadow-lg shadow-orange-500/10 rounded-tr-none" 
                         : "bg-app-card border border-app-border text-app-text rounded-tl-none"
@@ -190,7 +207,16 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                       {m.role === 'user' ? (
                         <p>{m.content.includes('Context Info:') ? m.content.split('\n\nUser Question: ')[1] : m.content}</p>
                       ) : (
-                        <Markdown>{m.content}</Markdown>
+                        <>
+                          <Markdown>{m.content}</Markdown>
+                          <button
+                            onClick={() => downloadResponse(m.content, m.timestamp)}
+                            className="absolute -bottom-3 -right-3 p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 z-10"
+                            title="Download as Markdown"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       )}
                     </div>
                     <span className="text-[9px] text-app-muted font-bold mt-1.5 uppercase tracking-widest">
