@@ -201,8 +201,8 @@ const FAQ_DATA: FAQCategory[] = [
     items: [
       {
         question: "How do I backup my data and settings?",
-        beginnerAnswer: "Go to the Maintenance tab in Settings and click 'Download Config'. This saves your history, metrics, and secret keys into a single file on your computer.",
-        technicalAnswer: "The 'Export Settings' function serializes your Entire Local Application State—including localStorage keys, historical activity summaries, and metric snapshots—into a veloanalytics_config_backup.json file. This ensures you never lose your data even if you clear your browser cache.",
+        beginnerAnswer: "Go to the Maintenance tab in Settings and click 'Download Config'. This saves your secret keys, fitness thresholds, and bike profiles into a simple file on your computer.",
+        technicalAnswer: "The 'Export Settings' function serializes your application configuration—including AI API keys, CP/W' thresholds, and Equipment profiles—into a veloanalytics_config_backup.json file. Note: Activity history (FIT file metadata) is not included in this export to keep the configuration portable and focused on secrets.",
         keywords: ["backup", "export", "download", "save", "config", "json"]
       },
       {

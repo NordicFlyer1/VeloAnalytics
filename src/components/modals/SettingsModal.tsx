@@ -842,7 +842,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>
                     <p className="text-[11px] text-app-muted leading-relaxed">
-                      Download your entire application environment (including history, metrics, and keys) into a single JSON file. You can restore this file to any VeloAnalytics instance.
+                      Export your application configuration, including secret API keys, physiological thresholds, and equipment profiles into a single JSON file. Note: Activity history is excluded to keep backups portable.
                     </p>
                   </div>
 
@@ -854,8 +854,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <Check className="w-5 h-5 text-orange-500" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Full Backup</span>
-                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Export everything</span>
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Config Bundle</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Settings & Secrets</span>
                         </div>
                       </div>
                       <button 

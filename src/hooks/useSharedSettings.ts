@@ -159,7 +159,7 @@ export function useSharedSettings() {
 
   /**
    * Export Settings
-   * Serializes the entire application state (settings + history + metrics) into a JSON file for backup.
+   * Serializes user settings and API keys into a JSON file for backup.
    */
   const exportSettings = () => {
     const config = {
@@ -178,11 +178,7 @@ export function useSharedSettings() {
       cpMode,
       powerZoneDefinitions,
       hrZoneDefinitions,
-      aiSettings,
-      // Also include history if the user wants a full backup
-      history: JSON.parse(localStorage.getItem('veloanalytics_history') || '[]'),
-      // Metrics snapshots for consistency
-      metrics: JSON.parse(localStorage.getItem('veloanalytics_metrics_snapshots') || '[]')
+      aiSettings
     };
 
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });

@@ -87,8 +87,8 @@ The coach understands your naming conventions and historical data.
 
 ### Export / Import Settings
 *   **Functionality:** Found in Settings > Maintenance.
-*   **Export:** Captures all `localStorage` state (Settings, Activity History index, Metrics Snapshots) into a single `.json` blob (`veloanalytics_config_backup.json`).
-*   **Import:** Overwrites the current `localStorage` with the backup content and reloads the application to sync state.
+*   **Export:** Captures all `localStorage` configuration (Settings, API Keys, Physiological Thresholds, Equipment Profiles) into a single `.json` blob (`veloanalytics_config_backup.json`). Activity history is excluded to keep backups portable and focused on configuration and secrets.
+*   **Import:** Overwrites the current `localStorage` settings with the backup content and reloads the application to sync state.
 *   **Use Case:** Migrating between browsers (e.g., Chrome to Tauri), recovering from cache clearing, or syncing between devices.
 
 ---
