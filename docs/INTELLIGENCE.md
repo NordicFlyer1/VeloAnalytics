@@ -57,6 +57,7 @@ When you send a message, the app bundle provides the AI with a dense physiologic
 *   **Local Processing**: All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
 *   **Direct-to-Vendor**: Your API keys are used to talk directly to Google/OpenAI/Anthropic from your browser.
 *   **Local-First Option**: If using a Local LLM provider (Ollama/LM Studio), the data never leaves your computer.
+*   **GitHub Safety**: The code is architected to never store hardcoded keys. User-provided keys stay in `localStorage`. Environment variables (like `.env`) are excluded from version control via `.gitignore`, ensuring no secrets are accidentally pushed to GitHub.
 
 ---
 
