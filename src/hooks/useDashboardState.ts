@@ -12,6 +12,8 @@ export const useDashboardState = () => {
   const [isPmcExpanded, setIsPmcExpanded] = useState(true);
   const [isTrainingLoadExpanded, setIsTrainingLoadExpanded] = useState(true);
   const [isVolumeTrendsExpanded, setIsVolumeTrendsExpanded] = useState(true);
+  const [isSleepExpanded, setIsSleepExpanded] = useState(true);
+  const [isRecoveryStatusExpanded, setIsRecoveryStatusExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
 
   const toggleAllPanels = (expand: boolean) => {
@@ -26,6 +28,8 @@ export const useDashboardState = () => {
     setIsPmcExpanded(expand);
     setIsTrainingLoadExpanded(expand);
     setIsVolumeTrendsExpanded(expand);
+    setIsSleepExpanded(expand);
+    setIsRecoveryStatusExpanded(expand);
     setIsHistoryExpanded(expand);
   };
 
@@ -41,6 +45,8 @@ export const useDashboardState = () => {
     !isPmcExpanded && 
     !isTrainingLoadExpanded && 
     !isVolumeTrendsExpanded && 
+    !isSleepExpanded && 
+    !isRecoveryStatusExpanded && 
     !isHistoryExpanded;
 
   return {
@@ -55,6 +61,8 @@ export const useDashboardState = () => {
     isPmcExpanded, setIsPmcExpanded,
     isTrainingLoadExpanded, setIsTrainingLoadExpanded,
     isVolumeTrendsExpanded, setIsVolumeTrendsExpanded,
+    isSleepExpanded, setIsSleepExpanded,
+    isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
     isHistoryExpanded, setIsHistoryExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed

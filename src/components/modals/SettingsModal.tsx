@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
-  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare, Sparkles 
+  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare, Sparkles,
+  Moon, RefreshCw
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { 
   RidingPosition, SurfaceType, Equipment, ZoneDefinition, 
-  HistoricalActivity, AISettings 
+  HistoricalActivity, AISettings, SleepMetric, HRVMetric
 } from '../../types';
+import { parseSleepCSV, parseHRVCSV } from '../../services/wellnessService';
 
 interface SettingsModalProps {
   showSettings: boolean;
@@ -46,6 +48,10 @@ interface SettingsModalProps {
   smoothingWindow: number;
   setSmoothingWindow: (n: number) => void;
   history: HistoricalActivity[];
+  sleepHistory: SleepMetric[];
+  setSleepHistory: (data: SleepMetric[] | ((prev: SleepMetric[]) => SleepMetric[])) => void;
+  hrvHistory: HRVMetric[];
+  setHrvHistory: (data: HRVMetric[] | ((prev: HRVMetric[]) => HRVMetric[])) => void;
 
   // AI Props
   aiSettings: AISettings;
@@ -91,6 +97,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   smoothingWindow,
   setSmoothingWindow,
   history,
+  sleepHistory,
+  setSleepHistory,
+  hrvHistory,
+  setHrvHistory,
   aiSettings,
   updateAiSettings,
   exportSettings,
@@ -838,6 +848,130 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    Maintenance & Portability Section
                    Provides mechanisms for full application state backup and restoration.
                 */}
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Wellness Data (Garmin Exports)</h3>
+                    <p className="text-[11px] text-app-muted leading-relaxed">
+                      Import your Sleep and HRV CSV exports from Garmin Connect. These files provide recovery context for your coaching analysis.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Sleep Import Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                            <Moon className="w-5 h-5 text-orange-500" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Sleep Data</span>
+                            <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{sleepHistory.length} Records Loaded</span>
+                          </div>
+                        </div>
+                        {sleepHistory.length > 0 && (
+                          <button 
+                            onClick={() => setSleepHistory([])}
+                            className="p-2 text-app-muted hover:text-red-400 transition-colors"
+                            title="Clear Sleep History"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept=".csv"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const content = event.target?.result as string;
+                                const data = parseSleepCSV(content);
+                                if (data.length > 0) {
+                                  // Merge with existing avoiding duplicates
+                                  setSleepHistory(prev => {
+                                    const merged = [...prev];
+                                    data.forEach(newItem => {
+                                      const idx = merged.findIndex(m => m.date === newItem.date);
+                                      if (idx >= 0) merged[idx] = newItem;
+                                      else merged.push(newItem);
+                                    });
+                                    return merged;
+                                  });
+                                }
+                              };
+                              reader.readAsText(file);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        />
+                        <button className="w-full bg-app-card border border-app-border hover:border-orange-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                          Upload Sleep CSV
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* HRV Import Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                            <RefreshCw className="w-5 h-5 text-purple-500" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">HRV Status</span>
+                            <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{hrvHistory.length} Records Loaded</span>
+                          </div>
+                        </div>
+                        {hrvHistory.length > 0 && (
+                          <button 
+                            onClick={() => setHrvHistory([])}
+                            className="p-2 text-app-muted hover:text-red-400 transition-colors"
+                            title="Clear HRV History"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept=".csv"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const content = event.target?.result as string;
+                                const data = parseHRVCSV(content);
+                                if (data.length > 0) {
+                                  setHrvHistory(prev => {
+                                    const merged = [...prev];
+                                    data.forEach(newItem => {
+                                      const idx = merged.findIndex(m => m.date === newItem.date);
+                                      if (idx >= 0) merged[idx] = newItem;
+                                      else merged.push(newItem);
+                                    });
+                                    return merged;
+                                  });
+                                }
+                              };
+                              reader.readAsText(file);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        />
+                        <button className="w-full bg-app-card border border-app-border hover:border-purple-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                          Upload HRV CSV
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
                   <div className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>

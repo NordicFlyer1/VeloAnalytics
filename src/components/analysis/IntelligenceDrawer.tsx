@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn } from '../../lib/utils';
-import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity } from '../../types';
+import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity, SleepMetric, HRVMetric } from '../../types';
 import { getCoachResponse, buildCoachContext } from '../../services/intelligenceService';
 
 interface IntelligenceDrawerProps {
@@ -17,6 +17,8 @@ interface IntelligenceDrawerProps {
   summary: ActivitySummary | null;
   currentPMC: PMCDataPoint | null;
   history: HistoricalActivity[];
+  sleepHistory: SleepMetric[];
+  hrvHistory: HRVMetric[];
   cp: number;
   wPrime: number;
 }
@@ -28,6 +30,8 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   summary,
   currentPMC,
   history,
+  sleepHistory,
+  hrvHistory,
   cp,
   wPrime
 }) => {
@@ -62,7 +66,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     setIsTyping(true);
 
     try {
-      const context = buildCoachContext(summary, currentPMC, history, cp, wPrime);
+      const context = buildCoachContext(summary, currentPMC, history, sleepHistory, hrvHistory, cp, wPrime);
       const response = await getCoachResponse(aiSettings, newMessages, context);
 
       const assistantMessage: ChatMessage = {

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutList, Loader2 } from 'lucide-react';
+import { LayoutList, Loader2, RefreshCw } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -18,6 +18,8 @@ import { LapBreakdown } from './components/analysis/LapBreakdown';
 import { PmcAnalysis } from './components/analysis/PmcAnalysis';
 import { VolumeTrendsAnalysis } from './components/analysis/VolumeTrendsAnalysis';
 import { TrainingLoadAnalysis } from './components/analysis/TrainingLoadAnalysis';
+import { SleepAnalysis } from './components/analysis/recovery/SleepAnalysis';
+import { RecoveryAnalysis } from './components/analysis/recovery/RecoveryAnalysis';
 import { AboutModal } from './components/modals/AboutModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { UploadView } from './components/views/UploadView';
@@ -113,6 +115,8 @@ export default function App() {
     isPmcExpanded, setIsPmcExpanded,
     isTrainingLoadExpanded, setIsTrainingLoadExpanded,
     isVolumeTrendsExpanded, setIsVolumeTrendsExpanded,
+    isSleepExpanded, setIsSleepExpanded,
+    isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed
   } = dashboardState;
@@ -470,6 +474,19 @@ export default function App() {
                       isExpanded={isVolumeTrendsExpanded} setIsExpanded={setIsVolumeTrendsExpanded}
                       range={volumeTrendsRange} setRange={setVolumeTrendsRange} data={volumeTrendsData}
                     />
+
+                    <SleepAnalysis 
+                      data={settings.sleepHistory}
+                      isExpanded={isSleepExpanded}
+                      setIsExpanded={setIsSleepExpanded}
+                    />
+
+                    <RecoveryAnalysis 
+                      hrvData={settings.hrvHistory}
+                      sleepData={settings.sleepHistory}
+                      isExpanded={isRecoveryStatusExpanded}
+                      setIsExpanded={setIsRecoveryStatusExpanded}
+                    />
                   </div>
                 </div>
               </div>
@@ -521,6 +538,10 @@ export default function App() {
         smoothingWindow={smoothingWindow}
         setSmoothingWindow={settings.setSmoothingWindow}
         history={history}
+        sleepHistory={settings.sleepHistory}
+        setSleepHistory={settings.setSleepHistory}
+        hrvHistory={settings.hrvHistory}
+        setHrvHistory={settings.setHrvHistory}
         aiSettings={settings.aiSettings}
         updateAiSettings={settings.updateAiSettings}
         exportSettings={settings.exportSettings}
@@ -536,6 +557,8 @@ export default function App() {
         summary={summary}
         currentPMC={currentPMC}
         history={history}
+        sleepHistory={settings.sleepHistory}
+        hrvHistory={settings.hrvHistory}
         cp={cp || 250}
         wPrime={manualWPrime || 15000}
       />

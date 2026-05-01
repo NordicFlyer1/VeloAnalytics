@@ -176,6 +176,29 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface SleepMetric {
+  date: string; // YYYY-MM-DD
+  score: number;
+  restingHeartRate: number;
+  bodyBattery: number;
+  pulseOx: number;
+  respiration: number;
+  hrvStatus: number;
+  quality: string;
+  duration: number; // minutes
+  sleepNeed: number; // minutes
+  bedtime: string;
+  wakeTime: string;
+}
+
+export interface HRVMetric {
+  date: string; // YYYY-MM-DD (canonical format)
+  overnightHRV: number;
+  baselineMin: number;
+  baselineMax: number;
+  sevenDayAvg: number;
+}
+
 export interface Equipment {
   id: string;
   name: string;

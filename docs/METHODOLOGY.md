@@ -44,6 +44,11 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 **Concept**: Measures the "drift" between Power and Heart Rate during a steady-state effort.
 **Calculation**: The ratio of Average Power to Average Heart Rate in the first half of a ride compared to the second half. A drift > 5% may indicate aerobic fatigue or lack of cardiovascular conditioning.
 
+### 7. Wellness & Physiological Recovery
+**Concept**: Integrating life-stress and sleep data into performance analysis.
+*   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture. VeloAnalytics uses this to weight the "readiness" insights from the Velo Coach.
+*   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**. Persistent values below the 25th percentile of the baseline indicate a state of high physiological strain.
+
 ---
 
 ## Attributions & Legal Notes

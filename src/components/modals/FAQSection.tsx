@@ -197,6 +197,29 @@ const FAQ_DATA: FAQCategory[] = [
     ]
   },
   {
+    name: "Wellness & Recovery",
+    items: [
+      {
+        question: "What is Sleep Quality?",
+        beginnerAnswer: "A single number (0-100) that summarizes how well you slept. It looks at your heart rate, how much you moved, and how long you were in different sleep stages.",
+        technicalAnswer: "The VeloAnalytics Sleep Quality metric integrates pulse oximetry, heart rate variability, respiration rate, and movement data to quantify sleep architecture (Light, Deep, REM) and overall quality.",
+        keywords: ["sleep", "quality", "recovery", "rest", "night"]
+      },
+      {
+        question: "What is Heart Rate Variability (HRV)?",
+        beginnerAnswer: "HRV measures the tiny differences in time between your heartbeats. When you're well-recovered, these differences are higher. When you're tired or stressed, your heart beats more like a metronome (lower HRV).",
+        technicalAnswer: "HRV measures the variation in the R-R interval (the time between heartbeats). High HRV indicates a healthy balance between the Sympathetic and Parasympathetic nervous systems. A significant drop in overnight HRV relative to your baseline is a strong indicator of systemic fatigue or impending overtraining.",
+        keywords: ["hrv", "recovery", "autonomic", "nervous system", "readiness"]
+      },
+      {
+        question: "How do I import my Garmin health data?",
+        beginnerAnswer: "Go to Garmin Connect on your computer, export your Sleep and HRV Status as CSV files, and then upload them in VeloAnalytics Settings > Maintenance.",
+        technicalAnswer: "VeloAnalytics supports standard Garmin CSV exports for Sleep and HRV. Data is parsed locally and correlated by date with your activities to provide physiological context to the Velo Coach.",
+        keywords: ["import", "garmin", "csv", "wellness", "health", "data"]
+      }
+    ]
+  },
+  {
     name: "Maintenance & Portability",
     items: [
       {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings } from '../types';
+import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings, SleepMetric, HRVMetric } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
@@ -125,6 +125,24 @@ export function useSharedSettings() {
     return DEFAULT_HR_ZONES;
   });
 
+  const [sleepHistory, setSleepHistory] = useState<SleepMetric[]>(() => {
+    const saved = localStorage.getItem('veloanalytics_sleep_history');
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [hrvHistory, setHrvHistory] = useState<HRVMetric[]>(() => {
+    const saved = localStorage.getItem('veloanalytics_hrv_history');
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem('veloanalytics_ai_settings');
     if (!saved) return DEFAULT_AI_SETTINGS;
@@ -178,7 +196,9 @@ export function useSharedSettings() {
       cpMode,
       powerZoneDefinitions,
       hrZoneDefinitions,
-      aiSettings
+      aiSettings,
+      sleepHistory,
+      hrvHistory
     };
 
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
@@ -217,6 +237,8 @@ export function useSharedSettings() {
       if (config.powerZoneDefinitions !== undefined) setPowerZoneDefinitions(config.powerZoneDefinitions);
       if (config.hrZoneDefinitions !== undefined) setHrZoneDefinitions(config.hrZoneDefinitions);
       if (config.aiSettings !== undefined) setAiSettings(config.aiSettings);
+      if (config.sleepHistory !== undefined) setSleepHistory(config.sleepHistory);
+      if (config.hrvHistory !== undefined) setHrvHistory(config.hrvHistory);
       
       // Full data restoration
       if (config.history) localStorage.setItem('veloanalytics_history', JSON.stringify(config.history));
@@ -256,6 +278,8 @@ export function useSharedSettings() {
   useEffect(() => { localStorage.setItem('veloanalytics_power_zones', JSON.stringify(powerZoneDefinitions)); }, [powerZoneDefinitions]);
   useEffect(() => { localStorage.setItem('veloanalytics_hr_zones', JSON.stringify(hrZoneDefinitions)); }, [hrZoneDefinitions]);
   useEffect(() => { localStorage.setItem('veloanalytics_ai_settings', JSON.stringify(aiSettings)); }, [aiSettings]);
+  useEffect(() => { localStorage.setItem('veloanalytics_sleep_history', JSON.stringify(sleepHistory)); }, [sleepHistory]);
+  useEffect(() => { localStorage.setItem('veloanalytics_hrv_history', JSON.stringify(hrvHistory)); }, [hrvHistory]);
   
   useEffect(() => {
     localStorage.setItem('veloanalytics_theme', theme);
@@ -313,6 +337,8 @@ export function useSharedSettings() {
     cpMode, setCpMode,
     powerZoneDefinitions, setPowerZoneDefinitions,
     hrZoneDefinitions, setHrZoneDefinitions,
+    sleepHistory, setSleepHistory,
+    hrvHistory, setHrvHistory,
     aiSettings, updateAiSettings,
     exportSettings, importSettings
   };
