@@ -105,9 +105,9 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({ data, isExpanded, 
                     </div>
                   </div>
                   <div className="bg-app-bg/30 border border-app-border/50 p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Body Battery</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Readiness Score</span>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-app-text text-cyan-500">{latest?.bodyBattery || '--'}</span>
+                      <span className="text-xl font-black text-app-text text-cyan-500">{latest?.readinessScore || '--'}</span>
                       <span className="text-[9px] font-bold text-app-muted uppercase">Points</span>
                     </div>
                   </div>

@@ -206,10 +206,16 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["sleep", "quality", "recovery", "rest", "night"]
       },
       {
+        question: "What is Readiness Score?",
+        beginnerAnswer: "Think of this as your body's daily 'energy tank' status. It tells you how prepared you are for a hard workout vs. when you should take it easy, based on your sleep and recovery patterns.",
+        technicalAnswer: "The Readiness Score is a composite metric derived from overnight recovery indicators. It models the body's autonomic state using heart rate variability (HRV), resting heart rate, and sleep architecture data to estimate current physiological work capacity.",
+        keywords: ["readiness", "score", "energy", "tank", "battery", "recovery", "prep"]
+      },
+      {
         question: "What is Heart Rate Variability (HRV)?",
         beginnerAnswer: "HRV measures the tiny differences in time between your heartbeats. When you're well-recovered, these differences are higher. When you're tired or stressed, your heart beats more like a metronome (lower HRV).",
         technicalAnswer: "HRV measures the variation in the R-R interval (the time between heartbeats). High HRV indicates a healthy balance between the Sympathetic and Parasympathetic nervous systems. A significant drop in overnight HRV relative to your baseline is a strong indicator of systemic fatigue or impending overtraining.",
-        keywords: ["hrv", "recovery", "autonomic", "nervous system", "readiness"]
+        keywords: ["hrv", "recovery", "autonomic", "nervous system", "readiness", "readiness score"]
       },
       {
         question: "How do I import my Garmin health data?",
@@ -268,7 +274,7 @@ export const FAQSection: React.FC = () => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted" />
         <input 
           type="text"
-          placeholder="Try 'climbing', 'stress', or 'battery'..."
+          placeholder="Try 'climbing', 'stress', or 'readiness'..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-app-bg/50 border border-app-border rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-orange-500/50 transition-all"

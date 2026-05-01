@@ -180,7 +180,7 @@ export interface SleepMetric {
   date: string; // YYYY-MM-DD
   score: number;
   restingHeartRate: number;
-  bodyBattery: number;
+  readinessScore: number;
   pulseOx: number;
   respiration: number;
   hrvStatus: number;

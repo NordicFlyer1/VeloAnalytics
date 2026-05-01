@@ -46,6 +46,7 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 
 ### 7. Wellness & Physiological Recovery
 **Concept**: Integrating life-stress and sleep data into performance analysis.
+*   **Readiness Score**: A summary metric of your daily physiological work capacity. It integrates sleep quality, HRV trends, and resting heart rate to estimate your overall "preparedness" for physical training.
 *   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture. VeloAnalytics uses this to weight the "readiness" insights from the Velo Coach.
 *   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**. Persistent values below the 25th percentile of the baseline indicate a state of high physiological strain.
 

@@ -110,6 +110,16 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             ))}
           </Bar>
           <Line 
+            yAxisId="left" 
+            type="monotone" 
+            dataKey="readinessScore" 
+            name="READINESS SCORE" 
+            stroke="var(--color-speed)" 
+            strokeWidth={2}
+            dot={{ r: 3, fill: 'var(--color-speed)', strokeWidth: 0 }}
+            activeDot={{ r: 5, strokeWidth: 0 }}
+          />
+          <Line 
             yAxisId="right" 
             type="monotone" 
             dataKey="restingHeartRate" 
