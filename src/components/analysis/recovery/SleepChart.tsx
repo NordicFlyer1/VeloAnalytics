@@ -30,7 +30,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
 
   return (
     <div className="h-[300px] w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
         <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="sleepScoreGradient" x1="0" y1="0" x2="0" y2="1">

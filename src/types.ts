@@ -165,6 +165,7 @@ export interface AISettings {
   lmStudioUrl: string;
   lmStudioModel: string;
   systemPrompt: string;
+  wellnessContextDays?: number;
   googleMapsApiKey?: string;
   openWeatherMapApiKey?: string;
 }

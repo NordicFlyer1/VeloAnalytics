@@ -31,7 +31,7 @@ export const HRVChart: React.FC<HRVChartProps> = ({ data }) => {
 
   return (
     <div className="h-[300px] w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
         <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid 
             strokeDasharray="3 3" 

@@ -14,6 +14,7 @@ interface IntelligenceDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   aiSettings: AISettings;
+  updateAiSettings: (updates: Partial<AISettings>) => void;
   summary: ActivitySummary | null;
   currentPMC: PMCDataPoint | null;
   history: HistoricalActivity[];
@@ -27,6 +28,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   isOpen,
   onClose,
   aiSettings,
+  updateAiSettings,
   summary,
   currentPMC,
   history,
@@ -66,7 +68,16 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     setIsTyping(true);
 
     try {
-      const context = buildCoachContext(summary, currentPMC, history, sleepHistory, hrvHistory, cp, wPrime);
+      const context = buildCoachContext(
+        summary, 
+        currentPMC, 
+        history, 
+        sleepHistory, 
+        hrvHistory, 
+        cp, 
+        wPrime,
+        aiSettings.wellnessContextDays || 7
+      );
       const response = await getCoachResponse(aiSettings, newMessages, context);
 
       const assistantMessage: ChatMessage = {
@@ -154,12 +165,33 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-app-bg/50 rounded-full text-app-muted transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex flex-col items-end mr-2">
+                  <span className="text-[9px] text-app-muted font-bold uppercase tracking-widest mb-1.5">Context Window</span>
+                  <div className="flex bg-app-bg/50 p-0.5 rounded-full border border-app-border">
+                    {[7, 14, 21, 28].map((days) => (
+                      <button
+                        key={days}
+                        onClick={() => updateAiSettings({ wellnessContextDays: days })}
+                        className={cn(
+                          "px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter transition-all",
+                          aiSettings.wellnessContextDays === days 
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                            : "text-app-muted hover:text-app-text"
+                        )}
+                      >
+                        {days}d
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="p-2 hover:bg-app-bg/50 rounded-full text-app-muted transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Chat Area */}

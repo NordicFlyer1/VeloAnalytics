@@ -15,6 +15,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards.',
+  wellnessContextDays: 7,
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
   openWeatherMapApiKey: import.meta.env.VITE_OPENWEATHERMAP_API_KEY || ''
 };

@@ -11,25 +11,27 @@ export function buildCoachContext(
   sleepHistory: SleepMetric[],
   hrvHistory: HRVMetric[],
   cp: number,
-  wPrime: number
+  wPrime: number,
+  wellnessContextDays: number = 7
 ): string {
   let context = `Athlete's Physiological Profile & Context:\n`;
   context += `- Critical Power (CP): ${cp}W\n`;
   context += `- W' Balance (Anaerobic Capacity): ${wPrime}J\n`;
+  context += `- Wellness Lookback Window: ${wellnessContextDays} days\n`;
 
   // Add Wellness/Recovery context
   if (sleepHistory.length > 0 || hrvHistory.length > 0) {
-    context += `\nWellness & Recovery (Recent Trends):\n`;
+    context += `\nWellness & Recovery (${wellnessContextDays}-Day Trends):\n`;
     
     if (sleepHistory.length > 0) {
-      const recentSleep = [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
+      const recentSleep = [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
       context += `- Recent Sleep Quality: ${recentSleep.map(s => `${s.score} (${s.quality})`).join(', ')}\n`;
       const avgDuration = recentSleep.reduce((acc, s) => acc + s.duration, 0) / recentSleep.length;
-      context += `- Avg Duration (7d): ${(avgDuration / 60).toFixed(1)} hours\n`;
+      context += `- Avg Duration (${wellnessContextDays}d): ${(avgDuration / 60).toFixed(1)} hours\n`;
     }
 
     if (hrvHistory.length > 0) {
-      const recentHRV = [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
+      const recentHRV = [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
       context += `- Recent Overnight HRV: ${recentHRV.map(h => `${h.overnightHRV}ms`).join(', ')}\n`;
       const latest = recentHRV[0];
       context += `- Latest Baseline Range: ${latest.baselineMin}-${latest.baselineMax}ms\n`;

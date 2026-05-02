@@ -554,6 +554,7 @@ export default function App() {
         isOpen={showIntelligence}
         onClose={() => setShowIntelligence(false)}
         aiSettings={settings.aiSettings}
+        updateAiSettings={settings.updateAiSettings}
         summary={summary}
         currentPMC={currentPMC}
         history={history}

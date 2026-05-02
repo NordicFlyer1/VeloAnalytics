@@ -788,6 +788,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Wellness Context Window */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-1 ml-1">
+                      <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Wellness Context Window</label>
+                      <p className="text-[9px] text-app-muted font-medium uppercase tracking-tight">Number of days of Sleep and HRV data sent to the Coach</p>
+                    </div>
+                    <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border w-fit">
+                      {[7, 14, 21, 28].map((days) => (
+                        <button
+                          key={days}
+                          onClick={() => updateAiSettings({ wellnessContextDays: days })}
+                          className={cn(
+                            "px-6 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all",
+                            (aiSettings.wellnessContextDays || 7) === days 
+                              ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                              : "text-app-muted hover:text-app-text"
+                          )}
+                        >
+                          {days} Days
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* External API Keys 
                       Implementation Note: These keys follow a priority waterfall.
                       1. Settings Panel (Local Storage)
