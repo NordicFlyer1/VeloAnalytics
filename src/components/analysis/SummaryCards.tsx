@@ -82,45 +82,34 @@ export const SummaryCards = React.memo(({
     // Sort descending by date to get most recent first
     const sorted = [...sleepData].sort((a, b) => b.date.localeCompare(a.date));
     
-    // Try to find sleep data for the activity date first
-    if (activityDate) {
-      const onDate = sorted.find(s => s.date === activityDate);
-      if (onDate) return onDate;
-    }
-    
-    // Fallback to absolute latest record
+    // Always return absolute latest record for trend-based summary
     return sorted[0];
-  }, [sleepData, activityDate]);
+  }, [sleepData]);
 
   const latestHRV = React.useMemo(() => {
-    if (hrvData.length === 0) return null;
-    const sorted = [...hrvData].sort((a, b) => b.date.localeCompare(a.date));
+    if (!latestSleep || hrvData.length === 0) return null;
     
-    if (activityDate) {
-      const onDate = sorted.find(h => h.date === activityDate);
-      if (onDate) return onDate;
-    }
-    
-    return sorted[0];
-  }, [hrvData, activityDate]);
+    // Align with the latest sleep date to match trend chart calculation logic
+    return hrvData.find(h => h.date === latestSleep.date) || null;
+  }, [hrvData, latestSleep]);
 
   const latestPMC = React.useMemo(() => {
-    // If we have history for the activity date, prioritize that specific day's state
-    if (activityDate && pmcData.length > 0) {
-      const onDate = pmcData.find(p => p.date === activityDate);
-      if (onDate) return onDate;
-    }
+    if (!latestSleep) return currentPMC;
+    
+    // Align with the latest sleep date
+    const onDate = pmcData.find(p => p.date === latestSleep.date);
+    if (onDate) return onDate;
 
     if (pmcData.length === 0) return currentPMC;
     
-    // Filter out predictive points to find the latest "real" state
+    // Filter out predictive points to find the latest "real" state in history as fallback
     const realPoints = pmcData.filter(p => !p.isPredictive);
     if (realPoints.length > 0) {
       return [...realPoints].sort((a, b) => b.date.localeCompare(a.date))[0];
     }
     
     return currentPMC;
-  }, [pmcData, currentPMC, activityDate]);
+  }, [pmcData, currentPMC, latestSleep]);
 
   const veloReadiness = React.useMemo(() => {
     if (!aiSettings?.useExperimentalReadiness || !latestSleep || !latestPMC) return null;

@@ -159,134 +159,125 @@ function parseGarminDate(dateStr: string, defaultYear: number): string {
 }
 
 /**
- * Calculates a "Vibe Coded" experimental readiness score.
- * Uses a weighted balance modified by Garmin-style multiplicative inhibitors and deficit scalars.
+ * Calculates a "Velo-Coded" experimental readiness score.
+ * Formula and methodology based on the "VeloAnalytics Design System" guidelines.
  */
 export function calculateVeloReadiness(
   sleep: SleepMetric | null,
   hrv: HRVMetric | null,
-  sb: number, // Form/TSB
-  sts: number, // Fatigue/ATL
+  sb: number, // Form (LTS - STS)
+  sts: number, // Fatigue (STS / ATL)
   dailyMaxBikeScore: number = 0
 ): { score: number; contributors: Record<string, number>; penalties: string[] } {
-  // 1. Inputs Normalization
-  const sleepBasis = sleep?.score || 0;
-  const durationHours = (sleep?.duration || 0) / 60;
+  // 1. Component Pillar Normalization (0-100)
   
-  // HRV Component: Normalize overnight HRV to a 0-100 scale relative to baseline
-  let hrvComponent = 50; 
+  // Sleep Pillar: Direct from Garmin Sleep Score
+  const sleepPillar = sleep?.score || 0;
+  const durationHours = (sleep?.duration || 0) / 60;
+
+  // Recovery Pillar: Estimated from Fatigue (STS)
+  // Higher Fatigue = Lower Recovery. sts of 80 is considered near-empty.
+  const recoveryPillar = Math.max(0, Math.min(100, 100 - (sts * 1.25)));
+
+  // HRV Pillar: Normalized to baseline status
+  let hrvPillar = 50; 
   if (hrv && hrv.baselineMax > hrv.baselineMin) {
     const range = hrv.baselineMax - hrv.baselineMin;
     const offset = hrv.overnightHRV - hrv.baselineMin;
-    // We want the score to be 100 if at the top of baseline, 70 in middle, 40 at bottom.
-    // Above baseline is a bonus, below is a critical penalty.
-    hrvComponent = Math.max(0, (offset / range) * 50 + 40); 
-    if (hrv.overnightHRV > hrv.baselineMax) hrvComponent = Math.min(100, 90 + (hrv.overnightHRV - hrv.baselineMax) * 0.5);
+    if (offset < 0) {
+      // Below baseline: 0-40 range. Primary suppression danger zone.
+      hrvPillar = Math.max(0, 40 + (offset / Math.max(1, hrv.baselineMin)) * 40);
+    } else {
+      // Within or above baseline: 40-100 range.
+      hrvPillar = Math.min(100, 40 + (offset / range) * 60);
+    }
   }
 
-  // Load Component: ACWR Interpretation (Higher Load = Lower Readiness)
-  // ACWR = Acute / Chronic. 
-  // sts = Acute (7d), lts = Chronic (42d). sb = lts - sts => lts = sb + sts.
+  // Load Pillar: ACWR Interpretation and Spike Suppression
   const lts = sb + sts;
   const acwr = lts > 0 ? (sts / lts) : 1.0;
   
-  let loadComponent = 100;
-  if (acwr > 1.5) loadComponent = 10;
-  else if (acwr > 1.3) loadComponent = 30;
-  else if (acwr > 1.1) loadComponent = 60;
-  else if (acwr < 0.8) loadComponent = 80; // Under-training is "Ready" but maybe not "Peaked"
-  else loadComponent = 100; // Optimal (0.8 - 1.1)
+  let loadPillar = 100;
+  if (acwr > 1.5) loadPillar = 10;
+  else if (acwr > 1.3) loadPillar = 40;
+  else if (acwr > 1.1) loadPillar = 70;
+  else if (acwr < 0.8) loadPillar = 85; // Under-training
+  else loadPillar = 100; // Optimal
 
-  /**
-   * RECOVERY ADJUSTMENT: Relative Intensity Spike Suppression
-   * Rule: If a single session's BikeScore exceeds 5.0x your current CTL (lts),
-   * the Load Pillar is force-dropped to "Red" (0).
-   * Reason: For a recovering athlete, a spike represents acute inflammatory risk
-   * regardless of other recovery markers.
-   */
-  const spikeLimit = lts > 0 ? lts * 5.0 : 0;
-  const isSpikeTriggered = spikeLimit > 0 && dailyMaxBikeScore > spikeLimit;
+  // Relative Intensity Spike Suppression (Recovery Guard)
+  // If a single session exceeds 5.0x current CTL, Load Pillar is force-dropped to 0 (Red)
+  const spikeLimit = lts * 5.0;
+  const isSpikeTriggered = lts > 0 && dailyMaxBikeScore > spikeLimit;
   if (isSpikeTriggered) {
-    loadComponent = 0;
+    loadPillar = 0;
   }
 
-  // Recovery Component: Estimate from Fatigue (STS)
-  // Higher fatigue = lower recovery score.
-  const recoveryComponent = Math.max(0, Math.min(100, 100 - (sts * 1.1)));
-
-  // 2. Base Calculation (Weighted Average)
-  let baseScore = (sleepBasis * 0.35) + (recoveryComponent * 0.25) + (hrvComponent * 0.20) + (loadComponent * 0.20);
+  // 2. Weighted Base Calculation
+  // (Sleep * 0.35) + (Recovery * 0.25) + (HRV * 0.20) + (Load * 0.20)
+  const baseScore = (sleepPillar * 0.35) + (recoveryPillar * 0.25) + (hrvPillar * 0.20) + (loadPillar * 0.20);
+  
+  // 3. Pillar Suppression (Veto Logic - Non-Linear Mixed Model)
+  // Final = (Base * 0.30) + (Base * 0.70 * (WorstPillar / 100))
+  const pillars = [
+    { name: 'Sleep', val: sleepPillar },
+    { name: 'Recovery', val: recoveryPillar },
+    { name: 'HRV', val: hrvPillar },
+    { name: 'Load', val: loadPillar }
+  ];
+  const worstPillar = pillars.reduce((prev, curr) => prev.val < curr.val ? prev : curr);
+  const suppressionRatio = worstPillar.val / 100;
+  
+  let finalScore = (baseScore * 0.30) + (baseScore * 0.70 * suppressionRatio);
   
   const penalties: string[] = [];
   
-  // 3. Garmin-Style "Pillar Suppression" Logic
-  // The lowest pillar acts as a drag on the entire system.
-  // Even if sleep is 100, if HRV is 30, the score is suppressed by that 0.3x ratio.
-  const corePillars = [
-    { name: 'Sleep', score: sleepBasis },
-    { name: 'Recovery', score: recoveryComponent },
-    { name: 'HRV', score: hrvComponent },
-    { name: 'Load', score: loadComponent } // Load is now a core pillar for suppression
-  ];
+  // 4. Multiplicative Inhibitors & Suppressors
   
-  const worstPillar = corePillars.reduce((prev, curr) => prev.score < curr.score ? prev : curr);
-  const suppressionScalar = worstPillar.score / 100;
-  
-  // Apply suppression - this is "veto logic" where the worst pillar drags the score down.
-  // We use a 30/70 mixed suppression model to prevent complete score bottom-out.
-  let score = (baseScore * 0.30) + (baseScore * 0.70 * suppressionScalar);
-
-  if (isSpikeTriggered) {
-    penalties.push("Critical Load Spike (>5x CTL)");
-  }
-  
-  if (suppressionScalar < 0.6 && !isSpikeTriggered) {
-    penalties.push(`Suppressed by ${worstPillar.name} deficit (${worstPillar.score})`);
-  }
-  
-  // 4. Conditional Multipliers & Penalties
-  
-  // A. HRV Status "Low" Multiplier (Already handled by suppression if it's the lowest pillar)
-  if (hrv && hrv.overnightHRV < hrv.baselineMin) {
-    penalties.push("Low HRV Status (Suppressed)");
-  }
-
-  // B. Sleep Debt Penalty
+  // Sleep Debt Deduction (Flat -15 if < 6 hours)
   if (durationHours > 0 && durationHours < 6) {
-    score -= 15;
+    finalScore -= 15;
     penalties.push("Sleep Debt (<6h)");
   }
 
-  // C. Recovery Time Hard Cap
-  const estimatedRecoveryTime = sts > 45 ? (sts - 35) * 2 : 0;
+  // Recovery Hard Caps
+  // Estimate recovery time from Fatigue (STS). Fatigue > 45 correlates with > 24-48h recovery.
+  const estimatedRecoveryTime = sts > 35 ? (sts - 35) * 2 : 0;
+  
   if (estimatedRecoveryTime > 48) {
-    if (score > 30) {
-      score = 25 + (score * 0.1); // Harsh compression toward floor
-      penalties.push("Critical Recovery Needed (48h+ Cap)");
+    // Critical: Compressed towards floor of 25
+    if (finalScore > 25) {
+      finalScore = 25 + (finalScore - 25) * 0.15;
+      penalties.push("Critical Recovery (48h+ Cap)");
     }
   } else if (estimatedRecoveryTime > 24) {
-    if (score > 55) {
-      score = 55;
-      penalties.push("Moderate Recovery needed (24h+ Cap)");
+    // Moderate: Capped at 55
+    if (finalScore > 55) {
+      finalScore = 55;
+      penalties.push("Moderate Recovery (24h+ Cap)");
     }
   }
 
-  // D. ACWR "Overreaching" Penalty
-  if (acwr > 1.4 && score > 40) {
-    score = 40;
-    penalties.push("High ACWR Risk (Overreaching)");
+  // ACWR Interpretation (Capped at 40 if ACWR > 1.4)
+  if (acwr > 1.4 && finalScore > 40) {
+    finalScore = 40;
+    penalties.push("Injury Risk (ACWR > 1.4 Cap)");
   }
 
-  // Final Clamp
-  score = Math.max(0, Math.min(100, Math.round(score)));
+  // Spike Warning for penalties array
+  if (isSpikeTriggered) {
+    penalties.push("Recovery Guard (Intensity Spike)");
+  }
+  
+  // Final Boundary Clamping
+  finalScore = Math.max(0, Math.min(100, Math.round(finalScore)));
 
   return {
-    score,
+    score: finalScore,
     contributors: {
-      sleep: Math.round(sleepBasis),
-      recovery: Math.round(recoveryComponent),
-      hrv: Math.round(hrvComponent),
-      load: Math.round(loadComponent)
+      sleep: Math.round(sleepPillar),
+      recovery: Math.round(recoveryPillar),
+      hrv: Math.round(hrvPillar),
+      load: Math.round(loadPillar)
     },
     penalties
   };
