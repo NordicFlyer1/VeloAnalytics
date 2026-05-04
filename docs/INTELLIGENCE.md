@@ -105,5 +105,8 @@ A: If using Cloud Providers (OpenAI/Google), they may use data according to thei
 **Q: Why does the coach sometimes get math wrong?**
 A: LLMs can struggle with arithmetic. VeloAnalytics handles this by **pre-calculating** the hard numbers (xPower, BikeScore, etc.) and passing the results to the AI for interpretation.
 
+**Q: What is "Velo Experimental Readiness"?**
+A: It is an opt-in algorithm that calculates physiological readiness using a custom weighting (Sleep, HRV, Recovery, Load) and penalty logic based on user-provided hypotheses. See the Methodology document for the full formula.
+
 **Q: How do I update my coach's rules?**
 A: Update the **System Prompt** in Settings with your preferred coaching methodology or persona.

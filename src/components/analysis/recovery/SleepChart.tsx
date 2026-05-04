@@ -11,26 +11,59 @@ import {
   Legend,
   Cell
 } from 'recharts';
-import { SleepMetric } from '../../../types';
+import { SleepMetric, HRVMetric, PMCDataPoint, AISettings } from '../../../types';
 import { format } from 'date-fns';
+import { calculateVeloReadiness } from '../../../services/wellnessService';
 
 interface SleepChartProps {
   data: SleepMetric[];
+  hrvHistory: HRVMetric[];
+  pmcData: PMCDataPoint[];
+  aiSettings: AISettings;
 }
 
-export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
+export const SleepChart: React.FC<SleepChartProps> = ({ 
+  data, 
+  hrvHistory, 
+  pmcData, 
+  aiSettings 
+}) => {
   // Sort by date ascending for the chart
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
 
-  const chartData = sortedData.map(d => ({
-    ...d,
-    displayDate: format(new Date(d.date), 'MMM dd'),
-    hours: (d.duration / 60).toFixed(1)
-  }));
+  const chartData = sortedData.map(d => {
+    const [y, m, d_part] = d.date.split('-').map(Number);
+    
+    // Find matching HRV and PMC data for this date
+    const hrvOnDate = hrvHistory.find(h => h.date === d.date);
+    const pmcOnDate = pmcData.find(p => p.date === d.date);
+    
+    let displayReadiness = d.readinessScore;
+    let veloCalc = null;
+    if (aiSettings.useExperimentalReadiness) {
+      // Use defaults (0 load) if PMC data is not available for this date yet
+      veloCalc = calculateVeloReadiness(
+        d, 
+        hrvOnDate || null, 
+        pmcOnDate?.sb || 0, 
+        pmcOnDate?.sts || 0,
+        pmcOnDate?.bikeScore || 0
+      );
+      displayReadiness = veloCalc.score;
+    }
+
+    return {
+      ...d,
+      displayDate: format(new Date(y, m - 1, d_part), 'MMM dd'),
+      hours: (d.duration / 60).toFixed(1),
+      calculatedReadiness: displayReadiness,
+      veloCalculation: veloCalc
+    };
+  });
 
   return (
-    <div className="h-[300px] w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
+    <div className="h-[300px] w-full min-h-[300px] mt-4">
+      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
         <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="sleepScoreGradient" x1="0" y1="0" x2="0" y2="1">
@@ -72,17 +105,47 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             tick={{ fill: 'var(--app-muted)' }}
           />
           <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'var(--app-tooltip-bg)', 
-              backdropFilter: 'blur(8px)', 
-              WebkitBackdropFilter: 'blur(8px)', 
-              border: '1px solid var(--app-border)', 
-              borderRadius: '12px', 
-              fontSize: '12px', 
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="bg-app-tooltip-bg backdrop-blur-md border border-app-border rounded-xl p-3 shadow-xl overflow-hidden min-w-[160px]">
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-app-text mb-2 border-b border-app-border pb-1">
+                      {label}
+                    </div>
+                    <div className="space-y-1.5">
+                      {payload.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center gap-4">
+                          <span className="text-[10px] text-app-muted uppercase font-bold tracking-tight">
+                            {item.name}
+                          </span>
+                          <span className="font-bold text-xs text-app-text">
+                            {item.value}
+                          </span>
+                        </div>
+                      ))}
+                      
+                      {/* Velo-Readiness Contributors (if active and available) */}
+                      {aiSettings.useExperimentalReadiness && payload.find(p => p.dataKey === 'calculatedReadiness') && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-app-border">
+                          <div className="text-[8px] uppercase tracking-widest font-bold text-app-text mb-1">
+                            Velo-Readiness Components
+                          </div>
+                          {Object.entries((payload[0].payload.veloCalculation?.contributors || {})).map(([key, value]) => (
+                            <div key={key} className="flex justify-between items-center gap-4">
+                              <span className="text-[9px] text-app-muted uppercase font-medium">{key}</span>
+                              <span className="font-bold text-[9px] text-app-text">
+                                {value as number}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
             }}
-            itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-            labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px' }}
           />
           <Legend 
             verticalAlign="top" 
@@ -112,11 +175,11 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
           <Line 
             yAxisId="left" 
             type="monotone" 
-            dataKey="readinessScore" 
-            name="READINESS SCORE" 
-            stroke="var(--color-speed)" 
-            strokeWidth={2}
-            dot={{ r: 3, fill: 'var(--color-speed)', strokeWidth: 0 }}
+            dataKey="calculatedReadiness" 
+            name={aiSettings.useExperimentalReadiness ? "VELO-READINESS SCORE" : "READINESS SCORE"} 
+            stroke={aiSettings.useExperimentalReadiness ? "#facc15" : "#06b6d4"} 
+            strokeWidth={3}
+            dot={{ r: 3, fill: aiSettings.useExperimentalReadiness ? "#facc15" : "#06b6d4", strokeWidth: 0 }}
             activeDot={{ r: 5, strokeWidth: 0 }}
           />
           <Line 

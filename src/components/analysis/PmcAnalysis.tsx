@@ -11,7 +11,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  ReferenceArea
 } from 'recharts';
 import { format } from 'date-fns';
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
@@ -105,15 +106,18 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                 </div>
               </div>
 
-              <div className="h-[400px] w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={400}>
+              <div className="h-[400px] w-full min-w-0 min-h-[400px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={400}>
                   <ComposedChart data={pmcData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
                     <XAxis 
                       dataKey="date" 
                       stroke="var(--app-muted)" 
                       fontSize={10} 
-                      tickFormatter={(str) => format(new Date(str), 'MMM d')}
+                      tickFormatter={(str) => {
+                        const [y, m, d] = str.split('-').map(Number);
+                        return format(new Date(y, m - 1, d), 'MMM d');
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -151,7 +155,12 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                       }}
                       labelStyle={{ color: 'var(--app-text)', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
-                      labelFormatter={(label) => format(new Date(label), 'EEEE, MMMM d, yyyy')}
+                      labelFormatter={(label, payload) => {
+                        const isPredictive = payload?.[0]?.payload?.isPredictive;
+                        const [y, m, d] = label.split('-').map(Number);
+                        const date = format(new Date(y, m - 1, d), 'EEEE, MMMM d, yyyy');
+                        return isPredictive ? `${date} (Projected)` : date;
+                      }}
                       formatter={(value: any, name: string) => {
                         if (name === 'BIKESCORE') return [Math.round(value), name];
                         return [Number(value).toFixed(1), name];
@@ -170,6 +179,29 @@ export const PmcAnalysis: React.FC<PmcAnalysisProps> = ({
                         color: 'var(--app-muted)' 
                       }}
                     />
+                    {pmcData.some(d => d.isPredictive) && (() => {
+                      const firstPredictive = pmcData.find(d => d.isPredictive);
+                      if (firstPredictive) {
+                        return (
+                          <ReferenceArea 
+                            yAxisId="fitness"
+                            x1={firstPredictive.date} 
+                            fill="rgba(249, 115, 22, 0.05)" 
+                            stroke="none"
+                            label={{ 
+                              value: 'PREDICTED DECAY', 
+                              position: 'insideTopRight', 
+                              fill: 'var(--app-muted)', 
+                              fontSize: 9, 
+                              fontWeight: 'bold',
+                              letterSpacing: '0.1em',
+                              offset: 10
+                            }}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
                     <Bar 
                       yAxisId={pmcFocus === 'bikeScore' ? "bikeScore" : "fitness"} 
                       dataKey="bikeScore" 

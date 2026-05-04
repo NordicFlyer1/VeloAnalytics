@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Moon, Image, FileText, Clock } from 'lucide-react';
-import { SleepMetric } from '../../../types';
+import { SleepMetric, HRVMetric, PMCDataPoint, AISettings } from '../../../types';
 import { SectionHeader, ExportAction } from '../../ui/SectionHeader';
 import { SleepChart } from './SleepChart';
-import { exportSleepToCSV } from '../../../services/wellnessService';
+import { exportSleepToCSV, calculateVeloReadiness } from '../../../services/wellnessService';
 import { exportComponentAsImage } from '../../../lib/chartExport';
 import { cn } from '../../../lib/utils';
 
@@ -12,10 +12,35 @@ interface SleepAnalysisProps {
   data: SleepMetric[];
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
+  hrvHistory: HRVMetric[];
+  pmcData: PMCDataPoint[];
+  aiSettings: AISettings;
 }
 
-export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({ data, isExpanded, setIsExpanded }) => {
+export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({ 
+  data, 
+  isExpanded, 
+  setIsExpanded,
+  hrvHistory,
+  pmcData,
+  aiSettings
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const latest = data.length > 0 ? [...data].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+
+  const veloReadiness = React.useMemo(() => {
+    if (!aiSettings.useExperimentalReadiness || !latest) return null;
+    const hrvOnDate = hrvHistory.find(h => h.date === latest.date);
+    const pmcOnDate = pmcData.find(p => p.date === latest.date);
+    return calculateVeloReadiness(
+      latest, 
+      hrvOnDate || null, 
+      pmcOnDate?.sb || 0, 
+      pmcOnDate?.sts || 0,
+      pmcOnDate?.bikeScore || 0
+    );
+  }, [aiSettings.useExperimentalReadiness, latest, hrvHistory, pmcData]);
 
   const exportActions: ExportAction[] = [
     {
@@ -34,8 +59,6 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({ data, isExpanded, 
       onClick: () => exportSleepToCSV(data)
     }
   ];
-
-  const latest = data.length > 0 ? [...data].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -105,16 +128,31 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({ data, isExpanded, 
                     </div>
                   </div>
                   <div className="bg-app-bg/30 border border-app-border/50 p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Readiness Score</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">
+                      {aiSettings.useExperimentalReadiness ? 'Velo-Readiness Score' : 'Readiness Score'}
+                    </span>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-app-text text-cyan-500">{latest?.readinessScore || '--'}</span>
+                      <span className={cn(
+                        "text-xl font-black text-app-text",
+                        aiSettings.useExperimentalReadiness ? "text-yellow-400" : "text-cyan-500"
+                      )}>
+                        {aiSettings.useExperimentalReadiness 
+                          ? (veloReadiness?.score || '--')
+                          : (latest?.readinessScore || '--')
+                        }
+                      </span>
                       <span className="text-[9px] font-bold text-app-muted uppercase">Points</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="border border-app-border/50 rounded-2xl overflow-hidden bg-app-bg/10 p-4">
-                  <SleepChart data={data} />
+                  <SleepChart 
+                    data={data} 
+                    hrvHistory={hrvHistory}
+                    pmcData={pmcData}
+                    aiSettings={aiSettings}
+                  />
                 </div>
               </div>
             )}

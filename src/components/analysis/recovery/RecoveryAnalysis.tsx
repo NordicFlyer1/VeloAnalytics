@@ -15,7 +15,12 @@ interface RecoveryAnalysisProps {
   setIsExpanded: (expanded: boolean) => void;
 }
 
-export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({ hrvData, sleepData, isExpanded, setIsExpanded }) => {
+export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({ 
+  hrvData, 
+  sleepData, 
+  isExpanded, 
+  setIsExpanded
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const exportActions: ExportAction[] = [
@@ -77,7 +82,7 @@ export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({ hrvData, sle
             ) : (
               <div className="space-y-8">
                 {/* Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4">
                   <div className="bg-app-bg/30 border border-app-border/50 p-4 rounded-2xl space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Overnight HRV</span>
                     <div className="flex items-baseline gap-2">

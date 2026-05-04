@@ -4,12 +4,13 @@ import { Image, LayoutTemplate, LayoutList } from 'lucide-react';
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { SummaryCards } from './SummaryCards';
 import { exportComponentAsImage } from '../../lib/chartExport';
-import { ActivitySummary, PMCDataPoint, HistoricalActivity, Equipment } from '../../types';
+import { ActivitySummary, PMCDataPoint, HistoricalActivity, Equipment, SleepMetric, HRVMetric, AISettings } from '../../types';
 
 interface ActivityOverviewProps {
   summary: ActivitySummary;
   data: any[];
   currentPMC: PMCDataPoint | null;
+  pmcData?: PMCDataPoint[];
   history: HistoricalActivity[];
   userWeight?: number | null;
   weightUnit?: 'kg' | 'lbs';
@@ -18,12 +19,16 @@ interface ActivityOverviewProps {
   updateActivityBike: (id: string, bikeId: string) => void;
   isExpanded: boolean;
   onToggle: () => void;
+  sleepData?: SleepMetric[];
+  hrvData?: HRVMetric[];
+  aiSettings?: AISettings;
 }
 
 export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
   summary,
   data,
   currentPMC,
+  pmcData = [],
   history,
   userWeight,
   weightUnit,
@@ -31,7 +36,10 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
   currentActivityId,
   updateActivityBike,
   isExpanded,
-  onToggle
+  onToggle,
+  sleepData = [],
+  hrvData = [],
+  aiSettings
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -88,12 +96,16 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
                 summary={summary} 
                 data={data} 
                 currentPMC={currentPMC} 
+                pmcData={pmcData}
                 history={history} 
                 userWeight={userWeight} 
                 weightUnit={weightUnit} 
                 equipment={equipment}
                 currentActivityId={currentActivityId}
                 updateActivityBike={updateActivityBike}
+                sleepData={sleepData}
+                hrvData={hrvData}
+                aiSettings={aiSettings}
               />
             </div>
           </motion.div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings, SleepMetric, HRVMetric } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
+import { formatLocalDate } from '../lib/utils';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
@@ -16,6 +17,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   lmStudioModel: 'phi-4-mini-instruct',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards.',
   wellnessContextDays: 7,
+  useExperimentalReadiness: false,
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
   openWeatherMapApiKey: import.meta.env.VITE_OPENWEATHERMAP_API_KEY || ''
 };
@@ -206,7 +208,7 @@ export function useSharedSettings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `veloanalytics_config_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `veloanalytics_config_backup_${formatLocalDate(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

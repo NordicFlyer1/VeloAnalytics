@@ -46,10 +46,28 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 
 ### 7. Wellness & Physiological Recovery
 **Concept**: Integrating life-stress and sleep data into performance analysis.
-*   **Readiness Score**: A summary metric of your daily physiological work capacity. It integrates sleep quality, HRV trends, and resting heart rate to estimate your overall "preparedness" for physical training.
-*   **AI Context Window**: The Velo Coach can adjust its analysis lookback window (7, 14, 21, or 28 days) for wellness and physiological metrics, allowing for more comprehensive trend identification.
-*   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture. VeloAnalytics uses this to weight the "readiness" insights from the Velo Coach.
-*   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**. Persistent values below the 25th percentile of the baseline indicate a state of high physiological strain.
+*   **Initial Readiness**: The standard readiness metric provided by source sensors (Garmin/Oura).
+*   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture.
+*   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**.
+
+### 8. Experimental Velo Readiness (Opt-in)
+**Concept**: A hypothesized weighted algorithm designed to approximate aggregate physiological readiness by combining sleep quality, autonomic status, and chronic training load. Unlike standard linear averages, it uses **Non-Linear Multiplicative Inhibitors** to model fatigue correctly—preventing high scores in one area from masking critical deficits in another.
+
+**Component Scoring**:
+*   **Weighted Base**: $(Sleep \times 0.35) + (Recovery \times 0.25) + (HRV \times 0.20) + (Load \times 0.20)$
+*   **Pillar Suppression**: The Weighted Base is modified by your weakest metric using a 30/70 mix: $Final = (Base \times 0.30) + (Base \times 0.70 \times \frac{WorstPillar}{100})$. This reflects "Veto Logic" where one failure point suppresses but doesn't completely erase success points.
+
+**Multiplicative Inhibitors & Suppressors**:
+To align with the "pessimistic" nature of human recovery (where one failure point often vetoes multiple successes), the algorithm applies:
+*   **HRV Status Warning**: If overnight HRV is below your 7-day baseline minimum, it will likely act as the primary suppression pillar for the entire score.
+*   **Sleep Debt Deduction**: If last night's sleep was less than 6 hours, a **flat 15-point deduction** is applied.
+*   **Recovery Hard Caps**: 
+    *   Estimated Recovery > 48h (Critical): Score compressed towards a floor of **25**.
+    *   Estimated Recovery > 24h (Moderate): Score capped at **55**.
+*   **ACWR Interpretation (Load Interpretation)**: If ACWR > 1.4, the score is capped at **40** to reflect heightened injury and overtraining risk.
+*   **Relative Intensity Spike Suppression (Recovery Guard)**: Specifically adjusted for athletes in recovery (e.g., from illness), this rule monitors for acute inflammatory triggers. If a single session's BikeScore exceeds **5.0x your current CTL (lts)**, the Load Pillar is force-dropped to a "Red" status (0). This prevents high-load sessions from presentation as positive "readiness" markers during a vulnerable state.
+
+*Note: This feature is experimental and must be enabled in Settings > Experimental.*
 
 ---
 

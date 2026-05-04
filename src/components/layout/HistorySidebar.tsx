@@ -11,7 +11,7 @@ import {
   Search
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, formatDuration } from '../../lib/utils';
+import { cn, formatDuration, formatLocalDate } from '../../lib/utils';
 import { HistoricalActivity, ActivitySummary } from '../../types';
 import { SectionHeader } from '../ui/SectionHeader';
 
@@ -251,7 +251,7 @@ export const HistorySidebar = React.memo(({
                         onClick={() => loadFromHistory(h.id)}
                         className={cn(
                           "bg-app-bg/40 border rounded-2xl p-3 sm:p-4 flex items-center justify-between group cursor-pointer transition-all active:scale-[0.98]",
-                          summary?.startTime && h.date === summary.startTime.toISOString().split('T')[0] && h.name === summary.name 
+                          summary?.startTime && h.date === formatLocalDate(summary.startTime) && h.name === summary.name 
                             ? "border-orange-500/50 bg-orange-500/[0.03] ring-1 ring-orange-500/20" 
                             : "border-app-border hover:border-app-border/80"
                         )}

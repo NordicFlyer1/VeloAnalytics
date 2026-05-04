@@ -1,4 +1,5 @@
 import { CyclingDataPoint, ActivitySummary, Lap, Zone, ZoneDistribution, ZoneDefinition, PowerCurvePoint, PMCDataPoint } from '../types';
+import { formatLocalDate } from '../lib/utils';
 
 export const DEFAULT_FALLBACK_CP = 250;
 export const DEFAULT_FALLBACK_WPRIME = 15000; // 15kJ
@@ -329,8 +330,9 @@ export function calculateBikeScore(durationSec: number, xPower: number, ri: numb
 
 /**
  * Calculates the Performance Management Chart (PMC) metrics: LTS, STS, and SB.
+ * Includes a predictive component that projects fitness decay into the future.
  */
-export function calculatePMC(history: { date: string, bikeScore: number }[]): PMCDataPoint[] {
+export function calculatePMC(history: { date: string, bikeScore: number }[], futureDays: number = 14): PMCDataPoint[] {
   if (history.length === 0) return [];
 
   // Sort history by date
@@ -346,10 +348,18 @@ export function calculatePMC(history: { date: string, bikeScore: number }[]): PM
   const ltsLambda = 1 / ltsDays;
   const stsLambda = 1 / stsDays;
 
-  // We need to fill in gaps between activities
+  // We need to fill in gaps between activities and project into the future
   const firstDate = new Date(sortedHistory[0].date);
-  const lastDate = new Date(sortedHistory[sortedHistory.length - 1].date);
-  const dayCount = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const lastActivityDate = new Date(sortedHistory[sortedHistory.length - 1].date);
+  
+  // Projection logic: Go at least to TODAY, then add futureDays
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(Math.max(lastActivityDate.getTime(), today.getTime()));
+  endDate.setDate(endDate.getDate() + futureDays);
+
+  const dayCount = Math.ceil((endDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const dailyScores: Record<string, number> = {};
   sortedHistory.forEach(h => {
@@ -357,10 +367,12 @@ export function calculatePMC(history: { date: string, bikeScore: number }[]): PM
     dailyScores[h.date] = (dailyScores[h.date] || 0) + score;
   });
 
+  const todayStr = formatLocalDate(today);
+
   for (let i = 0; i < dayCount; i++) {
     const currentDate = new Date(firstDate);
     currentDate.setDate(firstDate.getDate() + i);
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(currentDate);
     
     const todaysScore = dailyScores[dateStr] || 0;
     const safeTodaysScore = Number.isFinite(todaysScore) ? todaysScore : 0;
@@ -374,7 +386,8 @@ export function calculatePMC(history: { date: string, bikeScore: number }[]): PM
       bikeScore: safeTodaysScore,
       lts: Number.isFinite(currentLTS) ? currentLTS : 0,
       sts: Number.isFinite(currentSTS) ? currentSTS : 0,
-      sb: (Number.isFinite(currentLTS) && Number.isFinite(currentSTS)) ? currentLTS - currentSTS : 0
+      sb: (Number.isFinite(currentLTS) && Number.isFinite(currentSTS)) ? currentLTS - currentSTS : 0,
+      isPredictive: dateStr > todayStr
     });
   }
 

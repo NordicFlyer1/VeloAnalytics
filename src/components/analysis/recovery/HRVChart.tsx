@@ -22,16 +22,19 @@ export const HRVChart: React.FC<HRVChartProps> = ({ data }) => {
   // Sort by date ascending for the chart
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
 
-  const chartData = sortedData.map(d => ({
-    ...d,
-    displayDate: format(new Date(d.date), 'MMM dd'),
-    // Range data for the Area plot
-    range: [d.baselineMin, d.baselineMax]
-  }));
+  const chartData = sortedData.map(d => {
+    const [y, m, d_part] = d.date.split('-').map(Number);
+    return {
+      ...d,
+      displayDate: format(new Date(y, m - 1, d_part), 'MMM dd'),
+      // Range data for the Area plot
+      range: [d.baselineMin, d.baselineMax]
+    };
+  });
 
   return (
-    <div className="h-[300px] w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
+    <div className="h-[300px] w-full min-h-[300px] mt-4">
+      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
         <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid 
             strokeDasharray="3 3" 

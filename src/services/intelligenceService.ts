@@ -7,6 +7,7 @@ import { AISettings, ActivitySummary, PMCDataPoint, ChatMessage, HistoricalActiv
 export function buildCoachContext(
   summary: ActivitySummary | null,
   currentPMC: PMCDataPoint | null,
+  predictedPMC: PMCDataPoint | null,
   history: HistoricalActivity[],
   sleepHistory: SleepMetric[],
   hrvHistory: HRVMetric[],
@@ -65,10 +66,17 @@ export function buildCoachContext(
   }
 
   if (currentPMC) {
-    context += `\nPerformance Management (Long Term):
+    context += `\nPerformance Management (PMC Status):
 - Fitness (CTL/LTS): ${Math.round(currentPMC.lts)} (6-week average load)
 - Fatigue (ATL/STS): ${Math.round(currentPMC.sts)} (7-day average load)
 - Form (TSB/SB): ${Math.round(currentPMC.sb)} (Freshness index)\n`;
+    
+    if (predictedPMC && predictedPMC.date !== currentPMC.date) {
+      context += `\nProjected Status (in 14 days with zero load):
+- Fitness Decay: ${Math.round(predictedPMC.lts)}
+- Fatigue Decay: ${Math.round(predictedPMC.sts)}
+- Form Gain: ${Math.round(predictedPMC.sb)}\n`;
+    }
   }
 
   context += `\nHistorical Ride Library (Recent 20):\n`;

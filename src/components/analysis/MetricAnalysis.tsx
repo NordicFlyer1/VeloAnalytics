@@ -101,10 +101,10 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6 export-ignore">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-6 sm:gap-8 export-ignore">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Metrics</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar -mx-1 sm:mx-0">
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar">
                   {Object.entries(metricsConfig).map(([key, config]) => {
                     const typedConfig = config as { label: string, color: string, unit: string };
                     const isActive = activeMetrics.includes(key);
@@ -140,9 +140,9 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Smoothing</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar -mx-1 sm:mx-0">
+                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar">
                   {[1, 3, 10, 30, 60].map((window) => (
                     <button
                       key={window}

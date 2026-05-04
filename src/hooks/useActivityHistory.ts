@@ -10,6 +10,7 @@ import {
 import { saveActivityData, getActivityData, deleteActivityData } from '../services/storage';
 import { processActivityData, ProcessingContext } from '../services/activityProcessor';
 import { calculateAerobicDecoupling } from '../services/metrics';
+import { formatLocalDate } from '../lib/utils';
 
 interface HistoryHookDeps {
   workers: any;
@@ -80,7 +81,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
           else if (pmcDateRange === '1year') filterDate = subDays(now, 365);
 
           if (filterDate) {
-            const filterStr = filterDate.toISOString().split('T')[0];
+            const filterStr = formatLocalDate(filterDate);
             allData = allData.filter(d => d.date >= filterStr);
           }
         }
@@ -97,6 +98,19 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
   }, [history, pmcDateRange, workers.calculatePMC]);
 
   const currentPMC = useMemo(() => {
+    if (pmcData.length === 0) return null;
+    const todayStr = formatLocalDate(new Date());
+    // Find the point for today, or the last one before today if today isn't there, or just the last one if all are in the past
+    const todayPoint = pmcData.find(d => d.date === todayStr);
+    if (todayPoint) return todayPoint;
+    
+    const historicalPoints = pmcData.filter(d => !d.isPredictive);
+    if (historicalPoints.length > 0) return historicalPoints[historicalPoints.length - 1];
+    
+    return pmcData[pmcData.length - 1];
+  }, [pmcData]);
+
+  const predictedPMC = useMemo(() => {
     if (pmcData.length === 0) return null;
     return pmcData[pmcData.length - 1];
   }, [pmcData]);
@@ -288,7 +302,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     const targetFile = file || originalFile;
     
     if (!target || !target.startTime || isNaN(target.startTime.getTime())) return null;
-    const dateStr = target.startTime.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(target.startTime);
     const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     const newActivity: HistoricalActivity = {
@@ -474,6 +488,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     pmcDateRange, setPmcDateRange,
     pmcFocus, setPmcFocus,
     currentPMC,
+    predictedPMC,
 
     trainingLoadRange, setTrainingLoadRange,
     volumeTrendsRange, setVolumeTrendsRange,

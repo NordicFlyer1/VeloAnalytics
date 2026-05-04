@@ -6,7 +6,7 @@ import {
   Download
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { cn } from '../../lib/utils';
+import { cn, formatLocalDate } from '../../lib/utils';
 import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity, SleepMetric, HRVMetric } from '../../types';
 import { getCoachResponse, buildCoachContext } from '../../services/intelligenceService';
 
@@ -17,6 +17,7 @@ interface IntelligenceDrawerProps {
   updateAiSettings: (updates: Partial<AISettings>) => void;
   summary: ActivitySummary | null;
   currentPMC: PMCDataPoint | null;
+  predictedPMC: PMCDataPoint | null;
   history: HistoricalActivity[];
   sleepHistory: SleepMetric[];
   hrvHistory: HRVMetric[];
@@ -31,6 +32,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   updateAiSettings,
   summary,
   currentPMC,
+  predictedPMC,
   history,
   sleepHistory,
   hrvHistory,
@@ -71,6 +73,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
       const context = buildCoachContext(
         summary, 
         currentPMC, 
+        predictedPMC,
         history, 
         sleepHistory, 
         hrvHistory, 
@@ -101,7 +104,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   };
 
   const downloadResponse = (content: string, timestamp: Date) => {
-    const dateStr = timestamp.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(timestamp);
     const timeStr = timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
     const filename = `velo-coach-insight-${dateStr}-${timeStr}.md`;
     

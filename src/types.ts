@@ -105,6 +105,7 @@ export interface PMCDataPoint {
   lts: number;
   sts: number;
   sb: number;
+  isPredictive?: boolean;
 }
 
 export interface HistoricalActivity {
@@ -166,6 +167,7 @@ export interface AISettings {
   lmStudioModel: string;
   systemPrompt: string;
   wellnessContextDays?: number;
+  useExperimentalReadiness?: boolean;
   googleMapsApiKey?: string;
   openWeatherMapApiKey?: string;
 }

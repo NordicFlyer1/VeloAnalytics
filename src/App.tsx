@@ -74,6 +74,7 @@ export default function App() {
     pmcDateRange, setPmcDateRange,
     pmcFocus, setPmcFocus,
     currentPMC,
+    predictedPMC,
     trainingLoadRange, setTrainingLoadRange,
     volumeTrendsRange, setVolumeTrendsRange,
     trainingLoadData,
@@ -391,6 +392,7 @@ export default function App() {
                   summary={summary}
                   data={data}
                   currentPMC={currentPMC}
+                  pmcData={pmcData}
                   history={history}
                   userWeight={userWeight}
                   weightUnit={weightUnit}
@@ -399,6 +401,9 @@ export default function App() {
                   updateActivityBike={updateActivityBike}
                   isExpanded={isOverviewExpanded}
                   onToggle={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                  sleepData={settings.sleepHistory}
+                  hrvData={settings.hrvHistory}
+                  aiSettings={settings.aiSettings}
                 />
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-8">
@@ -479,6 +484,9 @@ export default function App() {
                       data={settings.sleepHistory}
                       isExpanded={isSleepExpanded}
                       setIsExpanded={setIsSleepExpanded}
+                      hrvHistory={settings.hrvHistory}
+                      pmcData={pmcData}
+                      aiSettings={settings.aiSettings}
                     />
 
                     <RecoveryAnalysis 
@@ -557,6 +565,7 @@ export default function App() {
         updateAiSettings={settings.updateAiSettings}
         summary={summary}
         currentPMC={currentPMC}
+        predictedPMC={predictedPMC}
         history={history}
         sleepHistory={settings.sleepHistory}
         hrvHistory={settings.hrvHistory}

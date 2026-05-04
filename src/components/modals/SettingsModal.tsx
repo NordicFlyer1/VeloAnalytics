@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
   Target, Eye, Brain, Key, Cpu, Globe, MessageSquare, Sparkles,
-  Moon, RefreshCw
+  Moon, RefreshCw, FlaskConical
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { 
@@ -62,7 +62,7 @@ interface SettingsModalProps {
   importSettings: (json: string) => boolean;
 }
 
-type Tab = 'general' | 'zones' | 'equipment' | 'intelligence' | 'maintenance';
+type Tab = 'general' | 'zones' | 'equipment' | 'intelligence' | 'experimental' | 'maintenance';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   showSettings,
@@ -143,7 +143,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Tab Navigation - Aligned to About Modal Capsule style */}
         <div className="px-6 sm:px-8 py-5 border-b border-app-border bg-app-card/30">
           <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start w-fit max-w-full overflow-x-auto no-scrollbar">
-            {(['general', 'zones', 'equipment', 'intelligence', 'maintenance'] as const).map((tab) => (
+            {(['general', 'zones', 'equipment', 'intelligence', 'maintenance', 'experimental'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1078,6 +1078,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <h4 className="text-[11px] font-bold uppercase tracking-widest text-orange-500">Security Implementation</h4>
                       <p className="text-[11px] text-app-muted leading-relaxed">
                         VeloAnalytics follows a "Private-First" architecture. All secrets are stored directly in your browser's <code className="bg-app-bg/50 px-1 rounded">localStorage</code> or served via your private build environment. We never proxy your data through third-party servers. Your keys remain yours.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'experimental' && (
+              <motion.div
+                key="experimental"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-8"
+              >
+                <div className="flex flex-col gap-2 px-2">
+                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Laboratory Settings</h3>
+                  <p className="text-[11px] text-app-muted leading-relaxed">
+                    Test cutting-edge features that are currently in development. These algorithms are hypothesized abstractions and may change frequently.
+                  </p>
+                </div>
+
+                <div className="space-y-6 bg-app-bg/30 border border-app-border rounded-3xl p-6 sm:p-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                      <FlaskConical className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-app-text">Custom Velo Readiness</h3>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500/80">Experimental Algorithm</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-app-card/50 border border-app-border/50 rounded-2xl p-5 space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-app-text">Enable Hypothesized Weights</span>
+                          <p className="text-[9px] text-app-muted font-medium mt-1 uppercase tracking-tight max-w-[400px] leading-relaxed">
+                            Uses Pillar Suppression logic: (Base * 0.30) + (Base * 0.70 * SuppressionRatio). One "Red" metric suppresses the score without completely zeroing it out.
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => updateAiSettings({ useExperimentalReadiness: !aiSettings.useExperimentalReadiness })}
+                          className={cn(
+                            "w-10 h-5 rounded-full transition-all relative shrink-0",
+                            aiSettings.useExperimentalReadiness ? "bg-orange-500" : "bg-app-border"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all",
+                            aiSettings.useExperimentalReadiness ? "left-5.5" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-app-border/30">
+                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-app-muted mb-3">Formula Components</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] text-app-muted uppercase font-bold">Sleep</span>
+                            <span className="text-xs font-bold text-app-text">35%</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] text-app-muted uppercase font-bold">Recovery</span>
+                            <span className="text-xs font-bold text-app-text">25%</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] text-app-muted uppercase font-bold">HRV</span>
+                            <span className="text-xs font-bold text-app-text">20%</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] text-app-muted uppercase font-bold">Load</span>
+                            <span className="text-xs font-bold text-app-text">20%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10">
+                      <p className="text-[10px] text-orange-500/80 font-medium leading-relaxed italic">
+                        "This algorithm prioritizes recovery constraints and physiological suppression (HRV) over raw sleep duration. High training load is treated as a negative for readiness."
                       </p>
                     </div>
                   </div>
