@@ -50,7 +50,7 @@ export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={RefreshCw}
-        title={aiSettings?.useExperimentalReadiness ? "Velo-Readiness" : "Readiness"}
+        title="Recovery Status"
         description="Physiological readiness based on Heart Rate Variability and Autonomic Nervous System balance"
         isExpanded={isExpanded}
         onToggle={() => setIsExpanded(!isExpanded)}

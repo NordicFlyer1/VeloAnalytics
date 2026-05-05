@@ -359,7 +359,7 @@ export const SummaryCards = React.memo(({
           <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px] min-w-[200px] sm:min-w-0 relative group">
             <div className="flex justify-between items-start mb-2 sm:mb-4">
               <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">
-                {aiSettings?.useExperimentalReadiness ? "Velo-Readiness" : "Readiness"}
+                Recovery Status
               </span>
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
             </div>
