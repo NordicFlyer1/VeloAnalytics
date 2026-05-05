@@ -358,7 +358,9 @@ export const SummaryCards = React.memo(({
         {(latestHRV || latestSleep) && (
           <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px] min-w-[200px] sm:min-w-0 relative group">
             <div className="flex justify-between items-start mb-2 sm:mb-4">
-              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Recovery Status</span>
+              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">
+                {aiSettings?.useExperimentalReadiness ? "Velo-Readiness" : "Readiness"}
+              </span>
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
             </div>
             <div className="flex-1 flex flex-col justify-center">
@@ -370,8 +372,7 @@ export const SummaryCards = React.memo(({
                   {veloReadiness ? veloReadiness.score : (latestSleep?.readinessScore || '--')}
                 </span>
                 <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest flex items-center gap-1">
-                  {veloReadiness ? "VELO" : "READINESS"}
-                  {veloReadiness && <InfoIcon className="w-2.5 h-2.5 text-yellow-400/80" />}
+                  {veloReadiness ? "VELO-READINESS" : "READINESS"}
                 </span>
               </div>
             </div>

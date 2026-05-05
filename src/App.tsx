@@ -494,6 +494,7 @@ export default function App() {
                       sleepData={settings.sleepHistory}
                       isExpanded={isRecoveryStatusExpanded}
                       setIsExpanded={setIsRecoveryStatusExpanded}
+                      aiSettings={settings.aiSettings}
                     />
                   </div>
                 </div>

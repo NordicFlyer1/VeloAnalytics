@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Image, FileText, Zap, Heart } from 'lucide-react';
-import { HRVMetric, SleepMetric } from '../../../types';
+import { HRVMetric, SleepMetric, AISettings } from '../../../types';
 import { SectionHeader, ExportAction } from '../../ui/SectionHeader';
 import { HRVChart } from './HRVChart';
-import { exportHRVToCSV } from '../../../services/wellnessService';
+import { exportHRVToCSV, calculateVeloReadiness } from '../../../services/wellnessService';
 import { exportComponentAsImage } from '../../../lib/chartExport';
 import { cn } from '../../../lib/utils';
 
@@ -13,13 +13,15 @@ interface RecoveryAnalysisProps {
   sleepData: SleepMetric[];
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
+  aiSettings?: AISettings;
 }
 
 export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({ 
   hrvData, 
   sleepData, 
   isExpanded, 
-  setIsExpanded
+  setIsExpanded,
+  aiSettings
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,7 @@ export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={RefreshCw}
-        title="Recovery Status"
+        title={aiSettings?.useExperimentalReadiness ? "Velo-Readiness" : "Readiness"}
         description="Physiological readiness based on Heart Rate Variability and Autonomic Nervous System balance"
         isExpanded={isExpanded}
         onToggle={() => setIsExpanded(!isExpanded)}

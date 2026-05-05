@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, TrendingUp, Activity, BookOpen, Scale, HelpCircle } from 'lucide-react';
+import { Zap, TrendingUp, Activity, BookOpen, Scale, HelpCircle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import methodologyContent from '../../../docs/METHODOLOGY.md?raw';
 import licenseContent from '../../../LICENSE?raw';
