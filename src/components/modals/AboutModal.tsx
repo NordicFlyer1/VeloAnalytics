@@ -170,6 +170,34 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                       </div>
                     </section>
                     
+                    <section className="space-y-4 sm:space-y-6">
+                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 text-center sm:text-left">Portability & Deployment</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                            🚀 Vercel Deployment
+                          </h4>
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed mb-3">
+                            Take VeloAnalytics private. Host your own dashboard for free on the web.
+                          </p>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-orange-500">
+                            See docs/DEPLOY_VERCEL.md
+                          </p>
+                        </div>
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                            💻 Native Desktop App
+                          </h4>
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed mb-3">
+                            Build a native .exe or .app file for your computer using the Tauri framework.
+                          </p>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-orange-500">
+                            See docs/LOCAL_BUILD.md
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+
                     <section className="space-y-3 sm:space-y-4">
                       <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Getting Help</h3>
                       <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6 flex gap-3 sm:gap-4">

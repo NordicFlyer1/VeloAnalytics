@@ -215,7 +215,7 @@ const FAQ_DATA: FAQCategory[] = [
         question: "What is the Experimental Velo Readiness score?",
         beginnerAnswer: "This is a custom calculation that combines your sleep, recovery time, HRV, and training load into one mega-score. Unlike standard averages, it is 'pessimistic'—if even one thing like your HRV or recovery is in the red, it will slash your total score to prevent overtraining. We also include a 'Spike Guard' that detects if you worked significantly harder than your recent average, which is critical if you are recovering from illness.",
         technicalAnswer: "Experimental Velo Readiness uses a non-linear mixed suppression model: (Base * 30%) + (Base * 70% * SuppressionRatio). It includes a Relative Intensity Spike Suppression rule: If a single session's BikeScore exceeds 5.0x your current CTL (LTS), the Load Pillar is force-dropped to 0 (Red). This accounts for inflammatory risk in illness-recovery periods. It also applies a -15 deduction for sleep debt (<6h) and hard caps based on estimated recovery time and ACWR peaks.",
-        keywords: ["readiness", "experimental", "calculation", "formula", "weighting", "penalties", "algorithm", "custom", "garmin", "spike", "illness", "recovery", "lts", "ctl"]
+        keywords: ["readiness", "experimental", "calculation", "formula", "weighting", "penalties", "algorithm", "custom", "garmin", "spike", "illness", "recovery", "lts", "ctl", "velo-readiness"]
       },
       {
         question: "What is Heart Rate Variability (HRV)?",
@@ -234,6 +234,18 @@ const FAQ_DATA: FAQCategory[] = [
   {
     name: "Maintenance & Portability",
     items: [
+      {
+        question: "How do I deploy VeloAnalytics to Vercel?",
+        beginnerAnswer: "You can host your own private version of VeloAnalytics on Vercel for free. It involves connecting your GitHub account and pasting your sensitive API keys into Vercel's secure settings.",
+        technicalAnswer: "Vercel is the recommended hosting provider for this Vite/React application. You can find a detailed Step-by-Step guide in the 'docs/DEPLOY_VERCEL.md' file in the project root. It covers environment variable configuration and CI/CD setup.",
+        keywords: ["vercel", "deploy", "host", "online", "private", "website"]
+      },
+      {
+        question: "Can I build VeloAnalytics as a desktop app with Tauri?",
+        beginnerAnswer: "Yes! If you want a standalone app on your Windows or Mac computer that doesn't need a browser, you can use a tool called Tauri to build it. This is great for privacy and speed.",
+        technicalAnswer: "Tauri allows you to bundle this web application into a native binary. A detailed Step-by-Step guide for installing the Rust toolchain and running the build command is available in 'docs/LOCAL_BUILD.md'.",
+        keywords: ["tauri", "desktop", "app", "exe", "dmg", "local", "rust", "windows", "mac"]
+      },
       {
         question: "How do I backup my data and settings?",
         beginnerAnswer: "Go to the Maintenance tab in Settings and click 'Download Config'. This saves your secret keys, fitness thresholds, and bike profiles into a simple file on your computer.",
