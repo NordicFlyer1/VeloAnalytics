@@ -165,6 +165,11 @@ export function useSharedSettings() {
       // Merge with defaults to ensure environment waterfall works if field is empty string
       const merged = { ...DEFAULT_AI_SETTINGS, ...parsed };
       
+      // Force migration back to Flash Preview if it was stuck on Pro during the transition
+      if (parsed.geminiModel === 'gemini-1.5-pro') {
+        merged.geminiModel = 'gemini-3-flash-preview';
+      }
+      
       // Secondary fallback check: if saved value is an empty string but env has a value, use env
       if (!parsed.geminiApiKey && DEFAULT_AI_SETTINGS.geminiApiKey) merged.geminiApiKey = DEFAULT_AI_SETTINGS.geminiApiKey;
       if (!parsed.openaiApiKey && DEFAULT_AI_SETTINGS.openaiApiKey) merged.openaiApiKey = DEFAULT_AI_SETTINGS.openaiApiKey;
