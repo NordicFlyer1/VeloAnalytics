@@ -6,7 +6,7 @@ import { formatLocalDate } from '../lib/utils';
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
   geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
-  geminiModel: 'gemini-1.5-pro', // Changed to pro as default for clinical precision
+  geminiModel: 'gemini-3-flash-preview',
   openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   openaiModel: 'gpt-4o',
   anthropicApiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
