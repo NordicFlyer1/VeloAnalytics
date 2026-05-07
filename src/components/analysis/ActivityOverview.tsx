@@ -78,7 +78,7 @@ export const ActivityOverview: React.FC<ActivityOverviewProps> = ({
         exportActions={exportActions}
         infoContent={{
           title: "Activity Overview",
-          description: "High-level performance summary and key metrics including xPower, BikeScore™, and relative intensity."
+          description: "High-level performance summary and key metrics including xPower, Efficiency Factor (EF), BikeScore™, and relative intensity."
         }}
       />
       

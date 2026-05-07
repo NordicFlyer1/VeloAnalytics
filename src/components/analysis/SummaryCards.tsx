@@ -122,6 +122,11 @@ export const SummaryCards = React.memo(({
     );
   }, [aiSettings?.useExperimentalReadiness, latestSleep, latestHRV, latestPMC]);
 
+  const ef = React.useMemo(() => {
+    if (!summary.xPower || !summary.avgHeartRate || summary.avgHeartRate === 0) return null;
+    return (summary.xPower / summary.avgHeartRate).toFixed(2);
+  }, [summary.xPower, summary.avgHeartRate]);
+
   return (
     <div className="relative -mx-4 px-4 overflow-x-auto hide-scrollbar sm:mx-0 sm:px-0 sm:overflow-visible">
       <div className="flex flex-nowrap sm:grid gap-3 sm:gap-4 pb-4 sm:pb-0 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -225,6 +230,24 @@ export const SummaryCards = React.memo(({
             MAX: {Math.round(summary.maxHeartRate || 0)} BPM
           </div>
         </div>
+
+        {ef && (
+          <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px] min-w-[160px] sm:min-w-0">
+            <div className="flex justify-between items-start mb-2 sm:mb-4">
+              <span className="text-[10px] uppercase tracking-widest text-app-muted font-bold">Efficiency Factor</span>
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex items-baseline gap-1 sm:gap-2">
+                <span className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter">{ef}</span>
+                <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest">EF</span>
+              </div>
+            </div>
+            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] text-app-muted font-bold uppercase tracking-widest">
+              XPOWER BY HEART RATE
+            </div>
+          </div>
+        )}
 
         <div className="bg-app-bg border border-app-border rounded-2xl p-3 sm:p-4 md:p-6 hover:bg-app-card/80 transition-colors h-full flex flex-col min-h-[140px] sm:min-h-[160px] min-w-[160px] sm:min-w-0">
           <div className="flex justify-between items-start mb-2 sm:mb-4">

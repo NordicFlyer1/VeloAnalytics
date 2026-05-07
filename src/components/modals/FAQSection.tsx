@@ -73,6 +73,12 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["normalized", "actual cost", "effort", "physiological cost"]
       },
       {
+        question: "What is Efficiency Factor (EF)?",
+        beginnerAnswer: "EF is a measure of your 'aerobic engine' efficiency. It tells you how much power you produce for every heartbeat. As you get fitter, your EF will go up because you can produce more power with less effort from your heart.",
+        technicalAnswer: "Efficiency Factor (EF) is the ratio of normalized output (xPower) to physiological input (Average Heart Rate). EF = xPower ÷ Avg HR. It quantifies aerobic efficiency; mitochondrial improvements and increased stroke volume lead to higher EF values over time on standardized efforts.",
+        keywords: ["ef", "efficiency", "aerobic", "engine", "heart rate", "power"]
+      },
+      {
         question: "What is BikeScore™?",
         beginnerAnswer: "A single number that tells you how stressful your ride was. A bigger number means you need more rest!",
         technicalAnswer: "BikeScore™ is a training load metric that combines duration, intensity (Relative Intensity), and xPower to quantify total physiological stress. 100 points represents roughly 1 hour of maximal effort.",
