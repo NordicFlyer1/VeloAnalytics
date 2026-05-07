@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { AISettings, ActivitySummary, PMCDataPoint, ChatMessage, HistoricalActivity, SleepMetric, HRVMetric } from '../types';
+import { calculateVeloReadiness } from './wellnessService';
 
 /**
  * Distills complex activity and performance data into a concise text format for the LLM.
@@ -13,27 +14,53 @@ export function buildCoachContext(
   hrvHistory: HRVMetric[],
   cp: number,
   wPrime: number,
+  aiSettings: AISettings,
   wellnessContextDays: number = 7
 ): string {
   let context = `Athlete's Physiological Profile & Context:\n`;
+  context += `- Current System Date: ${new Date().toISOString().split('T')[0]}\n`;
   context += `- Critical Power (CP): ${cp}W\n`;
   context += `- W' Balance (Anaerobic Capacity): ${wPrime}J\n`;
   context += `- Wellness Lookback Window: ${wellnessContextDays} days\n`;
 
-  // Add Wellness/Recovery context
+  // Calculate and add Readiness context
+  const latestHRV = hrvHistory.length > 0 ? [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  const latestSleep = sleepHistory.length > 0 ? [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  
+  if (currentPMC) {
+    const rawReadiness = latestSleep?.readinessScore;
+    const veloReadiness = calculateVeloReadiness(
+      latestSleep,
+      latestHRV,
+      currentPMC.sb,
+      currentPMC.sts,
+      summary?.bikeScore || 0
+    );
+
+    context += `\nReadiness & Recovery Status (Targeting Latest Date: ${currentPMC.date}):\n`;
+    if (rawReadiness !== undefined) {
+      context += `- Source Readiness (from ${latestSleep?.date || 'N/A'}): ${rawReadiness}/100\n`;
+    }
+    context += `- Current Velo-Readiness (as of ${currentPMC.date}): ${veloReadiness.score}/100\n`;
+    if (veloReadiness.penalties.length > 0) {
+      context += `- Active Recovery Penalties: ${veloReadiness.penalties.join(', ')}\n`;
+    }
+  }
+
+  // Add Wellness/Recovery trends
   if (sleepHistory.length > 0 || hrvHistory.length > 0) {
-    context += `\nWellness & Recovery (${wellnessContextDays}-Day Trends):\n`;
+    context += `\nWellness & Recovery (${wellnessContextDays}-Day Trends - NEWEST/LATEST DATA POINT FIRST):\n`;
     
     if (sleepHistory.length > 0) {
       const recentSleep = [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
-      context += `- Recent Sleep Quality: ${recentSleep.map(s => `${s.score} (${s.quality})`).join(', ')}\n`;
+      context += `- Recent Sleep Sequence (Newest First, starting ${recentSleep[0]?.date}): ${recentSleep.map(s => `${s.score} (${s.quality})`).join(', ')}\n`;
       const avgDuration = recentSleep.reduce((acc, s) => acc + s.duration, 0) / recentSleep.length;
       context += `- Avg Duration (${wellnessContextDays}d): ${(avgDuration / 60).toFixed(1)} hours\n`;
     }
 
     if (hrvHistory.length > 0) {
       const recentHRV = [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
-      context += `- Recent Overnight HRV: ${recentHRV.map(h => `${h.overnightHRV}ms`).join(', ')}\n`;
+      context += `- Recent HRV Sequence (Newest First, starting ${recentHRV[0]?.date}): ${recentHRV.map(h => `${h.overnightHRV}ms`).join(', ')}\n`;
       const latest = recentHRV[0];
       context += `- Latest Baseline Range: ${latest.baselineMin}-${latest.baselineMax}ms\n`;
     }
@@ -60,6 +87,12 @@ export function buildCoachContext(
     }
     if (summary.aerobicDecoupling !== undefined) {
       context += `- Efficiency: Aerobic Decoupling (Pw:HR) ${summary.aerobicDecoupling.toFixed(1)}%\n`;
+    }
+    
+    // Add Efficiency Factor (EF)
+    if (summary.xPower && summary.avgHeartRate && summary.avgHeartRate > 0) {
+      const ef = (summary.xPower / summary.avgHeartRate).toFixed(2);
+      context += `- Efficiency Factor (EF): ${ef} (xPower per BPM)\n`;
     }
   } else {
     context += `\n- No specific activity currently loaded for deep analysis.\n`;

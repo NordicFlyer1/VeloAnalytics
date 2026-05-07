@@ -79,6 +79,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
         hrvHistory, 
         cp, 
         wPrime,
+        aiSettings,
         aiSettings.wellnessContextDays || 7
       );
       const response = await getCoachResponse(aiSettings, newMessages, context);
