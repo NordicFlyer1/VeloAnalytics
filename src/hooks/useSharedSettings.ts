@@ -11,6 +11,8 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   openaiModel: 'gpt-4o',
   anthropicApiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
   anthropicModel: import.meta.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20240620',
+  groqApiKey: import.meta.env.VITE_GROQ_API_KEY || '',
+  groqModel: 'llama-3.3-70b-versatile',
   ollamaUrl: 'http://127.0.0.1:11434',
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
@@ -174,6 +176,7 @@ export function useSharedSettings() {
       if (!parsed.geminiApiKey && DEFAULT_AI_SETTINGS.geminiApiKey) merged.geminiApiKey = DEFAULT_AI_SETTINGS.geminiApiKey;
       if (!parsed.openaiApiKey && DEFAULT_AI_SETTINGS.openaiApiKey) merged.openaiApiKey = DEFAULT_AI_SETTINGS.openaiApiKey;
       if (!parsed.anthropicApiKey && DEFAULT_AI_SETTINGS.anthropicApiKey) merged.anthropicApiKey = DEFAULT_AI_SETTINGS.anthropicApiKey;
+      if (!parsed.groqApiKey && DEFAULT_AI_SETTINGS.groqApiKey) merged.groqApiKey = DEFAULT_AI_SETTINGS.groqApiKey;
       if (!parsed.googleMapsApiKey && DEFAULT_AI_SETTINGS.googleMapsApiKey) merged.googleMapsApiKey = DEFAULT_AI_SETTINGS.googleMapsApiKey;
       if (!parsed.openWeatherMapApiKey && DEFAULT_AI_SETTINGS.openWeatherMapApiKey) merged.openWeatherMapApiKey = DEFAULT_AI_SETTINGS.openWeatherMapApiKey;
 

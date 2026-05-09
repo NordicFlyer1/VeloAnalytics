@@ -151,7 +151,7 @@ export interface FileStatus {
 export type RidingPosition = 'tops' | 'hoods' | 'drops';
 export type SurfaceType = 'road' | 'gravel' | 'mtb';
 
-export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'ollama' | 'lm-studio';
+export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio';
 
 export interface AISettings {
   provider: AIProvider;
@@ -161,6 +161,8 @@ export interface AISettings {
   openaiModel: string;
   anthropicApiKey: string;
   anthropicModel: string;
+  groqApiKey: string;
+  groqModel: string;
   ollamaUrl: string;
   ollamaModel: string;
   lmStudioUrl: string;

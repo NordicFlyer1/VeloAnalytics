@@ -616,7 +616,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="space-y-4">
                     <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
                     <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border max-w-full overflow-x-auto no-scrollbar gap-1">
-                      {(['gemini', 'openai', 'anthropic', 'ollama', 'lm-studio'] as const).map(p => (
+                      {(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'lm-studio'] as const).map(p => (
                         <button
                            key={p}
                            onClick={() => updateAiSettings({ provider: p })}
@@ -628,6 +628,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                            {p === 'gemini' && <Globe className="w-3.5 h-3.5" />}
                            {p === 'openai' && <Sparkles className="w-3.5 h-3.5" />}
                            {p === 'anthropic' && <Brain className="w-3.5 h-3.5" />}
+                           {p === 'groq' && <Zap className="w-3.5 h-3.5" />}
                            {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
                            {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
                            <span>{p.replace('-', ' ')}</span>
@@ -637,7 +638,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Cloud API Key Settings */}
-                  {['gemini', 'openai', 'anthropic'].includes(aiSettings.provider) && (
+                  {['gemini', 'openai', 'anthropic', 'groq'].includes(aiSettings.provider) && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="space-y-2">
                         <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">
@@ -651,13 +652,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             value={
                               aiSettings.provider === 'gemini' ? aiSettings.geminiApiKey :
                               aiSettings.provider === 'openai' ? aiSettings.openaiApiKey :
-                              aiSettings.anthropicApiKey
+                              aiSettings.provider === 'anthropic' ? aiSettings.anthropicApiKey :
+                              aiSettings.groqApiKey
                             } 
                             onChange={(e) => {
                               const key = e.target.value;
                               if (aiSettings.provider === 'gemini') updateAiSettings({ geminiApiKey: key });
                               else if (aiSettings.provider === 'openai') updateAiSettings({ openaiApiKey: key });
-                              else updateAiSettings({ anthropicApiKey: key });
+                              else if (aiSettings.provider === 'anthropic') updateAiSettings({ anthropicApiKey: key });
+                              else updateAiSettings({ groqApiKey: key });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />
@@ -672,18 +675,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             type="text" 
                             placeholder={
                               aiSettings.provider === 'gemini' ? "gemini-3-flash-preview" :
-                              aiSettings.provider === 'openai' ? "gpt-4o" : "claude-3-5-sonnet-20240620"
+                              aiSettings.provider === 'openai' ? "gpt-4o" : 
+                              aiSettings.provider === 'anthropic' ? "claude-3-5-sonnet-20240620" :
+                              "llama-3.3-70b-versatile"
                             }
                             value={
                               aiSettings.provider === 'gemini' ? aiSettings.geminiModel :
                               aiSettings.provider === 'openai' ? aiSettings.openaiModel :
-                              aiSettings.anthropicModel
+                              aiSettings.provider === 'anthropic' ? aiSettings.anthropicModel :
+                              aiSettings.groqModel
                             } 
                             onChange={(e) => {
                               const val = e.target.value;
                               if (aiSettings.provider === 'gemini') updateAiSettings({ geminiModel: val });
                               else if (aiSettings.provider === 'openai') updateAiSettings({ openaiModel: val });
-                              else updateAiSettings({ anthropicModel: val });
+                              else if (aiSettings.provider === 'anthropic') updateAiSettings({ anthropicModel: val });
+                              else updateAiSettings({ groqModel: val });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />

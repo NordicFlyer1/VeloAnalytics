@@ -162,6 +162,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                         aiSettings.provider === 'gemini' ? aiSettings.geminiModel : 
                         aiSettings.provider === 'openai' ? aiSettings.openaiModel :
                         aiSettings.provider === 'anthropic' ? aiSettings.anthropicModel :
+                        aiSettings.provider === 'groq' ? aiSettings.groqModel :
                         aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
                         aiSettings.lmStudioModel
                       }
