@@ -21,41 +21,52 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 3.  Calculate the average of these 4th-power values.
 4.  Take the **4th root** of that average.
 
-### 3. BikeScore™
+### 3. Relative Intensity (RI)
+**Concept**: A dimensionless number that quantifies the intensity of a ride relative to the athlete's current fitness level (CP). It tells you how "hard" the effort was on a scale of 0 to 1.0+.
+*   **Formula**: $RI = xPower / CP$
+*   **Interpretation**:
+    *   **< 0.70**: Recovery or basic endurance.
+    *   **0.75 - 0.85**: Steady state, tempo, or long-distance racing.
+    *   **0.85 - 0.95**: High-intensity interval sessions or threshold efforts.
+    *   **1.00+**: Maximum effort (typically only possible for durations up to ~60 minutes).
+*   **Significance**: RI allows you to compare the intensity of different rides regardless of their duration or your changing fitness levels.
+
+### 4. BikeScore™
 **Concept**: A quantification of the total training dose of a session, accounting for both duration and intensity.
 **Calculation**:
 *   **Formula**: $BikeScore = \frac{t \times xPower \times RI}{CP \times 3600} \times 100$
-*   **Relative Intensity (RI)**: The ratio of xPower to Critical Power ($RI = xPower / CP$).
+*   **Substitution**: Since $RI = xPower / CP$, the formula can also be expressed as: $BikeScore = \frac{t \times RI^2}{3600} \times 100$ (where $t$ is duration in seconds).
+*   **Insight**: Because RI is squared in the underlying math, BikeScore rewards intensity exponentially. Doubling your intensity (RI) results in 4x the stress score for the same duration.
 
-### 4. Efficiency Factor (EF)
+### 5. Efficiency Factor (EF)
 **Concept**: A measure of aerobic efficiency, representing the "output per beat" of the cardiovascular engine.
 **Calculation**: $EF = xPower \div Average Heart Rate$
 **Insight**: EF quantifies how much work (normalized as xPower) is produced for a given physiological cost (Heart Rate). An upward trend in EF over time on standardized steady-state efforts indicates improved aerobic conditioning and cardiovascular efficiency.
 
-### 5. Performance Management (LTS, STS, SB)
+### 6. Performance Management (LTS, STS, SB)
 **Concept**: Based on the **Banister Impulse-Response Model**, these metrics track the accumulation of training load and its effect on fitness and fatigue.
 *   **LTS (Long Term Stress / Fitness)**: A 42-day exponentially weighted moving average of daily BikeScore.
 *   **STS (Short Term Stress / Fatigue)**: A 7-day exponentially weighted moving average of daily BikeScore.
 *   **SB (Stress Balance / Form)**: The difference between yesterday's LTS and yesterday's STS ($SB = LTS_{yest} - STS_{yest}$).
 
-### 6. Fatigue-Adjusted W' Balance (W'bal)
+### 7. Fatigue-Adjusted W' Balance (W'bal)
 **Concept**: A real-time model of your remaining anaerobic work capacity.
 **Implementation**: VeloAnalytics uses a **Fatigue-Adjusted Skiba Model**. While the standard model uses a static recovery constant, VeloAnalytics accounts for parameter non-stationarity during long-duration activities:
 1.  **Recovery Slowing**: The recovery time constant ($\tau$) is scaled by accumulated work ($kJ$). As you fatigue, $\tau$ increases (e.g., ~15% slower per 1000kJ), reflecting the physiological "sluggishness" of a fatigued system.
 2.  **Capacity Decay**: The maximum anaerobic capacity ($W'$) is not treated as a static tank. The ceiling of the tank decays gradually based on cumulative work (e.g., ~5% per 1000kJ), acknowledging that you cannot reach 100% of your fresh $W'$ after several hours of riding.
 3.  **Standard Model**: For shorter efforts, these adjustments are negligible, and the model behaves as the standard differential equation proposed by **Dr. Philip Skiba**.
 
-### 7. Aerobic Decoupling (Pw:HR)
+### 8. Aerobic Decoupling (Pw:HR)
 **Concept**: Measures the "drift" between Power and Heart Rate during a steady-state effort.
 **Calculation**: The ratio of Average Power to Average Heart Rate in the first half of a ride compared to the second half. A drift > 5% may indicate aerobic fatigue or lack of cardiovascular conditioning.
 
-### 8. Wellness & Physiological Recovery
+### 9. Wellness & Physiological Recovery
 **Concept**: Integrating life-stress and sleep data into performance analysis.
 *   **Initial Readiness**: The standard readiness metric provided by source sensors (Garmin/Oura).
 *   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture.
 *   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**.
 
-### 9. Experimental Velo Readiness (Opt-in)
+### 10. Experimental Velo Readiness (Opt-in)
 **Concept**: A hypothesized weighted algorithm designed to approximate aggregate physiological readiness by combining sleep quality, autonomic status, and chronic training load. Unlike standard linear averages, it uses **Non-Linear Multiplicative Inhibitors** to model fatigue correctly—preventing high scores in one area from masking critical deficits in another.
 
 **Component Scoring**:

@@ -14,7 +14,6 @@ import {
   ChevronDown,
   Moon,
   RefreshCw,
-  Info as InfoIcon,
   AlertTriangle
 } from 'lucide-react';
 import { cn, formatDuration, formatLocalDate } from '../../lib/utils';

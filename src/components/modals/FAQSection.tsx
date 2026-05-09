@@ -73,6 +73,12 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["normalized", "actual cost", "effort", "physiological cost"]
       },
       {
+        question: "What is Relative Intensity (RI)?",
+        beginnerAnswer: "RI is a scale of 0 to 1.0 (or higher) that tells you how hard your ride was compared to your absolute speed limit. 1.0 means you were riding at your limit (Critical Power).",
+        technicalAnswer: "Relative Intensity (RI) is the ratio of normalized power (xPower) to Critical Power (CP). Formula: RI = xPower / CP. It is a dimensionless number representing the intensity of an effort relative to the athlete's physiological steady-state threshold.",
+        keywords: ["ri", "intensity", "relative", "hard", "threshold"]
+      },
+      {
         question: "What is Efficiency Factor (EF)?",
         beginnerAnswer: "EF is a measure of your 'aerobic engine' efficiency. It tells you how much power you produce for every heartbeat. As you get fitter, your EF will go up because you can produce more power with less effort from your heart.",
         technicalAnswer: "Efficiency Factor (EF) is the ratio of normalized output (xPower) to physiological input (Average Heart Rate). EF = xPower ÷ Avg HR. It quantifies aerobic efficiency; mitochondrial improvements and increased stroke volume lead to higher EF values over time on standardized efforts.",
@@ -150,8 +156,14 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Is my performance data sent to AI companies?",
         beginnerAnswer: "Only when you use the 'Velo Coach' feature. Your raw ride files are never sent; only a text summary of your stats is shared with the AI provider (like Google or OpenAI) to generate your coaching response.",
-        technicalAnswer: "Data is processed locally. When a chat message is sent, a distilled text summary is generated and sent via a direct client-side HTTPS request to the selected AI vendor (Gemini/OpenAI/Anthropic). Your raw binary .fit files and full sensor data never leave your browser.",
-        keywords: ["security", "privacy", "sharing", "google", "openai"]
+        technicalAnswer: "Data is processed locally. When a chat message is sent, a distilled text summary is generated and sent via a direct client-side HTTPS request to the selected AI vendor (Gemini/OpenAI/Anthropic/Groq). Your raw binary .fit files and full sensor data never leave your browser.",
+        keywords: ["security", "privacy", "sharing", "google", "openai", "anthropic", "groq"]
+      },
+      {
+        question: "How do I use Groq for faster AI responses?",
+        beginnerAnswer: "Groq is a high-speed AI provider that works with your own API key. It's often much faster than other cloud options. You can set it up in the Intelligence tab by selecting 'Groq' and pasting your key.",
+        technicalAnswer: "Groq uses specialized LPU (Language Processing Unit) hardware to provide industry-leading inference speeds. VeloAnalytics connects to Groq's OpenAI-compatible API endpoint using your provided key and model selection (e.g., Llama 3.3).",
+        keywords: ["groq", "fast", "llama", "speed", "performance"]
       },
       {
         question: "Can I use my own local LLM (Ollama/LM Studio)?",

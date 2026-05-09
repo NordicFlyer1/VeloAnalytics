@@ -18,6 +18,9 @@ VeloAnalytics utilizes a multi-layered priority system for managing API keys (Ge
 *   **Fallback:** If the Settings Panel field is empty, the app falls back to build-time environment variables.
 *   **Vite Prefixes:**
     *   `VITE_GEMINI_API_KEY`
+    *   `VITE_OPENAI_API_KEY`
+    *   `VITE_ANTHROPIC_API_KEY`
+    *   `VITE_GROQ_API_KEY`
     *   `VITE_GOOGLE_MAPS_API_KEY`
     *   `VITE_OPENWEATHERMAP_API_KEY`
 
@@ -28,9 +31,10 @@ VeloAnalytics utilizes a multi-layered priority system for managing API keys (Ge
 VeloAnalytics does not charge for AI access. Instead, we use the BYOK model to give you total control over costs, privacy, and model quality.
 
 ### Cloud Providers (Online)
-*   **Google Gemini**: Optimized for speed and large context windows. Best for daily summaries. (Default: Gemini 1.5 Pro).
+*   **Google Gemini**: Optimized for speed and large context windows. Best for daily summaries. (Default: Gemini 3 Flash Preview).
 *   **OpenAI (GPT-4o)**: Exceptional reasoning and clinical analysis.
 *   **Anthropic (Claude 3.5)**: Highly nuanced coaching personas and data interpretation.
+*   **Groq**: High-performance inference for Llama, Mistral, and other open models. Optimized for near-instant responses.
 
 ### Local Providers (Offline/Private)
 *   **Ollama / LM Studio**: Run models (like Phi-4, Llama 3, Gemma 3) entirely on your own hardware using OpenAI-compatible endpoints.
@@ -55,7 +59,7 @@ When you send a message, the app bundle provides the AI with a dense physiologic
 
 ### Security Model:
 *   **Local Processing**: All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
-*   **Direct-to-Vendor**: Your API keys are used to talk directly to Google/OpenAI/Anthropic from your browser.
+*   **Direct-to-Vendor**: Your API keys are used to talk directly to Google/OpenAI/Anthropic/Groq from your browser.
 *   **Local-First Option**: If using a Local LLM provider (Ollama/LM Studio), the data never leaves your computer.
 *   **GitHub Safety**: The code is architected to never store hardcoded keys. User-provided keys stay in `localStorage`. Environment variables (like `.env`) are excluded from version control via `.gitignore`, ensuring no secrets are accidentally pushed to GitHub.
 
