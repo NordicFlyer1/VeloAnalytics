@@ -1,7 +1,10 @@
+import { saveAs } from './fileSystem';
+
 /**
  * Utility to export an array of objects to a CSV file.
+ * Returns a promise that resolves when the export is complete.
  */
-export function exportToCSV(data: any[], fileName: string = 'export.csv') {
+export async function exportToCSV(data: any[], fileName: string = 'export.csv') {
   if (!data || !data.length) return;
 
   const headers = Object.keys(data[0]);
@@ -21,17 +24,9 @@ export function exportToCSV(data: any[], fileName: string = 'export.csv') {
   }
 
   const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-  
-  // Standard browser download approach works in both web and Tauri webview
-  const link = document.createElement('a');
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+
+  await saveAs(csvString, fileName, {
+    description: 'CSV File',
+    accept: { 'text/csv': ['.csv'] }
+  });
 }

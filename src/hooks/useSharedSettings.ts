@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings, SleepMetric, HRVMetric } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 import { formatLocalDate } from '../lib/utils';
+import { saveAs } from '../lib/fileSystem';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
@@ -17,7 +18,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
-  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards. You also have access to "Relative Intensity (RI)" which is xPower / CP, "Efficiency Factor (EF)" which is xPower / Avg HR (aerobic efficiency), and "Velo-Readiness" which is a custom physiological recovery score. CRITICAL: All historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first, oldest last). The first data point in a sequence ALWAYS represents the most recent date provided in the context.',
+  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. You will receive context in a structured JSON format containing profile data, detailed activity metrics (xPower, RI, BikeScore, EF), and wellness trends (HRV, Sleep, Velo-Readiness). Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards. CRITICAL: Historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first).',
   wellnessContextDays: 7,
   useExperimentalReadiness: false,
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
@@ -190,7 +191,7 @@ export function useSharedSettings() {
    * Export Settings
    * Serializes user settings and API keys into a JSON file for backup.
    */
-  const exportSettings = () => {
+  const exportSettings = async () => {
     const config = {
       cp,
       autoUpdateCP,
@@ -212,15 +213,13 @@ export function useSharedSettings() {
       hrvHistory
     };
 
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `veloanalytics_config_backup_${formatLocalDate(new Date())}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const content = JSON.stringify(config, null, 2);
+    const filename = `veloanalytics_config_backup_${formatLocalDate(new Date())}.json`;
+
+    await saveAs(content, filename, {
+      description: 'VeloAnalytics Config',
+      accept: { 'application/json': ['.json'] }
+    });
   };
 
   /**

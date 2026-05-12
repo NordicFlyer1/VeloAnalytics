@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn, formatLocalDate } from '../../lib/utils';
+import { saveAs } from '../../lib/fileSystem';
 import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity, SleepMetric, HRVMetric } from '../../types';
 import { getCoachResponse, buildCoachContext } from '../../services/intelligenceService';
 
@@ -18,6 +19,7 @@ interface IntelligenceDrawerProps {
   summary: ActivitySummary | null;
   currentPMC: PMCDataPoint | null;
   predictedPMC: PMCDataPoint | null;
+  pmcData: PMCDataPoint[];
   history: HistoricalActivity[];
   sleepHistory: SleepMetric[];
   hrvHistory: HRVMetric[];
@@ -33,6 +35,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   summary,
   currentPMC,
   predictedPMC,
+  pmcData,
   history,
   sleepHistory,
   hrvHistory,
@@ -74,6 +77,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
         summary, 
         currentPMC, 
         predictedPMC,
+        pmcData,
         history, 
         sleepHistory, 
         hrvHistory, 
@@ -104,20 +108,38 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     setError(null);
   };
 
-  const downloadResponse = (content: string, timestamp: Date) => {
+  const downloadResponse = async (content: string, timestamp: Date) => {
     const dateStr = formatLocalDate(timestamp);
     const timeStr = timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
     const filename = `velo-coach-insight-${dateStr}-${timeStr}.md`;
     
-    const blob = new Blob([content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await saveAs(content, filename, {
+      description: 'Markdown File',
+      accept: { 'text/markdown': ['.md'] }
+    });
+  };
+
+  const downloadContext = async () => {
+    const context = buildCoachContext(
+      summary, 
+      currentPMC, 
+      predictedPMC,
+      pmcData,
+      history, 
+      sleepHistory, 
+      hrvHistory, 
+      cp, 
+      wPrime,
+      aiSettings,
+      aiSettings.wellnessContextDays || 7
+    );
+    
+    const filename = `velo-ai-context-${new Date().toISOString().split('T')[0]}.json`;
+
+    await saveAs(context, filename, {
+      description: 'JSON File',
+      accept: { 'application/json': ['.json'] }
+    });
   };
 
   const quickActions = [
@@ -190,6 +212,13 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                     ))}
                   </div>
                 </div>
+                <button 
+                  onClick={downloadContext}
+                  className="p-2 hover:bg-app-bg/50 rounded-full text-app-muted hover:text-orange-500 transition-colors"
+                  title="Export Internal AI Context (JSON)"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
                 <button 
                   onClick={onClose}
                   className="p-2 hover:bg-app-bg/50 rounded-full text-app-muted transition-colors"

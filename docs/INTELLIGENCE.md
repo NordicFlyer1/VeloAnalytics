@@ -48,14 +48,19 @@ VeloAnalytics does not charge for AI access. Instead, we use the BYOK model to g
 The Velo Coach is built on a **Zero-Storage** architecture.
 
 ### What the AI can see:
-When you send a message, the app bundle provides the AI with a dense physiological context:
+When you send a message, the app bundle provides the AI with a dense, **structured JSON physiological context**:
 1.  **Thresholds**: Your established **Critical Power (CP)** and **W' Balance** (anaerobic battery).
-2.  **Summarization / Active Activity Summary**:
-    *   **Intensity**: xPower (NP), Relative Intensity (RI), BikeScore, and total **Work (KJ)**.
+2.  **Activity Metrics**:
+    *   **Intensity**: xPower, Relative Intensity (RI), BikeScore, and total **Work (KJ)**.
     *   **Sensors**: Average and Maximum values for **Power**, **Heart Rate**, **Cadence**, and **Speed**.
-    *   **Geography/Physics**: Total **Distance**, **Total Ascent** (Climbing), and **Aerobic Decoupling** (Efficiency/Pw:HR).
-3.  **Fitness Trends (PMC)**: Your current **CTL** (Fitness), **ATL** (Fatigue), and **TSB** (Form/Freshness).
-4.  **Historical Library**: A searchable index of your 20 most recent activities (Name, Date, FileName, and BikeScore).
+    *   **Efficiency**: **Efficiency Factor (EF)** (xPower per BPM) and **Aerobic Decoupling** (Pw:HR).
+    *   **Geography**: Total **Distance** and **Total Ascent** (Climbing).
+3.  **Wellness & Recovery Trends**:
+    *   **Sleep Sequence**: Multi-day history of sleep scores, quality, and duration.
+    *   **HRV Sequence**: Multi-day history of overnight HRV vs. your personal baseline.
+    *   **Velo-Readiness**: The complete breakdown of the experimental readiness score, including active penalties (e.g., Sleep Debt, ACWR spikes).
+4.  **Fitness Trends (PMC)**: Your current **CTL** (Fitness), **ATL** (Fatigue), and **TSB** (Form/Freshness), plus a 14-day projection.
+5.  **Historical Library**: A searchable index of your 20 most recent activities (Name, Date, FileName, and BikeScore).
 
 ### Security Model:
 *   **Local Processing**: All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
@@ -92,9 +97,13 @@ The coach understands your naming conventions and historical data.
 
 ### Export / Import Settings
 *   **Functionality:** Found in Settings > Maintenance.
-*   **Export:** Captures all `localStorage` configuration (Settings, API Keys, Physiological Thresholds, Equipment Profiles) into a single `.json` blob (`veloanalytics_config_backup.json`). Activity history is excluded to keep backups portable and focused on configuration and secrets.
-*   **Import:** Overwrites the current `localStorage` settings with the backup content and reloads the application to sync state.
-*   **Use Case:** Migrating between browsers (e.g., Chrome to Tauri), recovering from cache clearing, or syncing between devices.
+*   **Export Settings:** Captures all `localStorage` configuration (Settings, API Keys, Physiological Thresholds, Equipment Profiles) into a single `.json` blob (`veloanalytics_config_backup.json`). Activity history is excluded to keep backups portable and focused on configuration and secrets.
+*   **Import Settings:** Overwrites the current `localStorage` settings with the backup content and reloads the application to sync state.
+
+### Export Internal AI Context (JSON)
+*   **Functionality:** Found in the Intelligence Drawer (AI Chat) via the **Download** icon.
+*   **Purpose:** Downloads the exact structured JSON object that is sent to the Velo Coach. 
+*   **Use Case:** Debugging AI responses, analyzing your own data trends with external tools, or "warm-starting" a conversation on another platform using the same physiological state.
 
 ---
 
@@ -107,7 +116,7 @@ A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in S
 A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (Ollama), training is impossible as data remains offline.
 
 **Q: Why does the coach sometimes get math wrong?**
-A: LLMs can struggle with arithmetic. VeloAnalytics handles this by **pre-calculating** the hard numbers (xPower, BikeScore, etc.) and passing the results to the AI for interpretation.
+A: LLMs can struggle with complex arithmetic. VeloAnalytics mitigates this by **pre-calculating** every metric (xPower, BikeScore, EF, Velo-Readiness) and passing them as a **structured JSON schema**. This provides the AI with "hard facts" to interpret rather than forcing it to guess from raw sensor streams.
 
 **Q: What is "Velo Experimental Readiness"?**
 A: It is an opt-in algorithm that calculates physiological readiness using a custom weighting (Sleep, HRV, Recovery, Load) and penalty logic based on user-provided hypotheses. See the Methodology document for the full formula.

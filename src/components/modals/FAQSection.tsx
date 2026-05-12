@@ -149,15 +149,21 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "What is the Velo Coach?",
-        beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your 6-week fitness trends and can search your history.",
-        technicalAnswer: "The coach context includes CP, W' Balance, and full ActivitySummary metrics (NP, RI, BikeScore, KJ, Aerobic Decoupling). It also receives sensor statistical aggregates (Avg/Max Power, HR, Cadence, Speed), PMC indices (LTS, STS, SB), and a searchable index of historical ride metadata.",
-        keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent"]
+        beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your recent sleep, HRV trends, and 6-week fitness base.",
+        technicalAnswer: "The coach context is a structured JSON schema containing: 1) System thresholds (CP/W'); 2) Calculated activity metrics (xPower, RI, BikeScore, EF, Aerobic Decoupling); 3) Sensor aggregates (Avg/Max Power, HR, Cadence, Speed); 4) Wellness timelines (Sleep durations, Quality, HRV Baselines); and 5) Performance indices (CTL, ATL, TSB) with 14-day projections.",
+        keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent", "json"]
       },
       {
         question: "Is my performance data sent to AI companies?",
-        beginnerAnswer: "Only when you use the 'Velo Coach' feature. Your raw ride files are never sent; only a text summary of your stats is shared with the AI provider (like Google or OpenAI) to generate your coaching response.",
-        technicalAnswer: "Data is processed locally. When a chat message is sent, a distilled text summary is generated and sent via a direct client-side HTTPS request to the selected AI vendor (Gemini/OpenAI/Anthropic/Groq). Your raw binary .fit files and full sensor data never leave your browser.",
-        keywords: ["security", "privacy", "sharing", "google", "openai", "anthropic", "groq"]
+        beginnerAnswer: "Only when you use the 'Velo Coach' feature. Your raw ride files are never sent; only a summary of your stats in a standard data format is shared with the AI provider (like Google or OpenAI) to generate your coaching response.",
+        technicalAnswer: "Data is processed locally. When a chat message is sent, the app generates a structured JSON summary and sends it via client-side HTTPS to the selected AI vendor. Your raw binary .fit files and high-resolution sensor streams never leave your browser context.",
+        keywords: ["security", "privacy", "sharing", "google", "openai", "anthropic", "groq", "json"]
+      },
+      {
+        question: "How do I export the data that is sent to the AI?",
+        beginnerAnswer: "You can download the exact context file that our AI Coach sees! Open the Velo Coach sidebar and click the 'Download' icon in the header. This saves a JSON file to your computer.",
+        technicalAnswer: "The 'Export Internal AI Context' feature serializes the active Coaching Context (the exact JSON blob provided to the LLM) into a download. This is useful for cross-referencing your calculated metrics, debugging prompts, or performing offline analysis with other research tools.",
+        keywords: ["export", "download", "ai", "context", "json", "data", "debug"]
       },
       {
         question: "How do I use Groq for faster AI responses?",

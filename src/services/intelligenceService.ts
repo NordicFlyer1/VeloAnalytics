@@ -3,12 +3,13 @@ import { AISettings, ActivitySummary, PMCDataPoint, ChatMessage, HistoricalActiv
 import { calculateVeloReadiness } from './wellnessService';
 
 /**
- * Distills complex activity and performance data into a concise text format for the LLM.
+ * Distills complex activity and performance data into a structured JSON format for the LLM.
  */
 export function buildCoachContext(
   summary: ActivitySummary | null,
   currentPMC: PMCDataPoint | null,
   predictedPMC: PMCDataPoint | null,
+  pmcData: PMCDataPoint[],
   history: HistoricalActivity[],
   sleepHistory: SleepMetric[],
   hrvHistory: HRVMetric[],
@@ -17,117 +18,149 @@ export function buildCoachContext(
   aiSettings: AISettings,
   wellnessContextDays: number = 7
 ): string {
-  let context = `Athlete's Physiological Profile & Context:\n`;
-  context += `- Current System Date: ${new Date().toISOString().split('T')[0]}\n`;
-  context += `- Critical Power (CP): ${cp}W\n`;
-  context += `- W' Balance (Anaerobic Capacity): ${wPrime}J\n`;
-  context += `- Wellness Lookback Window: ${wellnessContextDays} days\n`;
-
-  // Calculate and add Readiness context
-  const latestHRV = hrvHistory.length > 0 ? [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
-  const latestSleep = sleepHistory.length > 0 ? [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  // 1. Wellness Trends (Newest First)
+  const sortedSleep = [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
+  const sortedHRV = [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
   
-  if (currentPMC) {
-    const rawReadiness = latestSleep?.readinessScore;
-    const veloReadiness = calculateVeloReadiness(
+  // 2. Absolute Athlete State (Matches SummaryCards "Interface" logic)
+  const latestSleep = sortedSleep[0] || null;
+  
+  // Find PMC aligned with latest sleep (Athlete's current baseline)
+  let athleteCurrentPMC = null;
+  if (latestSleep) {
+    athleteCurrentPMC = pmcData.find(p => p.date === latestSleep.date);
+  }
+  
+  // If no sleep data or no match, fall back to last real PMC point in history
+  if (!athleteCurrentPMC && pmcData.length > 0) {
+    const realPoints = pmcData.filter(p => !p.isPredictive);
+    if (realPoints.length > 0) {
+      athleteCurrentPMC = [...realPoints].sort((a, b) => b.date.localeCompare(a.date))[0];
+    }
+  }
+
+  // Calculate Global Athlete Readiness (The "Interface" number)
+  let athleteGlobalReadiness = null;
+  if (latestSleep && athleteCurrentPMC) {
+    // Aligned to latest sleep as per SummaryCards
+    const alignedHRV = hrvHistory.find(h => h.date === latestSleep.date) || null;
+    athleteGlobalReadiness = calculateVeloReadiness(
       latestSleep,
-      latestHRV,
+      alignedHRV,
+      athleteCurrentPMC.sb,
+      athleteCurrentPMC.sts,
+      athleteCurrentPMC.bikeScore || 0
+    );
+  }
+
+  // 3. Activity-Specific Readiness (Context for the selected ride)
+  let activityReadiness = null;
+  if (currentPMC && summary) {
+    const activityDate = summary.startTime.toISOString().split('T')[0];
+    const activitySleep = sleepHistory.find(s => s.date === activityDate) || null;
+    const activityHRV = hrvHistory.find(h => h.date === activityDate) || null;
+    
+    activityReadiness = calculateVeloReadiness(
+      activitySleep,
+      activityHRV,
       currentPMC.sb,
       currentPMC.sts,
-      summary?.bikeScore || 0
+      summary.bikeScore || 0
     );
-
-    context += `\nReadiness & Recovery Status (Targeting Latest Date: ${currentPMC.date}):\n`;
-    if (rawReadiness !== undefined) {
-      context += `- Source Readiness (from ${latestSleep?.date || 'N/A'}): ${rawReadiness}/100\n`;
-    }
-    context += `- Current Velo-Readiness (as of ${currentPMC.date}): ${veloReadiness.score}/100\n`;
-    if (veloReadiness.penalties.length > 0) {
-      context += `- Active Recovery Penalties: ${veloReadiness.penalties.join(', ')}\n`;
-    }
   }
 
-  // Add Wellness/Recovery trends
-  if (sleepHistory.length > 0 || hrvHistory.length > 0) {
-    context += `\nWellness & Recovery (${wellnessContextDays}-Day Trends - NEWEST/LATEST DATA POINT FIRST):\n`;
-    
-    if (sleepHistory.length > 0) {
-      const recentSleep = [...sleepHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
-      context += `- Recent Sleep Sequence (Newest First, starting ${recentSleep[0]?.date}): ${recentSleep.map(s => `${s.score} (${s.quality})`).join(', ')}\n`;
-      const avgDuration = recentSleep.reduce((acc, s) => acc + s.duration, 0) / recentSleep.length;
-      context += `- Avg Duration (${wellnessContextDays}d): ${(avgDuration / 60).toFixed(1)} hours\n`;
-    }
-
-    if (hrvHistory.length > 0) {
-      const recentHRV = [...hrvHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, wellnessContextDays);
-      context += `- Recent HRV Sequence (Newest First, starting ${recentHRV[0]?.date}): ${recentHRV.map(h => `${h.overnightHRV}ms`).join(', ')}\n`;
-      const latest = recentHRV[0];
-      context += `- Latest Baseline Range: ${latest.baselineMin}-${latest.baselineMax}ms\n`;
-    }
-  }
-  
-  if (summary) {
-    context += `\nLatest Activity Details (${summary.name}):\n`;
-    context += `- Core: ${(summary.distance / 1000).toFixed(1)}km, ${Math.round(summary.duration / 60)}min duration\n`;
-    context += `- Intensity: xPower ${Math.round(summary.xPower || 0)}W, RI ${summary.relativeIntensity?.toFixed(2)}, BikeScore ${Math.round(summary.bikeScore || 0)}\n`;
-    context += `- Work: ${summary.work?.toFixed(0)} KJ total energy expenditure\n`;
-    
-    context += `- Power: Avg ${Math.round(summary.avgPower || 0)}W, Max ${Math.round(summary.maxPower || 0)}W\n`;
-    if (summary.avgHeartRate) {
-      context += `- Heart Rate: Avg ${Math.round(summary.avgHeartRate)} BPM, Max ${Math.round(summary.maxHeartRate || 0)} BPM\n`;
-    }
-    if (summary.avgCadence) {
-      context += `- Cadence: Avg ${Math.round(summary.avgCadence)} RPM, Max ${Math.round(summary.maxCadence || 0)} RPM\n`;
-    }
-    if (summary.avgSpeed) {
-      context += `- Speed: Avg ${summary.avgSpeed.toFixed(1)} km/h, Max ${(summary.maxSpeed || 0).toFixed(1)} km/h\n`;
-    }
-    if (summary.totalAscent !== undefined) {
-      context += `- Elevation: Total Ascent ${Math.round(summary.totalAscent)}m\n`;
-    }
-    if (summary.aerobicDecoupling !== undefined) {
-      context += `- Efficiency: Aerobic Decoupling (Pw:HR) ${summary.aerobicDecoupling.toFixed(1)}%\n`;
-    }
-    
-    // Add Efficiency Factor (EF)
-    if (summary.xPower && summary.avgHeartRate && summary.avgHeartRate > 0) {
-      const ef = (summary.xPower / summary.avgHeartRate).toFixed(2);
-      context += `- Efficiency Factor (EF): ${ef} (xPower per BPM)\n`;
-    }
-  } else {
-    context += `\n- No specific activity currently loaded for deep analysis.\n`;
+  // Calculate Efficiency Factor if possible
+  let efficiencyFactor = null;
+  if (summary && summary.xPower && summary.avgHeartRate && summary.avgHeartRate > 0) {
+    efficiencyFactor = Number((summary.xPower / summary.avgHeartRate).toFixed(2));
   }
 
-  if (currentPMC) {
-    context += `\nPerformance Management (PMC Status):
-- Fitness (CTL/LTS): ${Math.round(currentPMC.lts)} (6-week average load)
-- Fatigue (ATL/STS): ${Math.round(currentPMC.sts)} (7-day average load)
-- Form (TSB/SB): ${Math.round(currentPMC.sb)} (Freshness index)\n`;
-    
-    if (predictedPMC && predictedPMC.date !== currentPMC.date) {
-      context += `\nProjected Status (in 14 days with zero load):
-- Fitness Decay: ${Math.round(predictedPMC.lts)}
-- Fatigue Decay: ${Math.round(predictedPMC.sts)}
-- Form Gain: ${Math.round(predictedPMC.sb)}\n`;
-    }
-  }
+  const contextData = {
+    system: {
+      date: new Date().toISOString().split('T')[0],
+      units: "Metric (KM, Watts, m, kg)",
+      lookbackDays: wellnessContextDays,
+      readinessFormula: "Base = (Sleep*0.35 + Recovery*0.25 + HRV*0.20 + Load*0.20). Adjusted by WorstPillar suppression and debt/spike penalties."
+    },
+    athleteCurrentState: {
+      readiness: athleteGlobalReadiness, // The "remarkably higher" UI number
+      performance: athleteCurrentPMC ? {
+        fitness: Math.round(athleteCurrentPMC.lts),
+        fatigue: Math.round(athleteCurrentPMC.sts),
+        form: Math.round(athleteCurrentPMC.sb)
+      } : null,
+      latestWellness: {
+        sleep: latestSleep,
+        hrv: sortedHRV[0] || null
+      },
+      sleepTrend: sortedSleep.map(s => ({
+        date: s.date,
+        score: s.score,
+        durationMinutes: s.duration,
+        quality: s.quality,
+        restingHR: s.restingHeartRate
+      })),
+      hrvTrend: sortedHRV.map(h => ({
+        date: h.date,
+        overnightHRV: h.overnightHRV,
+        baseline: `${h.baselineMin}-${h.baselineMax}ms`,
+        sevenDayAvg: h.sevenDayAvg
+      })),
+      athleteProfile: {
+        criticalPower: cp,
+        wPrime: wPrime
+      }
+    },
+    activityContext: summary ? {
+      name: summary.name,
+      date: summary.startTime.toISOString().split('T')[0],
+      metrics: {
+        xPower: summary.xPower,
+        relativeIntensity: summary.relativeIntensity,
+        bikeScore: summary.bikeScore,
+        efficiencyFactor: efficiencyFactor,
+        aerobicDecoupling: summary.aerobicDecoupling,
+        workKJ: summary.work,
+        totalAscent: summary.totalAscent,
+        readinessOnDay: activityReadiness // How you felt GOING INTO this ride
+      },
+      performanceAtTime: currentPMC ? {
+        fitness: Math.round(currentPMC.lts),
+        fatigue: Math.round(currentPMC.sts),
+        form: Math.round(currentPMC.sb)
+      } : null,
+      stats: {
+        durationSeconds: summary.duration,
+        distanceMeters: summary.distance,
+        avgPower: summary.avgPower,
+        maxPower: summary.maxPower,
+        avgHR: summary.avgHeartRate,
+        maxHR: summary.maxHeartRate,
+        avgCadence: summary.avgCadence,
+        avgSpeed: summary.avgSpeed
+      }
+    } : null,
+    projections: predictedPMC ? {
+      forecastDate: predictedPMC.date,
+      fitness: Math.round(predictedPMC.lts),
+      fatigue: Math.round(predictedPMC.sts),
+      form: Math.round(predictedPMC.sb)
+    } : null,
+    history: [...history]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 40) // Increased to 40
+      .map((h, i) => ({
+        index: i + 1,
+        name: h.name,
+        date: h.date,
+        bikeScore: Math.round(h.bikeScore || 0),
+        fileName: h.originalFileName || 'N/A'
+      }))
+  };
 
-  context += `\nHistorical Ride Library (Recent 20):\n`;
-  // Limit to most recent 20 for context length safety
-  const recentHistory = [...history].slice(0, 20);
-  recentHistory.forEach((item, idx) => {
-    // Note the user's naming scheme in the context
-    context += `${idx + 1}. Name: "${item.name}", File: "${item.originalFileName || 'N/A'}", Date: ${item.date}, BikeScore: ${Math.round(item.bikeScore)}\n`;
-  });
-
-  if (history.length > 20) {
-    context += `... and ${history.length - 20} more archived activities.\n`;
-  }
-
-  context += `\nNote: If the user asks about a specific file or name (e.g., "MyWhoosh" or a date like "2026_04_13"), use the index above to identify it. All summaries represent real physical data.\n`;
-  
-  return context;
+  return JSON.stringify(contextData, null, 2);
 }
+
 
 /**
  * Handles communication with Cloud-based Gemini

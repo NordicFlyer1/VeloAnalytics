@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ActivitySummary, CyclingDataPoint } from '../types';
 import { getActivityData } from '../services/storage';
 import { exportToCSV } from '../lib/csvExport';
+import { saveAs } from '../lib/fileSystem';
 
 export interface ExportStatus {
   active: boolean;
@@ -51,14 +52,10 @@ export const useExportActions = (
       await new Promise(resolve => setTimeout(resolve, 500));
       setExportStatus(prev => ({ ...prev, progress: 50 }));
       
-      const url = URL.createObjectURL(fileToExport);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileToExport.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveAs(fileToExport, fileToExport.name, {
+        description: 'Activity File',
+        accept: { [fileToExport.type || 'application/octet-stream']: [`.${fileToExport.name.split('.').pop()}`] }
+      });
       
       setExportStatus(prev => ({ ...prev, progress: 100 }));
     } catch (err) {
@@ -118,15 +115,12 @@ export const useExportActions = (
 
     setExportStatus(prev => ({ ...prev, progress: 95 }));
 
-    const blob = new Blob([gpx], { type: 'application/gpx+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${summary?.name || 'activity'}.gpx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const filename = `${summary?.name || 'activity'}.gpx`;
+
+    await saveAs(gpx, filename, {
+      description: 'GPX File',
+      accept: { 'application/gpx+xml': ['.gpx'] }
+    });
     
     setExportStatus(prev => ({ ...prev, progress: 100 }));
     setTimeout(() => setExportStatus({ active: false, type: '', progress: 0 }), 1000);
@@ -155,7 +149,7 @@ export const useExportActions = (
       const fileName = `Velo_FullData_${summary?.name || 'Activity'}_${new Date().getTime()}.csv`;
       
       setExportStatus(prev => ({ ...prev, progress: 50 }));
-      exportToCSV(exportData, fileName);
+      await exportToCSV(exportData, fileName);
       setExportStatus(prev => ({ ...prev, progress: 100 }));
     } catch (err) {
       console.error('Export failed:', err);

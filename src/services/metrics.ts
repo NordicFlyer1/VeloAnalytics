@@ -336,7 +336,7 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
   if (history.length === 0) return [];
 
   // Sort history by date
-  const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
   
   const pmc: PMCDataPoint[] = [];
   let currentLTS = 0;
@@ -349,29 +349,33 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
   const stsLambda = 1 / stsDays;
 
   // We need to fill in gaps between activities and project into the future
-  const firstDate = new Date(sortedHistory[0].date);
-  const lastActivityDate = new Date(sortedHistory[sortedHistory.length - 1].date);
+  // Use a safe way to parse YYYY-MM-DD strings as local dates
+  const parseDateLocal = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const firstDate = parseDateLocal(sortedHistory[0].date);
   
   // Projection logic: Go at least to TODAY, then add futureDays
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+  const todayStr = formatLocalDate(today);
+
+  const lastActivityDate = parseDateLocal(sortedHistory[sortedHistory.length - 1].date);
   const endDate = new Date(Math.max(lastActivityDate.getTime(), today.getTime()));
   endDate.setDate(endDate.getDate() + futureDays);
 
-  const dayCount = Math.ceil((endDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
+  // Map scores to dates for quick lookup
   const dailyScores: Record<string, number> = {};
   sortedHistory.forEach(h => {
     const score = Number.isFinite(h.bikeScore) ? h.bikeScore : 0;
     dailyScores[h.date] = (dailyScores[h.date] || 0) + score;
   });
 
-  const todayStr = formatLocalDate(today);
-
-  for (let i = 0; i < dayCount; i++) {
-    const currentDate = new Date(firstDate);
-    currentDate.setDate(firstDate.getDate() + i);
+  // Iterate day by day from first activity to endDate
+  const currentDate = new Date(firstDate);
+  while (currentDate <= endDate) {
     const dateStr = formatLocalDate(currentDate);
     
     const todaysScore = dailyScores[dateStr] || 0;
@@ -389,6 +393,9 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
       sb: (Number.isFinite(currentLTS) && Number.isFinite(currentSTS)) ? currentLTS - currentSTS : 0,
       isPredictive: dateStr > todayStr
     });
+
+    // Move to next day
+    currentDate.setDate(currentDate.getDate() + 1);
   }
 
   return pmc;
@@ -402,10 +409,13 @@ export function calculateSlope(point1: CyclingDataPoint, point2: CyclingDataPoin
   if (point1.distance === undefined || point2.distance === undefined) return 0;
   
   const distDiff = point2.distance - point1.distance;
-  if (distDiff <= 0) return 0;
+  if (distDiff <= 5) return 0; // Filter out tiny distance movements that cause noise
   
   const altDiff = point2.altitude - point1.altitude;
-  return (altDiff / distDiff) * 100;
+  const rawSlope = (altDiff / distDiff) * 100;
+  
+  // Clamp to reasonable cycling limits (-40% to 40%)
+  return Math.max(-40, Math.min(40, rawSlope));
 }
 
 /**

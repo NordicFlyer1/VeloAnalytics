@@ -129,12 +129,28 @@ export const MetricLane = React.memo(({
               fontSize={9}
               tickLine={false}
               axisLine={false}
-              domain={['auto', 'auto']}
+              domain={metric === 'slope' 
+                ? [
+                    (dataMin: number) => Math.floor(Math.min(dataMin, -5) / 5) * 5, 
+                    (dataMax: number) => Math.ceil(Math.max(dataMax, 5) / 5) * 5
+                  ]
+                : ['auto', 'auto']
+              }
               width={window.innerWidth < 768 ? 32 : 45}
               orientation="right"
               tickFormatter={(val) => config.unit === 'KJ' ? (val / 1000).toFixed(1) : Math.round(val).toString()}
             />
             
+            {metric === 'slope' && (
+              <ReferenceLineAny 
+                yAxisId="slope" 
+                y={0} 
+                stroke="var(--app-border)" 
+                strokeOpacity={0.3} 
+                strokeWidth={1}
+              />
+            )}
+
             {activePoint !== null && data[activePoint] && (
               <ReferenceLineAny 
                 yAxisId={metric}

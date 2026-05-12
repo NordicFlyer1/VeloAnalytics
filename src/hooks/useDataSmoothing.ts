@@ -12,6 +12,7 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
     let sumSpeed = 0;
     let sumHR = 0;
     let sumCadence = 0;
+    let sumSlope = 0;
     let hrCount = 0;
     let cadenceCount = 0;
 
@@ -19,6 +20,7 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
     for (let i = 0; i <= initialEnd; i++) {
       sumPower += data[i].power || 0;
       sumSpeed += data[i].speed || 0;
+      sumSlope += data[i].slope || 0;
       if (data[i].heartRate) {
         sumHR += data[i].heartRate!;
         hrCount++;
@@ -36,6 +38,7 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
       if (oldStart >= 0) {
         sumPower -= data[oldStart].power || 0;
         sumSpeed -= data[oldStart].speed || 0;
+        sumSlope -= data[oldStart].slope || 0;
         if (data[oldStart].heartRate) {
           sumHR -= data[oldStart].heartRate!;
           hrCount--;
@@ -49,6 +52,7 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
       if (newEnd < data.length && newEnd > initialEnd) {
         sumPower += data[newEnd].power || 0;
         sumSpeed += data[newEnd].speed || 0;
+        sumSlope += data[newEnd].slope || 0;
         if (data[newEnd].heartRate) {
           sumHR += data[newEnd].heartRate!;
           hrCount++;
@@ -67,6 +71,7 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
         ...data[i],
         power: sumPower / windowSize,
         speed: sumSpeed / windowSize,
+        slope: sumSlope / windowSize,
         heartRate: hrCount > 0 ? sumHR / hrCount : data[i].heartRate,
         cadence: cadenceCount > 0 ? sumCadence / cadenceCount : data[i].cadence
       };

@@ -567,6 +567,7 @@ export default function App() {
         summary={summary}
         currentPMC={currentPMC}
         predictedPMC={predictedPMC}
+        pmcData={pmcData}
         history={history}
         sleepHistory={settings.sleepHistory}
         hrvHistory={settings.hrvHistory}

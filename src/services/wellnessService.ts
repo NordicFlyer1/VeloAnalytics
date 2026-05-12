@@ -56,7 +56,7 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
 /**
  * Exports Sleep metrics to CSV
  */
-export function exportSleepToCSV(data: SleepMetric[]) {
+export async function exportSleepToCSV(data: SleepMetric[]) {
   const exportData = data.map(d => ({
     Date: d.date,
     Score: d.score,
@@ -72,7 +72,7 @@ export function exportSleepToCSV(data: SleepMetric[]) {
     WakeTime: d.wakeTime
   }));
   
-  exportToCSV(exportData, `Velo_SleepTimeline_${new Date().toISOString().split('T')[0]}.csv`);
+  await exportToCSV(exportData, `Velo_SleepTimeline_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 /**
@@ -119,7 +119,7 @@ export function parseHRVCSV(csv: string): HRVMetric[] {
 /**
  * Exports HRV metrics to CSV
  */
-export function exportHRVToCSV(data: HRVMetric[]) {
+export async function exportHRVToCSV(data: HRVMetric[]) {
   const exportData = data.map(d => ({
     Date: d.date,
     OvernightHRV: d.overnightHRV,
@@ -128,7 +128,7 @@ export function exportHRVToCSV(data: HRVMetric[]) {
     SevenDayAvg: d.sevenDayAvg
   }));
 
-  exportToCSV(exportData, `Velo_HRVRecovery_${new Date().toISOString().split('T')[0]}.csv`);
+  await exportToCSV(exportData, `Velo_HRVRecovery_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 function parseDurationToMinutes(duration: string): number {

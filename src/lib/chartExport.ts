@@ -1,8 +1,9 @@
 import { toCanvas } from 'html-to-image';
+import { saveAs } from './fileSystem';
 
 /**
  * Capture a DOM element as a PNG and trigger a download.
- * Currently uses the standard browser download method.
+ * Uses central saveAs utility for Save As experience.
  */
 export async function exportComponentAsImage(
   element: HTMLElement,
@@ -47,14 +48,15 @@ export async function exportComponentAsImage(
     // 4. Cleanup the temporary styles immediately after capture
     document.head.removeChild(style);
 
-    // 5. Convert canvas to PNG Data URL
-    const dataUrl = canvas.toDataURL('image/png', 1.0);
+    // 5. Convert canvas to Blob (needed for streaming to writable in FS API)
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+    if (!blob) throw new Error('Canvas to Blob conversion failed.');
 
-    // 6. Standard browser download approach
-    const link = document.createElement('a');
-    link.download = fileName;
-    link.href = dataUrl;
-    link.click();
+    // 6. Use central saveAs utility
+    await saveAs(blob, fileName, {
+      description: 'PNG Image',
+      accept: { 'image/png': ['.png'] }
+    });
   } catch (err) {
     console.error('Failed to export image:', err);
     throw new Error('Could not export chart image.');
