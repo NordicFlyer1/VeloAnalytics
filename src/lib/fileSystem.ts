@@ -3,8 +3,12 @@ import { writeTextFile, writeFile } from '@tauri-apps/plugin-fs';
 
 /**
  * Check if the application is running within a Tauri webview.
+ * In Tauri v2, we check for multiple indicators including the internal bridge.
  */
-export const isTauri = () => (window as any).__TAURI__ !== undefined;
+export const isTauri = () => {
+  const win = window as any;
+  return win.__TAURI_INTERNALS__ !== undefined || win.__TAURI__ !== undefined;
+};
 
 interface SaveOptions {
   description?: string;
@@ -28,6 +32,7 @@ export async function saveAs(
 
   // --- 1. TAURI INTEGRATION ---
   if (isTauri()) {
+    console.debug('[FileSystem] Tauri environment detected. Attempting native save dialog.');
     try {
       const filters = Object.entries(accept).map(([name, extensions]) => ({
         name: description,
@@ -40,6 +45,7 @@ export async function saveAs(
       });
 
       if (filePath) {
+        console.debug(`[FileSystem] Saving to native path: ${filePath}`);
         if (typeof content === 'string') {
           await writeTextFile(filePath, content);
         } else {
@@ -48,12 +54,15 @@ export async function saveAs(
         }
         return;
       } else {
-        // User cancelled
+        console.debug('[FileSystem] User cancelled native save dialog.');
         return;
       }
     } catch (err) {
-      console.warn('Tauri Save Dialog failed, falling back:', err);
+      console.error('[FileSystem] Tauri native save failed. This usually means the "dialog" or "fs" plugin is not enabled in your tauri.conf.json.', err);
+      // Fall through to browser methods
     }
+  } else {
+    console.debug('[FileSystem] Standard browser environment detected (non-Tauri).');
   }
 
   // --- 2. BROWSER FILE SYSTEM ACCESS API ---
