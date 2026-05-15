@@ -85,6 +85,11 @@ To align with the "pessimistic" nature of human recovery (where one failure poin
 
 *Note: This feature is experimental and must be enabled in Settings > Experimental.*
 
+### 11. Health & Systemic Metrics (PulseOX & Respiration)
+**Concept**: Tracking fundamental physiological indicators to detect early signs of illness, high-altitude adaptation, or systemic stress.
+*   **PulseOX (Oxygen Saturation)**: Measures the percentage of oxygen-saturated hemoglobin in the blood. For athletes, significant deviations from personal baselines (typically 94-99% at sea level) can indicate respiratory issues, poor air quality, or overreaching.
+*   **Respiration Rate**: Measured in breaths per minute (bpm). An elevated resting respiration rate is a reliable early indicator of sympathetic nervous system dominance, often preceding HRV drops during the onset of illness or overtraining.
+
 ---
 
 ## Attributions & Legal Notes

@@ -188,7 +188,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                   }}
                   isLast={index === activeMetrics.length - 1}
                   syncId="activityAnalysis"
-                  height={window.innerWidth < 768 ? 100 : (activeMetrics.length > 3 ? 120 : 160)}
+                  height={window.innerWidth < 768 ? 160 : (activeMetrics.length > 3 ? 160 : 200)}
                   estimatedCp={estimatedCp}
                   cp={cp}
                   manualCP={manualCP}

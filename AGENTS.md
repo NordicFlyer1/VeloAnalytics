@@ -74,6 +74,9 @@ This document serves as the source of truth for the visual and structural design
 - **Speed:** Cyan (`#06b6d4`)
 - **Altitude:** Amber (`#f59e0b`)
 - **Slope:** Slate (`#64748b`)
+- **HRV:** Indigo (`#6366f1`)
+- **PulseOX:** Fuchsia (`#d946ef`)
+- **Respiration:** Emerald (`#10b981`)
 
 ## 12. Mobile Responsiveness & Patterns
 - **Capsule Sliders:** For selection groups with many items (e.g., AI Providers), use a horizontal scroll pattern on mobile: `flex overflow-x-auto no-scrollbar whitespace-nowrap`. This maintains the "Capsule" aesthetic without breaking the layout or forcing awkward abbreviations.

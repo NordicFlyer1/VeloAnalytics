@@ -20,6 +20,7 @@ import { VolumeTrendsAnalysis } from './components/analysis/VolumeTrendsAnalysis
 import { TrainingLoadAnalysis } from './components/analysis/TrainingLoadAnalysis';
 import { SleepAnalysis } from './components/analysis/recovery/SleepAnalysis';
 import { RecoveryAnalysis } from './components/analysis/recovery/RecoveryAnalysis';
+import { HealthAnalysis } from './components/analysis/recovery/HealthAnalysis';
 import { AboutModal } from './components/modals/AboutModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { UploadView } from './components/views/UploadView';
@@ -118,6 +119,7 @@ export default function App() {
     isVolumeTrendsExpanded, setIsVolumeTrendsExpanded,
     isSleepExpanded, setIsSleepExpanded,
     isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
+    isHealthExpanded, setIsHealthExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed
   } = dashboardState;
@@ -495,6 +497,12 @@ export default function App() {
                       isExpanded={isRecoveryStatusExpanded}
                       setIsExpanded={setIsRecoveryStatusExpanded}
                       aiSettings={settings.aiSettings}
+                    />
+
+                    <HealthAnalysis 
+                      sleepData={settings.sleepHistory}
+                      isExpanded={isHealthExpanded}
+                      setIsExpanded={setIsHealthExpanded}
                     />
                   </div>
                 </div>

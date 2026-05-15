@@ -14,6 +14,7 @@ export const useDashboardState = () => {
   const [isVolumeTrendsExpanded, setIsVolumeTrendsExpanded] = useState(true);
   const [isSleepExpanded, setIsSleepExpanded] = useState(true);
   const [isRecoveryStatusExpanded, setIsRecoveryStatusExpanded] = useState(true);
+  const [isHealthExpanded, setIsHealthExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
 
   const toggleAllPanels = (expand: boolean) => {
@@ -30,6 +31,7 @@ export const useDashboardState = () => {
     setIsVolumeTrendsExpanded(expand);
     setIsSleepExpanded(expand);
     setIsRecoveryStatusExpanded(expand);
+    setIsHealthExpanded(expand);
     setIsHistoryExpanded(expand);
   };
 
@@ -47,6 +49,7 @@ export const useDashboardState = () => {
     !isVolumeTrendsExpanded && 
     !isSleepExpanded && 
     !isRecoveryStatusExpanded && 
+    !isHealthExpanded && 
     !isHistoryExpanded;
 
   return {
@@ -63,6 +66,7 @@ export const useDashboardState = () => {
     isVolumeTrendsExpanded, setIsVolumeTrendsExpanded,
     isSleepExpanded, setIsSleepExpanded,
     isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
+    isHealthExpanded, setIsHealthExpanded,
     isHistoryExpanded, setIsHistoryExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed

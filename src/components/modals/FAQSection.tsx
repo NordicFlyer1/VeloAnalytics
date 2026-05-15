@@ -242,6 +242,18 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["readiness", "experimental", "calculation", "formula", "weighting", "penalties", "algorithm", "custom", "garmin", "spike", "illness", "recovery", "lts", "ctl", "velo-readiness"]
       },
       {
+        question: "What is PulseOX (Oxygen Saturation)?",
+        beginnerAnswer: "This measures how much oxygen is in your blood. It's usually between 95% and 100%. If it drops significantly, it can be an early sign that you're getting sick or struggling with high altitude.",
+        technicalAnswer: "Pulse Oximetry (PulseOX) measures the percentage of hemoglobin in the blood that is saturated with oxygen. Deviations from an athlete's personal baseline can indicate respiratory stress, altitude acclimatization issues, or acute illness.",
+        keywords: ["pulseox", "oxygen", "spo2", "blood", "altitude", "sickness"]
+      },
+      {
+        question: "What is Respiration Rate?",
+        beginnerAnswer: "How many breaths you take per minute while resting. If your breathing speeds up for no reason, it often means your body is working hard to fight off stress or illness, even before you feel symptoms.",
+        technicalAnswer: "Respiration Rate represents the number of breaths per minute (bpm). In VeloAnalytics, we track resting respiration trends; an increase in resting bpm is a high-confidence indicator of sympathetic nervous system activation and systemic physiological stress.",
+        keywords: ["breathing", "respiration", "breath", "lungs", "illness", "bpm"]
+      },
+      {
         question: "What is Heart Rate Variability (HRV)?",
         beginnerAnswer: "HRV measures the tiny differences in time between your heartbeats. When you're well-recovered, these differences are higher. When you're tired or stressed, your heart beats more like a metronome (lower HRV).",
         technicalAnswer: "HRV measures the variation in the R-R interval (the time between heartbeats). High HRV indicates a healthy balance between the Sympathetic and Parasympathetic nervous systems. A significant drop in overnight HRV relative to your baseline is a strong indicator of systemic fatigue or impending overtraining.",
