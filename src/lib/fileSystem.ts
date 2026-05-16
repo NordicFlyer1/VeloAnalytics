@@ -3,11 +3,17 @@ import { writeTextFile, writeFile } from '@tauri-apps/plugin-fs';
 
 /**
  * Check if the application is running within a Tauri webview.
- * In Tauri v2, we check for multiple indicators including the internal bridge.
+ * In Tauri v2, we check for multiple indicators including the internal bridge and IPC.
  */
 export const isTauri = () => {
+  if (typeof window === 'undefined') return false;
   const win = window as any;
-  return win.__TAURI_INTERNALS__ !== undefined || win.__TAURI__ !== undefined;
+  return !!(
+    win.__TAURI_INTERNALS__ || 
+    win.__TAURI_IPC__ || 
+    win.__TAURI_METADATA__ || 
+    win.__TAURI__
+  );
 };
 
 interface SaveOptions {
