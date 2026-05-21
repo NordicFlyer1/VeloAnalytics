@@ -1,7 +1,6 @@
 # VeloAnalytics Software License
 
-**Version 1.0**  
-**Copyright © Bruce H. Kraus. All rights reserved.**
+**Version 1.1** **Copyright © Bruce H. Kraus. All rights reserved.**
 
 ---
 
@@ -23,34 +22,34 @@
 
 "**Non-Commercial Use**" means personal, educational, research, or open community use where no direct or indirect commercial advantage or monetary compensation is sought or received. For the avoidance of doubt, an individual athlete using the Software solely to analyze their own training data is Non-Commercial Use, regardless of whether that athlete is a paid professional competitor.
 
+---
+
 ### 2. GRANT OF LICENSE
 
 Subject to the terms and conditions of this License, the Licensor hereby grants You a worldwide, royalty-free, non-exclusive, non-transferable license to:
 
-(a) Download, install, and use the Software for **Non-Commercial Use only**;
-
-(b) Copy and distribute verbatim copies of the Software for **Non-Commercial Use only**, provided that all copyright notices, this License, and all attribution notices are preserved in full;
-
+(a) Download, install, and use the Software for **Non-Commercial Use only**;  
+(b) Copy and distribute verbatim copies of the Software for **Non-Commercial Use only**, provided that all copyright notices, this License, and all attribution notices are preserved in full;  
 (c) Modify the Software and distribute Modified Versions for **Non-Commercial Use only**, subject to the conditions set out in Section 4.
+
+---
 
 ### 3. RESTRICTIONS
 
 You may not:
 
-(a) Use the Software, in original or modified form, for any **Commercial Use** without a separate written commercial license obtained directly from the Licensor;
-
-(b) Remove, obscure, or alter any copyright notice, attribution notice, or reference to this License in any copy or Modified Version of the Software;
-
-(c) Sublicense, sell, rent, lease, or transfer the Software or any rights granted under this License to any third party;
-
+(a) Use the Software, in original or modified form, for any **Commercial Use** without a separate written commercial license obtained directly from the Licensor;  
+(b) Remove, obscure, or alter any copyright notice, attribution notice, or reference to this License in any copy or Modified Version of the Software;  
+(c) Sublicense, sell, rent, lease, or transfer the Software or any rights granted under this License to any third party;  
 (d) Use the name "**VeloAnalytics**", the Licensor's name, or any associated branding in any Modified Version in a manner that implies endorsement or official origin without prior written permission from the Licensor.
+
+---
 
 ### 4. CONDITIONS FOR MODIFIED VERSIONS
 
 If You distribute a Modified Version of the Software, You must comply with all of the following conditions:
 
-(a) **Clear Identification**. The Modified Version must be clearly identified as such. The title displayed within the application interface, any repository name, and any distributed binary must include the word "Modified" or a clearly distinct name that does not imply it is the original Software (e.g., "VeloAnalytics — Modified Version" or a wholly new name).
-
+(a) **Clear Identification**. The Modified Version must be clearly identified as such. The title displayed within the application interface, any repository name, and any distributed binary must include the word "Modified" or a clearly distinct name that does not imply it is the original Software (e.g., "VeloAnalytics — Modified Version" or a wholly new name).  
 (b) **CHANGES File**. You must include a plaintext file named `CHANGES.md` in the root of any distributed repository or archive containing a clear, human-readable summary of every material change made to the Software. Each entry must include:
 * A description of what was changed, added, or removed
 * The date the change was made
@@ -58,67 +57,83 @@ If You distribute a Modified Version of the Software, You must comply with all o
 
 (c) **Attribution Notice**. All Modified Versions must retain the following notice in a prominent location in the application interface (such as an About screen or equivalent) and in the repository README:
 
-> This software is based on VeloAnalytics, originally created by Bruce H. Kraus. Original source: https://github.com/NordicFlyer1/VeloAnalytics This is a Modified Version. See CHANGES.md for a description of changes.
+> This software is based on VeloAnalytics, originally created by Bruce H. Kraus.  
+> Original source: https://github.com/NordicFlyer1/VeloAnalytics  
+> This is a Modified Version. See CHANGES.md for a description of changes.
 
-(d) **License Continuity**. Modified Versions must be distributed under the terms of this License, without additional restrictions.
-
+(d) **License Continuity**. Modified Versions must be distributed under the terms of this License, without additional restrictions.  
 (e) **Non-Commercial Use Only**. Modified Versions may only be distributed and used for Non-Commercial Use, as defined in Section 1.
+
+---
 
 ### 5. ATTRIBUTION FOR UNMODIFIED DISTRIBUTION
 
 Any distribution of the Software in unmodified form must retain:
 
-(a) This License in full;
-
-(b) All copyright notices as they appear in the original files;
-
+(a) This License in full;  
+(b) All copyright notices as they appear in the original files;  
 (c) The following attribution notice in any accompanying README or documentation:
 
-> VeloAnalytics is created and maintained by Bruce H. Kraus. Source: https://github.com/NordicFlyer1/VeloAnalytics
+> VeloAnalytics is created and maintained by Bruce H. Kraus.  
+> Source: https://github.com/NordicFlyer1/VeloAnalytics
+
+---
 
 ### 6. NO CONTRIBUTION REQUIREMENT
 
 The Licensor makes this Software available on a read-only basis. The Licensor:
 
-(a) Does not accept pull requests, code contributions, feature requests, or issue submissions;
-
-(b) Has no obligation to review, respond to, or incorporate any suggested changes from any third party;
-
+(a) Does not accept pull requests, code contributions, feature requests, or issue submissions;  
+(b) Has no obligation to review, respond to, or incorporate any suggested changes from any third party;  
 (c) Reserves the sole right to maintain, modify, and direct the development of the original Software.
 
 Nothing in this License creates any obligation on the part of the Licensor to provide support, updates, maintenance, or continued availability of the Software.
 
+---
+
 ### 7. METHODOLOGY AND ALGORITHMIC TRANSPARENCY
 
-The analytical methods implemented in this Software are based on established, publicly documented sports science research, including work attributed to Dr. Philip Friere Skiba, Dr. Eric Banister, and the GoldenCheetah project. Attribution to these sources is retained in the Software's documentation and interface in accordance with the principle of algorithmic transparency on which this project is founded.
+The analytical methods implemented in this Software are based on established, publicly documented sports science research, including work attributed to Dr. Philip Friere Skiba, Dr. Eric Banister, and the GoldenCheetah project. Attribution to these sources is retained in the Software's documentation and interface in accordance with the principle of algorithmic transparency on which this project is founded. Any Modified Version must preserve these third-party attributions in full.
 
-Any Modified Version must preserve these third-party attributions in full.
+---
 
 ### 8. COMMERCIAL LICENSING
 
 If You wish to use the Software for Commercial Use, as defined in Section 1, You must obtain a separate written commercial license from the Licensor.
 
+---
+
 ### 9. DISCLAIMER OF WARRANTIES
 
-**THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY OF ANALYTICAL RESULTS, OR NON-INFRINGEMENT. THE LICENSOR MAKES NO WARRANTY THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT ITS OPERATION WILL BE UNINTERRUPTED OR ERROR-FREE.**
+**THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY OF ANALYTICAL RESULTS, NON-INFRINGEMENT, OR THE PRIVACY, SECURITY, DATA POLICIES, COMPLIANCE, AND CONTINUED AVAILABILITY OF THIRD-PARTY APIS AND CLOUD SERVICES.**
 
-**USE OF THE SOFTWARE FOR TRAINING, PERFORMANCE, OR HEALTH-RELATED DECISIONS IS AT YOUR OWN RISK. THE LICENSOR IS NOT RESPONSIBLE FOR ANY INJURY, LOSS, OR DAMAGE ARISING FROM RELIANCE ON DATA OR OUTPUTS PRODUCED BY THE SOFTWARE.**
+**THE LICENSOR MAKES NO WARRANTY THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS, THAT ITS OPERATION WILL BE UNINTERRUPTED OR ERROR-FREE, OR THAT TRANSFERS TO THIRD-PARTY ENDPOINTS WILL BE COMPLETELY ANONYMOUS, SECURE, OR UNTRACKED BY THE RECEIVING ENTITY.**
+
+**THE SOFTWARE MAY CONTAIN OPTIONAL FEATURES THAT INTERFACE WITH THIRD-PARTY CLOUD SERVICES OR ARTIFICIAL INTELLIGENCE PROVIDERS (INCLUDING, BUT NOT LIMITED TO, GEMINI, GROQ, AND OPENAI). THE LICENSOR DOES NOT CONTROL, AUDIT, FILTER, OR OPERATE THESE EXTERNAL SERVICES. YOU ACKNOWLEDGE AND AGREE THAT ENABLING SUCH FEATURES TRANSMITS LOCAL DATA PAYLOADS DIRECTLY TO THIRD-PARTY ENDPOINTS OVER THE INTERNET, AND THE LICENSOR ASSUMES ABSOLUTELY NO RESPONSIBILITY OR LIABILITY FOR THE PRIVACY PRACTICES, LOCATION TRACKING, IP LOGGING, HARDWARE TELEMETRY CORRELATION, DATA RETENTION, OR CORPORATE MONETIZATION STRATEGIES OF ANY THIRD-PARTY SERVICE PROVIDER.**
+
+**USE OF THE SOFTWARE FOR TRAINING, PERFORMANCE, HEALTH-RELATED DECISIONS, OR DIGITAL PIPING TO THIRD-PARTY CLOUD ARTIFICIAL INTELLIGENCE MODELS IS ENTIRELY AT YOUR OWN RISK. THE LICENSOR IS NOT RESPONSIBLE FOR ANY INJURY, LOSS, SECURITY BREACH, PRIVACY EXPOSURE, DATA CORRUPTION, OR DAMAGE ARISING FROM RELIANCE ON DATA, OUTPUTS, OR EXTERNAL NETWORK HOOKS PRODUCED BY THE SOFTWARE.**
+
+---
 
 ### 10. LIMITATION OF LIABILITY
 
-**TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF DATA, LOSS OF PROFITS, PERSONAL INJURY, OR ANY OTHER LOSS) ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.**
+**TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF DATA, LOSS OF PROFITS, PERSONAL INJURY, PRIVACY VIOLATIONS, UNAUTHORIZED ACCOUNT EXPOSURE BY THIRD PARTIES, NETWORK INTERCEPTION, REGULATORY FINES, OR ANY OTHER FINANCIAL OR PERSONAL LOSS) ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.**
 
 **THE LICENSOR'S TOTAL LIABILITY TO YOU FOR ANY CLAIM ARISING UNDER THIS LICENSE SHALL NOT EXCEED THE AMOUNT, IF ANY, PAID BY YOU TO THE LICENSOR FOR THE SOFTWARE.**
 
+---
+
 ### 11. TERMINATION
 
-This License and the rights granted hereunder will terminate automatically if You fail to comply with any of the terms and conditions of this License. Upon termination, You must cease all use and distribution of the Software and destroy all copies in your possession.
+This License and the rights granted hereunder will terminate automatically if You fail to comply with any of the terms and conditions of this License. Upon termination, You must cease all use and distribution of the Software and destroy all copies in your possession. Sections 3, 8, 9, 10, and 12 shall survive any termination of this License.
 
-Sections 3, 8, 9, 10, and 12 shall survive any termination of this License.
+---
 
-### 12. GOVERNING LAW
+### 12. GOVERNING LAW AND JURISDICTION
 
-This License shall be governed by and construed in accordance with the laws of the jurisdiction in which the Licensor resides, without regard to its conflict of law provisions. Any dispute arising under this License shall be subject to the exclusive jurisdiction of the courts of that jurisdiction.
+**THIS LICENSE SHALL BE GOVERNED BY AND CONSTRUED IN ACCORDANCE WITH THE LAWS OF THE PROVINCE OF SASKATCHEWAN AND THE FEDERAL LAWS OF CANADA APPLICABLE THEREIN, WITHOUT REGARD TO CONFLICT OF LAW PROVISIONS. ANY LEGAL ACTION, SUIT, OR DISPUTE ARISING UNDER OR IN CONNECTION WITH THIS LICENSE MUST BE BROUGHT EXCLUSIVELY IN THE COURTS LOCATED IN REGINA, SASKATCHEWAN, CANADA, AND YOU HEREBY IRREVOCABLY CONSENT TO THE EXCLUSIVE JURISDICTION AND VENUE OF SUCH COURTS.**
+
+---
 
 ### 13. ENTIRE AGREEMENT
 
