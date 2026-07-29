@@ -4,7 +4,7 @@ import { Moon, Image, FileText, Clock } from 'lucide-react';
 import { SleepMetric, HRVMetric, PMCDataPoint, AISettings } from '../../../types';
 import { SectionHeader, ExportAction } from '../../ui/SectionHeader';
 import { SleepChart } from './SleepChart';
-import { exportSleepToCSV, calculateVeloReadiness } from '../../../services/wellnessService';
+import { exportSleepToCSV, calculateVeloReadiness, calculateStandardReadiness } from '../../../services/wellnessService';
 import { exportComponentAsImage } from '../../../lib/chartExport';
 import { cn } from '../../../lib/utils';
 
@@ -28,6 +28,14 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   
   const latest = data.length > 0 ? [...data].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+
+  const standardReadiness = React.useMemo(() => {
+    if (!latest) return null;
+    if (latest.readinessScore && latest.readinessScore > 0) return latest.readinessScore;
+    const hrvOnDate = hrvHistory.find(h => h.date === latest.date);
+    const pmcOnDate = pmcData.find(p => p.date === latest.date);
+    return calculateStandardReadiness(latest, hrvOnDate || null, pmcOnDate?.sb || 0);
+  }, [latest, hrvHistory, pmcData]);
 
   const veloReadiness = React.useMemo(() => {
     if (!aiSettings.useExperimentalReadiness || !latest) return null;
@@ -138,7 +146,7 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({
                       )}>
                         {aiSettings.useExperimentalReadiness 
                           ? (veloReadiness?.score || '--')
-                          : (latest?.readinessScore || '--')
+                          : (standardReadiness || '--')
                         }
                       </span>
                       <span className="text-[9px] font-bold text-app-muted uppercase">Points</span>

@@ -26,7 +26,7 @@ import {
   HRVMetric,
   AISettings
 } from '../../types';
-import { calculateVeloReadiness } from '../../services/wellnessService';
+import { calculateVeloReadiness, calculateStandardReadiness } from '../../services/wellnessService';
 
 interface SummaryCardsProps {
   summary: ActivitySummary;
@@ -109,6 +109,16 @@ export const SummaryCards = React.memo(({
     
     return currentPMC;
   }, [pmcData, currentPMC, latestSleep]);
+
+  const standardReadiness = React.useMemo(() => {
+    if (!latestSleep) return null;
+    if (latestSleep.readinessScore && latestSleep.readinessScore > 0) return latestSleep.readinessScore;
+    return calculateStandardReadiness(
+      latestSleep,
+      latestHRV || null,
+      latestPMC?.sb || 0
+    );
+  }, [latestSleep, latestHRV, latestPMC]);
 
   const veloReadiness = React.useMemo(() => {
     if (!aiSettings?.useExperimentalReadiness || !latestSleep || !latestPMC) return null;
@@ -391,7 +401,7 @@ export const SummaryCards = React.memo(({
                   "text-2xl sm:text-3xl md:text-4xl font-light tracking-tighter",
                   veloReadiness ? "text-yellow-400" : "text-cyan-500"
                 )}>
-                  {veloReadiness ? veloReadiness.score : (latestSleep?.readinessScore || '--')}
+                  {veloReadiness ? veloReadiness.score : (standardReadiness || '--')}
                 </span>
                 <span className="text-[10px] sm:text-xs text-app-muted font-bold uppercase tracking-widest flex items-center gap-1">
                   {veloReadiness ? "VELO-READINESS" : "READINESS"}

@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { SleepMetric, HRVMetric, PMCDataPoint, AISettings } from '../../../types';
 import { format } from 'date-fns';
-import { calculateVeloReadiness } from '../../../services/wellnessService';
+import { calculateVeloReadiness, calculateStandardReadiness } from '../../../services/wellnessService';
 
 interface SleepChartProps {
   data: SleepMetric[];
@@ -38,7 +38,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({
     const hrvOnDate = hrvHistory.find(h => h.date === d.date);
     const pmcOnDate = pmcData.find(p => p.date === d.date);
     
-    let displayReadiness = d.readinessScore;
+    let displayReadiness = d.readinessScore > 0 ? d.readinessScore : calculateStandardReadiness(d, hrvOnDate || null, pmcOnDate?.sb || 0);
     let veloCalc = null;
     if (aiSettings.useExperimentalReadiness) {
       // Use defaults (0 load) if PMC data is not available for this date yet
