@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { AISettings, ActivitySummary, PMCDataPoint, ChatMessage, HistoricalActivity, SleepMetric, HRVMetric } from '../types';
-import { calculateVeloReadiness } from './wellnessService';
+import { calculateVeloReadiness, calculateStandardReadiness } from './wellnessService';
 
 /**
  * Distills complex activity and performance data into a structured JSON format for the LLM.
@@ -39,34 +39,95 @@ export function buildCoachContext(
     }
   }
 
-  // Calculate Global Athlete Readiness (The "Interface" number)
-  let athleteGlobalReadiness = null;
+  const isExperimental = !!aiSettings?.useExperimentalReadiness;
+
+  // Calculate Global Athlete Readiness (The "Interface" number matching SummaryCards)
+  let athleteGlobalReadiness: any = null;
   if (latestSleep && athleteCurrentPMC) {
     // Aligned to latest sleep as per SummaryCards
     const alignedHRV = hrvHistory.find(h => h.date === latestSleep.date) || null;
-    athleteGlobalReadiness = calculateVeloReadiness(
-      latestSleep,
-      alignedHRV,
-      athleteCurrentPMC.sb,
-      athleteCurrentPMC.sts,
-      athleteCurrentPMC.bikeScore || 0
-    );
+    
+    if (isExperimental) {
+      const veloResult = calculateVeloReadiness(
+        latestSleep,
+        alignedHRV,
+        athleteCurrentPMC.sb,
+        athleteCurrentPMC.sts,
+        athleteCurrentPMC.bikeScore || 0
+      );
+      athleteGlobalReadiness = {
+        model: "Velo Readiness (Experimental 4-Pillar)",
+        ...veloResult
+      };
+    } else {
+      const rawGarminScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
+      const computedScore = calculateStandardReadiness(
+        latestSleep,
+        alignedHRV,
+        athleteCurrentPMC.sb
+      );
+      const score = rawGarminScore || computedScore;
+      athleteGlobalReadiness = {
+        model: "Standard Readiness (Garmin-aligned)",
+        score: score,
+        source: rawGarminScore ? "Garmin Direct Readiness" : "Standard 5-Pillar Calculated",
+        contributors: {
+          sleepScore: latestSleep.score,
+          restingHeartRate: latestSleep.restingHeartRate,
+          durationMinutes: latestSleep.duration,
+          sleepNeedMinutes: latestSleep.sleepNeed,
+          overnightHRV: alignedHRV?.overnightHRV || null,
+          hrvBaseline: alignedHRV ? `${alignedHRV.baselineMin}-${alignedHRV.baselineMax}ms` : null,
+          formTSB: Math.round(athleteCurrentPMC.sb)
+        }
+      };
+    }
   }
 
-  // 3. Activity-Specific Readiness (Context for the selected ride)
-  let activityReadiness = null;
+  // 3. Activity-Specific Readiness (Context for the selected ride on ride-day)
+  let activityReadiness: any = null;
   if (currentPMC && summary) {
     const activityDate = summary.startTime.toISOString().split('T')[0];
     const activitySleep = sleepHistory.find(s => s.date === activityDate) || null;
     const activityHRV = hrvHistory.find(h => h.date === activityDate) || null;
     
-    activityReadiness = calculateVeloReadiness(
-      activitySleep,
-      activityHRV,
-      currentPMC.sb,
-      currentPMC.sts,
-      summary.bikeScore || 0
-    );
+    if (activitySleep) {
+      if (isExperimental) {
+        const veloResult = calculateVeloReadiness(
+          activitySleep,
+          activityHRV,
+          currentPMC.sb,
+          currentPMC.sts,
+          summary.bikeScore || 0
+        );
+        activityReadiness = {
+          model: "Velo Readiness (Experimental 4-Pillar)",
+          ...veloResult
+        };
+      } else {
+        const rawGarminScore = (activitySleep.readinessScore && activitySleep.readinessScore > 0) ? activitySleep.readinessScore : null;
+        const computedScore = calculateStandardReadiness(
+          activitySleep,
+          activityHRV,
+          currentPMC.sb
+        );
+        const score = rawGarminScore || computedScore;
+        activityReadiness = {
+          model: "Standard Readiness (Garmin-aligned)",
+          score: score,
+          source: rawGarminScore ? "Garmin Direct Readiness" : "Standard 5-Pillar Calculated",
+          contributors: {
+            sleepScore: activitySleep.score,
+            restingHeartRate: activitySleep.restingHeartRate,
+            durationMinutes: activitySleep.duration,
+            sleepNeedMinutes: activitySleep.sleepNeed,
+            overnightHRV: activityHRV?.overnightHRV || null,
+            hrvBaseline: activityHRV ? `${activityHRV.baselineMin}-${activityHRV.baselineMax}ms` : null,
+            formTSB: Math.round(currentPMC.sb)
+          }
+        };
+      }
+    }
   }
 
   // Calculate Efficiency Factor if possible
@@ -80,7 +141,12 @@ export function buildCoachContext(
       date: new Date().toISOString().split('T')[0],
       units: "Metric (KM, Watts, m, kg)",
       lookbackDays: wellnessContextDays,
-      readinessFormula: "Base = (Sleep*0.35 + Recovery*0.25 + HRV*0.20 + Load*0.20). Adjusted by WorstPillar suppression and debt/spike penalties."
+      readinessModel: isExperimental 
+        ? "Velo Readiness (Experimental 4-Pillar)" 
+        : "Standard Readiness (Garmin-aligned 5-Pillar)",
+      readinessFormula: isExperimental
+        ? "Base = (Sleep*0.35 + Recovery*0.25 + HRV*0.20 + Load*0.20). Adjusted by WorstPillar suppression and debt/spike penalties."
+        : "Composite = (SleepScore*0.30 + HRVStatus*0.25 + DurationNeed*0.15 + RestingHR*0.15 + FormTSB*0.15). Scale 0-100."
     },
     athleteCurrentState: {
       readiness: athleteGlobalReadiness, // The "remarkably higher" UI number
