@@ -107,7 +107,29 @@ The coach understands your naming conventions and historical data.
 
 ---
 
-## 6. FAQs
+## 7. Apple Intelligence, Siri & Spotlight Integration (macOS)
+
+VeloAnalytics provides deep native integration with macOS Apple Intelligence, Siri Voice, Type to Siri, Spotlight Search, and the Apple Shortcuts ecosystem.
+
+### Supported Query Formats (Voice or Typed)
+* **"What is my Velo Readiness?"** - Returns today's Readiness Score (out of 100), Recovery Status, and overnight metrics.
+* **"Check my training status in Velo"** - Returns current Form (TSB), Acute Fatigue (STS), and Chronic Fitness (LTS).
+* **"Ask Velo Coach [query]"** - Automatically launches VeloAnalytics directly into the AI Coach assistant with context loaded.
+* **Spotlight Search (`⌘ Space`)** - Type `velo readiness` or `velo coach` into macOS Spotlight to view quick action cards.
+
+### Setup & Architecture
+* **Web App (Browser)**: Go to **Settings > Intelligence > Apple Intelligence & Siri** to export or copy ready-to-use Apple Shortcut JSON definitions.
+* **Tauri Desktop**: Native Swift `AppIntents` and `AppShortcutsProvider` are located in `/native-macos/VeloAppIntents.swift` and communicate with Tauri via local file caches with zero cloud latency.
+
+---
+
+## 8. FAQs
+
+**Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**
+A: Use your voice or double-tap `Command` (⌘) to Type to Siri: "What is my Velo Readiness?" or "Ask Velo Coach". On macOS, search `velo readiness` in Spotlight (`⌘ Space`).
+
+**Q: Does Siri work if I type instead of using my voice?**
+A: Yes! Apple unifies Type-to-Siri and voice Siri under the same AppIntents framework.
 
 **Q: How do I set up External API Keys (Maps/Weather)?**
 A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in Settings. If empty, the app falls back to build-time environment variables in your `.env` or Vercel dashboard.

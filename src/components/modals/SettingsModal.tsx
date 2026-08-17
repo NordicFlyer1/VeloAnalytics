@@ -863,6 +863,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       These keys prioritize the Settings Panel (Local Storage). If empty, the app falls back to build-time environment variables defined in your .env or the Vercel dashboard.
                     </p>
                   </div>
+
+                  {/* Apple Intelligence & Siri Section */}
+                  <div className="space-y-4 pt-4 border-t border-app-border/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-orange-500" />
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-app-text">Apple Intelligence & Siri (macOS)</h3>
+                      </div>
+                      <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                        Siri • Type-to-Siri • Spotlight
+                      </span>
+                    </div>
+
+                    <div className="p-5 rounded-3xl bg-app-bg/30 border border-app-border space-y-4">
+                      <p className="text-xs text-app-muted leading-relaxed">
+                        Access your Velo Readiness, Form (TSB), and AI Coaching assistant directly through macOS Siri, Type-to-Siri, Spotlight search (<kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">⌘ Space</kbd>), or the Apple Shortcuts app.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-siri-modal'));
+                          }}
+                          className="flex items-center gap-2 py-2 px-5 rounded-full bg-orange-500 hover:bg-orange-600 text-black text-[10px] font-bold uppercase tracking-widest transition-all shadow-md shadow-orange-500/20"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>View Siri Setup & Shortcuts</span>
+                        </button>
+                        <span className="text-[10px] text-app-muted font-medium">
+                          Works in Safari, Chrome & Tauri Desktop
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

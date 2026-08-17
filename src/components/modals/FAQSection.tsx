@@ -142,6 +142,24 @@ const FAQ_DATA: FAQCategory[] = [
     name: "AI Intelligence",
     items: [
       {
+        question: "How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?",
+        beginnerAnswer: "You can ask Siri with your voice or use Type to Siri (double-tap Command ⌘) by saying or typing: 'What is my Velo Readiness?', 'Check my training status in Velo', or 'Ask Velo Coach'. On macOS, you can also search 'velo readiness' directly in Spotlight Search (⌘ Space)!",
+        technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.veloanalytics.app/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
+        keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey"]
+      },
+      {
+        question: "Does Siri work if I type instead of using my voice?",
+        beginnerAnswer: "Yes! macOS treats Type to Siri and voice Siri identically. If you prefer typing silently, just double-tap Command (⌘) and type 'Velo Readiness' or 'Ask Velo Coach'.",
+        technicalAnswer: "Under macOS Sequoia and Sonoma, Apple's AppIntents subsystem unifies voice input, keyboard-driven Type-to-Siri, and Spotlight index queries under the same AppShortcut protocol.",
+        keywords: ["type", "typing", "keyboard", "silent", "type to siri", "text", "macbook", "command"]
+      },
+      {
+        question: "How do I set up Siri in the Browser vs. Tauri Desktop App?",
+        beginnerAnswer: "In the Web App: Go to Settings > Intelligence > Apple Intelligence & Siri, click 'View Siri Setup', and copy the payload into Apple Shortcuts. In Tauri Desktop: Simply run the app, or drag VeloAppIntents.swift into your Xcode build following the step-by-step guide in /native-macos/STEP-BY-STEP-GUIDE.md.",
+        technicalAnswer: "For Web: The app supports deep linking (e.g. ?action=coach, ?action=readiness) and exports ready-to-import Shortcuts JSON payloads. For Tauri: Native Swift bindings in /native-macos/VeloAppIntents.swift and Rust IPC handlers in /native-macos/TauriCommands.rs provide fully local, offline AppIntent resolution.",
+        keywords: ["setup", "tauri", "browser", "xcode", "shortcuts", "guide", "swift", "rust", "desktop", "mac"]
+      },
+      {
         question: "How do I set up External API Keys (Maps/Weather)?",
         beginnerAnswer: "You can paste your Google Maps and OpenWeatherMap keys directly into the Intelligence tab in Settings. This lets you see maps and weather stats for your rides.",
         technicalAnswer: "VeloAnalytics implements a priority-based waterfall for secrets. It first looks in the Settings Panel (localStorage). If empty, it falls back to build-time environment variables (VITE_GOOGLE_MAPS_API_KEY, VITE_OPENWEATHERMAP_API_KEY). This allows for easy local development while maintaining flexible BYOK (Bring Your Own Key) capabilities.",

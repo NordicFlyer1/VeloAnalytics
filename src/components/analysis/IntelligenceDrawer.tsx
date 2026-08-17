@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkle, Brain, X, Send, History, Trash2, 
   ArrowRight, Info, Activity, TrendingUp, Zap, AlertCircle,
-  Download
+  Download, Command
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn, formatLocalDate } from '../../lib/utils';
@@ -257,6 +257,13 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                         <ArrowRight className="w-3 h-3 ml-auto text-app-muted group-hover:translate-x-1 transition-transform" />
                       </button>
                     ))}
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-app-card/60 border border-app-border/70 max-w-[280px] text-left flex items-start gap-2.5">
+                    <Command className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-app-muted leading-relaxed">
+                      <strong className="text-app-text">macOS Tip:</strong> Ask Siri or double-tap <kbd className="px-1 py-0.2 rounded bg-app-bg border border-app-border text-[9px]">⌘</kbd> and type <span className="text-orange-500 font-semibold">"Ask Velo Coach"</span> to open this assistant from anywhere on your Mac.
+                    </p>
                   </div>
                 </div>
               ) : (

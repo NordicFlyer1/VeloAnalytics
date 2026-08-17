@@ -44,6 +44,9 @@ import { useDataRecalculator } from './hooks/useDataRecalculator';
 
 import { ActivityOverview } from './components/analysis/ActivityOverview';
 import { ExportProgress } from './components/ui/ExportProgress';
+import { SiriModal } from './integrations/apple/SiriModal';
+import { syncAppleSiriSnapshot, AppleSiriSnapshot } from './integrations/apple/appleBridge';
+import { calculateVeloReadiness, calculateStandardReadiness } from './services/wellnessService';
 
 import { 
   calculateLapSummary, 
@@ -140,6 +143,8 @@ export default function App() {
   const [showUploadView, setShowUploadView] = useState(false);
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
   const [showIntelligence, setShowIntelligence] = useState(false);
+  const [showSiriModal, setShowSiriModal] = useState(false);
+  const [siriSnapshot, setSiriSnapshot] = useState<AppleSiriSnapshot | null>(null);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'terrain' | 'hybrid'>('roadmap');
   const [showTraffic, setShowTraffic] = useState(false);
   const [showBicycling, setShowBicycling] = useState(false);
@@ -262,6 +267,78 @@ export default function App() {
       }
     }
   }, [activePoint, data, fetchWeather]);
+
+  // Siri / Apple Intelligence Deep Link and Snapshot Synchronization
+  React.useEffect(() => {
+    const handleOpenSiri = () => setShowSiriModal(true);
+    window.addEventListener('open-siri-modal', handleOpenSiri);
+
+    // Deep link query parameter parser (e.g. ?action=coach or ?action=siri)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      if (action === 'coach') {
+        setShowIntelligence(true);
+      } else if (action === 'siri') {
+        setShowSiriModal(true);
+      } else if (action === 'readiness') {
+        setIsRecoveryStatusExpanded(true);
+      } else if (action === 'pmc') {
+        setIsPmcExpanded(true);
+      }
+    } catch (e) {
+      // Ignore URL parsing errors in sandboxes
+    }
+
+    return () => {
+      window.removeEventListener('open-siri-modal', handleOpenSiri);
+    };
+  }, [setIsRecoveryStatusExpanded, setIsPmcExpanded]);
+
+  // Compute and sync Siri snapshot whenever wellness / PMC changes
+  React.useEffect(() => {
+    const latestSleep = settings.sleepHistory.length > 0 ? settings.sleepHistory[0] : null;
+    const alignedHRV = latestSleep ? (settings.hrvHistory.find(h => h.date === latestSleep.date) || null) : null;
+    const currentSB = currentPMC?.sb || 0;
+    const currentSTS = currentPMC?.sts || 0;
+    const currentLTS = currentPMC?.lts || 0;
+
+    let score = 80;
+    const isExperimental = !!settings.aiSettings?.useExperimentalReadiness;
+    const modelName = isExperimental ? "Velo Readiness (Experimental 4-Pillar)" : "Standard (Garmin-aligned)";
+
+    if (latestSleep) {
+      if (isExperimental) {
+        const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, summary?.bikeScore || 0);
+        score = velo.score;
+      } else {
+        const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
+        score = rawScore || calculateStandardReadiness(latestSleep, alignedHRV, currentSB);
+      }
+    }
+
+    const status = score >= 80 ? "Prime / Optimal" : score >= 60 ? "Good" : score >= 40 ? "Moderate" : "Low / Rest";
+
+    const snapshot: AppleSiriSnapshot = {
+      timestamp: new Date().toISOString(),
+      readinessScore: Math.round(score),
+      readinessStatus: status,
+      readinessModel: modelName,
+      tsb: Math.round(currentSB),
+      sts: Math.round(currentSTS),
+      lts: Math.round(currentLTS),
+      sleepScore: latestSleep?.score,
+      sleepDurationHours: latestSleep ? Number((latestSleep.duration / 60).toFixed(1)) : undefined,
+      hrvOvernight: alignedHRV?.overnightHRV,
+      lastRideDate: summary?.startTime ? summary.startTime.toISOString().split('T')[0] : undefined,
+      lastRideName: summary?.name || (summary?.startTime ? 'Cycling Activity' : undefined),
+      lastRideNormalizedPower: summary?.xPower,
+      lastRideTSS: summary?.bikeScore
+    };
+
+    setSiriSnapshot(snapshot);
+    syncAppleSiriSnapshot(snapshot);
+  }, [settings.sleepHistory, settings.hrvHistory, currentPMC, summary, settings.aiSettings?.useExperimentalReadiness]);
 
   // Calculations
   const metricsConfig = React.useMemo(() => ({
@@ -581,6 +658,12 @@ export default function App() {
         hrvHistory={settings.hrvHistory}
         cp={cp || 250}
         wPrime={manualWPrime || 15000}
+      />
+
+      <SiriModal 
+        isOpen={showSiriModal}
+        onClose={() => setShowSiriModal(false)}
+        snapshot={siriSnapshot}
       />
 
       <ExportProgress 
