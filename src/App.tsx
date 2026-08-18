@@ -191,11 +191,16 @@ export default function App() {
   };
 
   const handleActivityHistoryClick = () => {
+    dashboardState.setIsHistoryExpanded(true);
     if (window.innerWidth < 768) {
       setIsHistorySidebarOpen(true);
     } else {
       const element = document.getElementById('history-section');
-      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        setIsHistorySidebarOpen(true);
+      }
     }
   };
 

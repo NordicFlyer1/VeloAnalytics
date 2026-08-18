@@ -46,3 +46,21 @@ export const formatLocalDate = (date: Date | string): string => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+/**
+ * Safely formats any date string/Date object for display in history cards (e.g. 'Aug 12')
+ */
+export const formatHistoryDisplayDate = (date: Date | string | undefined | null): string => {
+  if (!date) return 'Activity';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) {
+      if (typeof date === 'string') return date.split('T')[0];
+      return 'Activity';
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[d.getMonth()]} ${d.getDate()}`;
+  } catch {
+    return 'Activity';
+  }
+};

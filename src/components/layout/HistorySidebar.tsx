@@ -11,7 +11,7 @@ import {
   Search
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, formatDuration, formatLocalDate } from '../../lib/utils';
+import { cn, formatDuration, formatLocalDate, formatHistoryDisplayDate } from '../../lib/utils';
 import { HistoricalActivity, ActivitySummary } from '../../types';
 import { SectionHeader } from '../ui/SectionHeader';
 
@@ -274,7 +274,7 @@ export const HistorySidebar = React.memo(({
                           <div className="min-w-0">
                             <div className="text-[11px] sm:text-xs font-bold truncate tracking-tight text-app-text">{h.name}</div>
                             <div className="text-[9px] sm:text-[10px] text-app-muted font-medium tracking-wide">
-                              {format(new Date(h.date), 'MMM d')} • {formatDuration(h.duration)}
+                              {formatHistoryDisplayDate(h.date)} • {formatDuration(h.duration)}
                               {h.avgPower !== undefined && ` • ${Math.round(h.avgPower)}W`}
                             </div>
                           </div>
