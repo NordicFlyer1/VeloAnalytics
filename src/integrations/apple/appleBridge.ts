@@ -1,10 +1,12 @@
 /**
  * Apple macOS & Siri Integration Bridge
  * 
- * Safely bridges VeloAnalytics metrics (Readiness, Form, Latest Ride, 7-Day / 28-Day Training Loads)
- * to macOS Apple Intelligence, Siri, Spotlight, and Apple Shortcuts.
+ * Safely bridges VeloAnalytics metrics (Readiness, Stress Balance / Form, Latest Ride, 
+ * and 7-Day / 28-Day BikeScore Training Blocks) to macOS Apple Intelligence, Siri, 
+ * Spotlight, and Apple Shortcuts.
  * 
  * Safe by design:
+ * - Uses open-source VeloAnalytics metrics: BikeScore™, xPower, RI, SB / STS / LTS.
  * - If running in Browser / Web: Emits clipboard / URL actions safely with zero side effects.
  * - If running in Tauri Desktop on macOS: Writes snapshot to local file cache via Tauri IPC.
  */
@@ -14,40 +16,41 @@ export interface AppleSiriSnapshot {
   readinessScore: number;
   readinessStatus: string;
   readinessModel: string;
-  tsb: number;
-  sts: number;
-  lts: number;
+  stressBalance: number; // SB (Stress Balance / Form)
+  shortTermStress: number; // STS (Acute Fatigue, 7-day EWMA)
+  longTermStress: number; // LTS (Chronic Fitness, 42-day EWMA)
   sleepScore?: number;
   sleepDurationHours?: number;
   hrvOvernight?: number;
   
-  // Real Latest Ride Metrics
+  // Real Latest Ride Metrics (Open-Source Golden Cheetah / VeloAnalytics standards)
   latestRide?: {
     date: string;
     name: string;
     distanceKm: number;
     durationMinutes: number;
-    normalizedPower?: number;
+    xPower?: number;
+    relativeIntensity?: number;
     avgPower?: number;
     avgHeartRate?: number;
-    tss: number;
-    kilojoules?: number;
+    bikeScore: number;
+    workKilojoules?: number;
   };
 
-  // Real 7-Day Rolling Volume Block
+  // Real 7-Day Rolling Volume & Stress Block
   trainingBlock7Days: {
     totalRides: number;
     totalKm: number;
     totalHours: number;
-    totalTSS: number;
+    totalBikeScore: number;
   };
 
-  // Real 28-Day Rolling Volume Block
+  // Real 28-Day Rolling Volume & Stress Block
   trainingBlock28Days: {
     totalRides: number;
     totalKm: number;
     totalHours: number;
-    totalTSS: number;
+    totalBikeScore: number;
   };
 }
 
@@ -88,23 +91,23 @@ export function generateAppleShortcutPayload(snapshot: AppleSiriSnapshot | null)
     readinessScore: 80,
     readinessStatus: "Prime / Optimal",
     readinessModel: "Standard (Garmin-aligned)",
-    tsb: 0,
-    sts: 0,
-    lts: 0,
-    trainingBlock7Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalTSS: 0 },
-    trainingBlock28Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalTSS: 0 }
+    stressBalance: 0,
+    shortTermStress: 0,
+    longTermStress: 0,
+    trainingBlock7Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalBikeScore: 0 },
+    trainingBlock28Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalBikeScore: 0 }
   };
 
   return JSON.stringify({
     appName: "VeloAnalytics",
-    version: "1.1",
+    version: "1.2",
     generatedAt: new Date().toISOString(),
     supportedQueries: [
       "What is my Velo Readiness?",
       "What was my last ride in VeloAnalytics?",
       "How much did I ride this week in VeloAnalytics?",
       "Check my 28-day training load in VeloAnalytics",
-      "Check my training status in VeloAnalytics",
+      "Check my Stress Balance in VeloAnalytics",
       "Ask Velo Coach if I should ride today"
     ],
     state: current,

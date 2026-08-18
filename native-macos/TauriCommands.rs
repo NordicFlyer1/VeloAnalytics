@@ -12,11 +12,12 @@ pub struct VeloRideSnapshot {
     pub name: String,
     pub distanceKm: f64,
     pub durationMinutes: i32,
-    pub normalizedPower: Option<i32>,
+    pub xPower: Option<i32>,
+    pub relativeIntensity: Option<f64>,
     pub avgPower: Option<i32>,
     pub avgHeartRate: Option<i32>,
-    pub tss: i32,
-    pub kilojoules: Option<i32>,
+    pub bikeScore: i32,
+    pub workKilojoules: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -24,7 +25,7 @@ pub struct VeloTrainingBlock {
     pub totalRides: i32,
     pub totalKm: f64,
     pub totalHours: f64,
-    pub totalTSS: i32,
+    pub totalBikeScore: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,9 +34,9 @@ pub struct AppleSiriSnapshot {
     pub readinessScore: i32,
     pub readinessStatus: String,
     pub readinessModel: String,
-    pub tsb: i32,
-    pub sts: i32,
-    pub lts: i32,
+    pub stressBalance: i32,
+    pub shortTermStress: i32,
+    pub longTermStress: i32,
     pub sleepScore: Option<i32>,
     pub sleepDurationHours: Option<f64>,
     pub hrvOvernight: Option<f64>,

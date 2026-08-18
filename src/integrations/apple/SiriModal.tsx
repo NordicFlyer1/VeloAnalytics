@@ -111,15 +111,15 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"What was my last ride?"</p>
-                    <p className="text-[10px] text-app-muted mt-1">Reports date, distance, normalized power, and TSS.</p>
+                    <p className="text-[10px] text-app-muted mt-1">Reports date, distance, xPower, and BikeScore™.</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"How much did I ride this week?"</p>
-                    <p className="text-[10px] text-app-muted mt-1">Returns rolling 7-day total distance, hours, and TSS.</p>
+                    <p className="text-[10px] text-app-muted mt-1">Returns rolling 7-day total distance, hours, and BikeScore™.</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"Check my 28-day training load"</p>
-                    <p className="text-[10px] text-app-muted mt-1">Reports 4-week total rides, mileage, and chronic load.</p>
+                    <p className="text-[10px] text-app-muted mt-1">Reports 4-week total rides, mileage, and chronic BikeScore™.</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"Ask VeloCoach if I should ride"</p>
@@ -145,7 +145,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-500">
                         {snapshot.readinessStatus}
                       </span>
-                      <span className="text-xs text-app-muted">TSB: {snapshot.tsb > 0 ? `+${snapshot.tsb}` : snapshot.tsb} | STS: {snapshot.sts} | LTS: {snapshot.lts}</span>
+                      <span className="text-xs text-app-muted">SB: {snapshot.stressBalance > 0 ? `+${snapshot.stressBalance}` : snapshot.stressBalance} | STS: {snapshot.shortTermStress} | LTS: {snapshot.longTermStress}</span>
                     </div>
                   </div>
 
@@ -159,7 +159,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                       {snapshot.latestRide ? (
                         <div className="space-y-0.5">
                           <p className="text-xs font-semibold text-app-text truncate">{snapshot.latestRide.name}</p>
-                          <p className="text-[10px] text-app-muted">{snapshot.latestRide.date} • {snapshot.latestRide.distanceKm} KM • {snapshot.latestRide.tss} TSS</p>
+                          <p className="text-[10px] text-app-muted">{snapshot.latestRide.date} • {snapshot.latestRide.distanceKm} KM • {snapshot.latestRide.bikeScore} BS</p>
                         </div>
                       ) : (
                         <p className="text-[10px] text-app-muted italic">No rides logged yet</p>
@@ -175,7 +175,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                         {snapshot.trainingBlock7Days.totalRides} rides • {snapshot.trainingBlock7Days.totalKm} KM
                       </p>
                       <p className="text-[10px] text-app-muted">
-                        {snapshot.trainingBlock7Days.totalHours} hrs • {snapshot.trainingBlock7Days.totalTSS} TSS
+                        {snapshot.trainingBlock7Days.totalHours} hrs • {snapshot.trainingBlock7Days.totalBikeScore} BS
                       </p>
                     </div>
 
@@ -188,7 +188,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                         {snapshot.trainingBlock28Days.totalRides} rides • {snapshot.trainingBlock28Days.totalKm} KM
                       </p>
                       <p className="text-[10px] text-app-muted">
-                        {snapshot.trainingBlock28Days.totalHours} hrs • {snapshot.trainingBlock28Days.totalTSS} TSS
+                        {snapshot.trainingBlock28Days.totalHours} hrs • {snapshot.trainingBlock28Days.totalBikeScore} BS
                       </p>
                     </div>
                   </div>

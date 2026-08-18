@@ -149,9 +149,9 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "Can Siri tell me about my latest ride and rolling weekly/monthly mileage?",
-        beginnerAnswer: "Yes! Siri can read your most recent ride (date, distance, normalized power, TSS) and calculate your real rolling 7-day and 28-day training blocks (total rides, kilometers, hours, and TSS) directly from your activity history.",
-        technicalAnswer: "The AppleBridge aggregates the user's IndexedDB activity history across 7-day and 28-day sliding windows, formatting them into VeloRideSnapshot and VeloTrainingBlock payloads available to both Web Shortcuts and native AppIntents (GetVeloLatestRideIntent & GetVeloTrainingLoadIntent).",
-        keywords: ["latest ride", "workout", "7 days", "week", "28 days", "month", "mileage", "distance", "tss", "hours", "siri", "shortcuts"]
+        beginnerAnswer: "Yes! Siri can read your most recent ride (date, distance, xPower, BikeScore™) and calculate your real rolling 7-day and 28-day training blocks (total rides, kilometers, hours, and BikeScore™) directly from your activity history.",
+        technicalAnswer: "The AppleBridge aggregates the user's IndexedDB activity history across 7-day and 28-day sliding windows, formatting them into open-source VeloRideSnapshot and VeloTrainingBlock payloads available to both Web Shortcuts and native AppIntents (GetVeloLatestRideIntent & GetVeloTrainingLoadIntent).",
+        keywords: ["latest ride", "workout", "7 days", "week", "28 days", "month", "mileage", "distance", "bikescore", "xpower", "hours", "siri", "shortcuts"]
       },
       {
         question: "Does Siri work if I type instead of using my voice?",

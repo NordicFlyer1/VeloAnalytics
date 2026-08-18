@@ -327,11 +327,12 @@ export default function App() {
         name: summary.name || 'Cycling Activity',
         distanceKm: Number(((summary.distance || 0) / 1000).toFixed(1)),
         durationMinutes: Math.round((summary.duration || 0) / 60),
-        normalizedPower: summary.xPower,
+        xPower: summary.xPower,
+        relativeIntensity: summary.relativeIntensity ? Number(summary.relativeIntensity.toFixed(2)) : undefined,
         avgPower: summary.avgPower,
         avgHeartRate: summary.avgHeartRate,
-        tss: Math.round(summary.bikeScore || 0),
-        kilojoules: summary.work
+        bikeScore: Math.round(summary.bikeScore || 0),
+        workKilojoules: summary.work
       };
     } else if (history && history.length > 0) {
       const topHistory = history[0];
@@ -340,11 +341,12 @@ export default function App() {
         name: topHistory.name || 'Cycling Activity',
         distanceKm: Number(((topHistory.distance || 0) / 1000).toFixed(1)),
         durationMinutes: Math.round((topHistory.duration || 0) / 60),
-        normalizedPower: topHistory.xPower,
+        xPower: topHistory.xPower,
+        relativeIntensity: topHistory.relativeIntensity ? Number(topHistory.relativeIntensity.toFixed(2)) : undefined,
         avgPower: topHistory.avgPower,
         avgHeartRate: topHistory.avgHeartRate,
-        tss: Math.round(topHistory.bikeScore || 0),
-        kilojoules: topHistory.work
+        bikeScore: Math.round(topHistory.bikeScore || 0),
+        workKilojoules: topHistory.work
       };
     }
 
@@ -357,12 +359,12 @@ export default function App() {
     let rides7d = 0;
     let dist7d = 0;
     let dur7d = 0;
-    let tss7d = 0;
+    let bikeScore7d = 0;
 
     let rides28d = 0;
     let dist28d = 0;
     let dur28d = 0;
-    let tss28d = 0;
+    let bikeScore28d = 0;
 
     if (history && history.length > 0) {
       history.forEach(act => {
@@ -372,13 +374,13 @@ export default function App() {
             rides7d++;
             dist7d += (act.distance || 0);
             dur7d += (act.duration || 0);
-            tss7d += (act.bikeScore || 0);
+            bikeScore7d += (act.bikeScore || 0);
           }
           if (actTime >= twentyEightDaysAgo) {
             rides28d++;
             dist28d += (act.distance || 0);
             dur28d += (act.duration || 0);
-            tss28d += (act.bikeScore || 0);
+            bikeScore28d += (act.bikeScore || 0);
           }
         }
       });
@@ -389,9 +391,9 @@ export default function App() {
       readinessScore: Math.round(score),
       readinessStatus: status,
       readinessModel: modelName,
-      tsb: Math.round(currentSB),
-      sts: Math.round(currentSTS),
-      lts: Math.round(currentLTS),
+      stressBalance: Math.round(currentSB),
+      shortTermStress: Math.round(currentSTS),
+      longTermStress: Math.round(currentLTS),
       sleepScore: latestSleep?.score,
       sleepDurationHours: latestSleep ? Number((latestSleep.duration / 60).toFixed(1)) : undefined,
       hrvOvernight: alignedHRV?.overnightHRV,
@@ -400,13 +402,13 @@ export default function App() {
         totalRides: rides7d,
         totalKm: Number((dist7d / 1000).toFixed(1)),
         totalHours: Number((dur7d / 3600).toFixed(1)),
-        totalTSS: Math.round(tss7d)
+        totalBikeScore: Math.round(bikeScore7d)
       },
       trainingBlock28Days: {
         totalRides: rides28d,
         totalKm: Number((dist28d / 1000).toFixed(1)),
         totalHours: Number((dur28d / 3600).toFixed(1)),
-        totalTSS: Math.round(tss28d)
+        totalBikeScore: Math.round(bikeScore28d)
       }
     };
 
