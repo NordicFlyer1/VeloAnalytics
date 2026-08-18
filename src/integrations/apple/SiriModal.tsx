@@ -102,7 +102,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                   <span>Voice or Type-to-Siri Supported</span>
                 </div>
                 <p className="text-xs text-app-muted leading-relaxed">
-                  You can use spoken Siri commands and macOS <strong>Type to Siri</strong> (double-tap <kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">⌘</kbd>).
+                  You can use spoken Siri commands and macOS <strong>Type to Siri / Spotlight</strong> (<kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">⌘</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">Space</kbd> or your configured Type to Siri shortcut).
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">

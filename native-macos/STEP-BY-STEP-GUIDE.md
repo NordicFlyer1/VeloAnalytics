@@ -66,13 +66,13 @@ Open `src-tauri/src/main.rs` (or `src-tauri/src/lib.rs`) and:
 
 #### Step 4: Test Spoken Siri & Type-to-Siri
 1. Launch your compiled Tauri app once so it writes its initial state snapshot.
-2. Test **Type-to-Siri**:
-   - Double-tap `Command` on your Mac keyboard.
+2. Test **Type-to-Siri / Spotlight**:
+   - Press `⌘ + Space` on your Mac keyboard.
    - Type: `What is my Velo Readiness?`
-   - Siri will display your Readiness score, recovery status, and TSB form.
-3. Test **macOS Spotlight**:
+   - Siri / Spotlight will display your Readiness score, recovery status, and Stress Balance (SB).
+3. Test **AI Coach Shortcut**:
    - Press `⌘ + Space`.
-   - Type: `velo readiness` or `ask velo coach`.
+   - Type: `ask velo coach`.
    - Press `Return` to jump into the coach or view metrics.
 
 ---

@@ -262,7 +262,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   <div className="p-3 rounded-2xl bg-app-card/60 border border-app-border/70 max-w-[280px] text-left flex items-start gap-2.5">
                     <Command className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                     <p className="text-[10px] text-app-muted leading-relaxed">
-                      <strong className="text-app-text">macOS Tip:</strong> Ask Siri or double-tap <kbd className="px-1 py-0.2 rounded bg-app-bg border border-app-border text-[9px]">⌘</kbd> and type <span className="text-orange-500 font-semibold">"Ask Velo Coach"</span> to open this assistant from anywhere on your Mac.
+                      <strong className="text-app-text">macOS Tip:</strong> Ask Siri or press <kbd className="px-1 py-0.2 rounded bg-app-bg border border-app-border text-[9px]">⌘ Space</kbd> and type <span className="text-orange-500 font-semibold">"Ask Velo Coach"</span> to open this assistant from anywhere on your Mac.
                     </p>
                   </div>
                 </div>

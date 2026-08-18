@@ -143,9 +143,9 @@ const FAQ_DATA: FAQCategory[] = [
     items: [
       {
         question: "How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?",
-        beginnerAnswer: "You can ask Siri with your voice or use Type to Siri (double-tap Command ⌘) by saying or typing: 'What is my Velo Readiness?', 'What was my last ride?', 'How much did I ride this week?', 'Check my 28-day training load', or 'Ask Velo Coach'. On macOS, you can also search 'velo readiness' directly in Spotlight Search (⌘ Space)!",
+        beginnerAnswer: "You can ask Siri with your voice or type directly using Command + Spacebar (⌘ Space) by saying or typing: 'What is my Velo Readiness?', 'What was my last ride?', 'How much did I ride this week?', 'Check my 28-day training load', or 'Ask Velo Coach'. You can also search 'velo readiness' directly in Spotlight!",
         technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents containing your Readiness score, latest ride metrics, and rolling 7-day and 28-day historical aggregates. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.veloanalytics.app/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
-        keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey", "last ride", "week", "28 days"]
+        keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey", "last ride", "week", "28 days", "command space"]
       },
       {
         question: "Can Siri tell me about my latest ride and rolling weekly/monthly mileage?",
@@ -155,9 +155,9 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "Does Siri work if I type instead of using my voice?",
-        beginnerAnswer: "Yes! macOS treats Type to Siri and voice Siri identically. If you prefer typing silently, just double-tap Command (⌘) and type 'Velo Readiness' or 'Ask Velo Coach'.",
-        technicalAnswer: "Under macOS Sequoia and Sonoma, Apple's AppIntents subsystem unifies voice input, keyboard-driven Type-to-Siri, and Spotlight index queries under the same AppShortcut protocol.",
-        keywords: ["type", "typing", "keyboard", "silent", "type to siri", "text", "macbook", "command"]
+        beginnerAnswer: "Yes! macOS treats typing and voice Siri identically. If you prefer typing silently, simply press Command + Spacebar (⌘ Space) and type 'Velo Readiness' or 'Ask Velo Coach'.",
+        technicalAnswer: "Under macOS Sequoia and Sonoma, Apple's AppIntents subsystem unifies voice input, keyboard-driven Type-to-Siri / Spotlight queries under the same AppShortcut protocol.",
+        keywords: ["type", "typing", "keyboard", "silent", "type to siri", "text", "macbook", "command", "space"]
       },
       {
         question: "How do I set up Siri in the Browser vs. Tauri Desktop App?",

@@ -129,10 +129,10 @@ VeloAnalytics provides deep native integration with macOS Apple Intelligence, Si
 ## 8. FAQs
 
 **Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**
-A: Use your voice or double-tap `Command` (⌘) to Type to Siri: "What is my Velo Readiness?" or "Ask Velo Coach". On macOS, search `velo readiness` in Spotlight (`⌘ Space`).
+A: Use your voice or press `Command + Spacebar` (`⌘ Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".
 
 **Q: Does Siri work if I type instead of using my voice?**
-A: Yes! Apple unifies Type-to-Siri and voice Siri under the same AppIntents framework.
+A: Yes! Apple unifies typing and voice Siri under the same AppIntents framework. Simply press `⌘ Space` and type your query.
 
 **Q: How do I set up External API Keys (Maps/Weather)?**
 A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in Settings. If empty, the app falls back to build-time environment variables in your `.env` or Vercel dashboard.
