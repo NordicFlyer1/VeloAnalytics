@@ -22,67 +22,113 @@ export async function openDB(): Promise<IDBDatabase> {
 }
 
 export async function saveActivityData(id: string, data: any): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put({ id, data });
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put({ id, data });
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn(`[IndexedDB] Could not save activity data for ${id}:`, err);
+  }
 }
 
 export async function getActivityData(id: string): Promise<any> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(id);
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(id);
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result?.data || null);
-  });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result?.data || null);
+        transaction.onerror = () => reject(transaction.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn(`[IndexedDB] Could not get activity data for ${id}:`, err);
+    return null;
+  }
 }
 
 export async function deleteActivityData(id: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn(`[IndexedDB] Could not delete activity data for ${id}:`, err);
+  }
 }
 
 export async function getAllHistory(): Promise<any[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.getAll();
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result.map(r => r.data));
-  });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve((request.result || []).map((r: any) => r.data));
+        transaction.onerror = () => reject(transaction.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] Could not get all history:', err);
+    return [];
+  }
 }
 
 export async function saveAllHistory(history: any[]): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    
-    // Clear existing data first
-    store.clear();
-    
-    for (const activity of history) {
-      store.put({ id: activity.id, data: activity });
-    }
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        
+        // Clear existing data first
+        store.clear();
+        
+        for (const activity of history) {
+          store.put({ id: activity.id, data: activity });
+        }
 
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] Could not save all history:', err);
+  }
 }

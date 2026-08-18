@@ -68,7 +68,19 @@ export const UploadView: React.FC<UploadViewProps> = ({
       </p>
       <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
         Select Files
-        <input type="file" className="hidden" accept=".fit" multiple onChange={(e) => handleFileUpload(e.target.files)} />
+        <input 
+          type="file" 
+          className="hidden" 
+          accept=".fit" 
+          multiple 
+          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              handleFileUpload(e.target.files);
+            }
+            e.target.value = '';
+          }} 
+        />
       </label>
       
       {uploadQueue.length > 0 && (

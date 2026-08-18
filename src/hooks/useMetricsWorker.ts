@@ -92,16 +92,65 @@ export function useMetricsWorker() {
       }
 
       requestsRef.current.set(id, { resolve, reject });
-      workerRef.current.postMessage({ type, payload, id });
+      try {
+        workerRef.current.postMessage({ type, payload, id });
+      } catch (postErr) {
+        console.warn('Worker postMessage failed, falling back to sync:', postErr);
+        requestsRef.current.delete(id);
+        try {
+          let result;
+          switch (type) {
+            case 'CALCULATE_POWER_CURVE':
+              result = metrics.calculatePowerCurve(payload.data);
+              break;
+            case 'CALCULATE_WPRIME_BALANCE':
+              result = metrics.calculateWPrimeBalance(payload.data, payload.cp, payload.wPrime);
+              break;
+            case 'CALCULATE_PMC':
+              result = metrics.calculatePMC(payload.history);
+              break;
+            case 'ESTIMATE_CP_WPRIME':
+              result = metrics.estimateCPWPrime(payload.data);
+              break;
+            default:
+              throw new Error(`Unknown task type: ${type}`);
+          }
+          resolve(result);
+        } catch (syncErr) {
+          reject(syncErr);
+        }
+        return;
+      }
 
-      // Safety timeout for worker tasks (30s)
+      // Safety timeout for worker tasks (15s fallback to synchronous computation)
       setTimeout(() => {
         if (requestsRef.current.has(id)) {
           const request = requestsRef.current.get(id);
-          request?.reject(new Error('Worker task timed out'));
           requestsRef.current.delete(id);
+          try {
+            let result;
+            switch (type) {
+              case 'CALCULATE_POWER_CURVE':
+                result = metrics.calculatePowerCurve(payload.data);
+                break;
+              case 'CALCULATE_WPRIME_BALANCE':
+                result = metrics.calculateWPrimeBalance(payload.data, payload.cp, payload.wPrime);
+                break;
+              case 'CALCULATE_PMC':
+                result = metrics.calculatePMC(payload.history);
+                break;
+              case 'ESTIMATE_CP_WPRIME':
+                result = metrics.estimateCPWPrime(payload.data);
+                break;
+              default:
+                throw new Error(`Unknown task type: ${type}`);
+            }
+            request?.resolve(result);
+          } catch (fallbackErr) {
+            request?.reject(fallbackErr);
+          }
         }
-      }, 30000);
+      }, 15000);
     });
   }, [isWorkerReady]);
 
