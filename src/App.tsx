@@ -297,123 +297,149 @@ export default function App() {
 
   // Compute and sync Siri snapshot whenever wellness / PMC / activity history changes
   React.useEffect(() => {
-    const latestSleep = settings.sleepHistory.length > 0 ? settings.sleepHistory[0] : null;
-    const alignedHRV = latestSleep ? (settings.hrvHistory.find(h => h.date === latestSleep.date) || null) : null;
-    const currentSB = currentPMC?.sb || 0;
-    const currentSTS = currentPMC?.sts || 0;
-    const currentLTS = currentPMC?.lts || 0;
+    try {
+      const latestSleep = settings.sleepHistory && settings.sleepHistory.length > 0 ? settings.sleepHistory[0] : null;
+      const alignedHRV = latestSleep ? (settings.hrvHistory?.find(h => h.date === latestSleep.date) || null) : null;
+      const currentSB = currentPMC?.sb || 0;
+      const currentSTS = currentPMC?.sts || 0;
+      const currentLTS = currentPMC?.lts || 0;
 
-    let score = 80;
-    const isExperimental = !!settings.aiSettings?.useExperimentalReadiness;
-    const modelName = isExperimental ? "Velo Readiness (Experimental 4-Pillar)" : "Standard (Garmin-aligned)";
+      let score = 80;
+      const isExperimental = !!settings.aiSettings?.useExperimentalReadiness;
+      const modelName = isExperimental ? "Velo Readiness (Experimental 4-Pillar)" : "Standard (Garmin-aligned)";
 
-    if (latestSleep) {
-      if (isExperimental) {
-        const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, summary?.bikeScore || 0);
-        score = velo.score;
-      } else {
-        const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
-        score = rawScore || calculateStandardReadiness(latestSleep, alignedHRV, currentSB);
-      }
-    }
-
-    const status = score >= 80 ? "Prime / Optimal" : score >= 60 ? "Good" : score >= 40 ? "Moderate" : "Low / Rest";
-
-    // 1. Identify latest ride either from active open summary or historical records
-    let latestRideInfo: AppleSiriSnapshot['latestRide'] = undefined;
-    if (summary && summary.startTime) {
-      latestRideInfo = {
-        date: summary.startTime.toISOString().split('T')[0],
-        name: summary.name || 'Cycling Activity',
-        distanceKm: Number(((summary.distance || 0) / 1000).toFixed(1)),
-        durationMinutes: Math.round((summary.duration || 0) / 60),
-        xPower: summary.xPower,
-        relativeIntensity: summary.relativeIntensity ? Number(summary.relativeIntensity.toFixed(2)) : undefined,
-        avgPower: summary.avgPower,
-        avgHeartRate: summary.avgHeartRate,
-        bikeScore: Math.round(summary.bikeScore || 0),
-        workKilojoules: summary.work
-      };
-    } else if (history && history.length > 0) {
-      const topHistory = history[0];
-      latestRideInfo = {
-        date: topHistory.date,
-        name: topHistory.name || 'Cycling Activity',
-        distanceKm: Number(((topHistory.distance || 0) / 1000).toFixed(1)),
-        durationMinutes: Math.round((topHistory.duration || 0) / 60),
-        xPower: topHistory.xPower,
-        relativeIntensity: topHistory.relativeIntensity ? Number(topHistory.relativeIntensity.toFixed(2)) : undefined,
-        avgPower: topHistory.avgPower,
-        avgHeartRate: topHistory.avgHeartRate,
-        bikeScore: Math.round(topHistory.bikeScore || 0),
-        workKilojoules: topHistory.work
-      };
-    }
-
-    // 2. Compute Real 7-day and 28-day rolling training blocks from user's history
-    const now = new Date().getTime();
-    const msInDay = 86400000;
-    const sevenDaysAgo = now - 7 * msInDay;
-    const twentyEightDaysAgo = now - 28 * msInDay;
-
-    let rides7d = 0;
-    let dist7d = 0;
-    let dur7d = 0;
-    let bikeScore7d = 0;
-
-    let rides28d = 0;
-    let dist28d = 0;
-    let dur28d = 0;
-    let bikeScore28d = 0;
-
-    if (history && history.length > 0) {
-      history.forEach(act => {
-        const actTime = new Date(act.date).getTime();
-        if (!isNaN(actTime)) {
-          if (actTime >= sevenDaysAgo) {
-            rides7d++;
-            dist7d += (act.distance || 0);
-            dur7d += (act.duration || 0);
-            bikeScore7d += (act.bikeScore || 0);
-          }
-          if (actTime >= twentyEightDaysAgo) {
-            rides28d++;
-            dist28d += (act.distance || 0);
-            dur28d += (act.duration || 0);
-            bikeScore28d += (act.bikeScore || 0);
-          }
+      if (latestSleep) {
+        if (isExperimental) {
+          const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, summary?.bikeScore || 0);
+          score = velo.score;
+        } else {
+          const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
+          score = rawScore || calculateStandardReadiness(latestSleep, alignedHRV, currentSB);
         }
-      });
-    }
-
-    const snapshot: AppleSiriSnapshot = {
-      timestamp: new Date().toISOString(),
-      readinessScore: Math.round(score),
-      readinessStatus: status,
-      readinessModel: modelName,
-      stressBalance: Math.round(currentSB),
-      shortTermStress: Math.round(currentSTS),
-      longTermStress: Math.round(currentLTS),
-      sleepScore: latestSleep?.score,
-      sleepDurationHours: latestSleep ? Number((latestSleep.duration / 60).toFixed(1)) : undefined,
-      hrvOvernight: alignedHRV?.overnightHRV,
-      latestRide: latestRideInfo,
-      trainingBlock7Days: {
-        totalRides: rides7d,
-        totalKm: Number((dist7d / 1000).toFixed(1)),
-        totalHours: Number((dur7d / 3600).toFixed(1)),
-        totalBikeScore: Math.round(bikeScore7d)
-      },
-      trainingBlock28Days: {
-        totalRides: rides28d,
-        totalKm: Number((dist28d / 1000).toFixed(1)),
-        totalHours: Number((dur28d / 3600).toFixed(1)),
-        totalBikeScore: Math.round(bikeScore28d)
       }
-    };
 
-    setSiriSnapshot(snapshot);
-    syncAppleSiriSnapshot(snapshot);
+      const status = score >= 80 ? "Prime / Optimal" : score >= 60 ? "Good" : score >= 40 ? "Moderate" : "Low / Rest";
+
+      // Helper to safely format any date or timestamp representation
+      const safeFormatDate = (rawDate: any): string => {
+        if (!rawDate) return new Date().toISOString().split('T')[0];
+        try {
+          if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+            return rawDate.toISOString().split('T')[0];
+          }
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+          }
+          if (typeof rawDate === 'string') {
+            return rawDate.split('T')[0];
+          }
+        } catch {
+          // Fallback
+        }
+        return new Date().toISOString().split('T')[0];
+      };
+
+      // 1. Identify latest ride either from active open summary or historical records
+      let latestRideInfo: AppleSiriSnapshot['latestRide'] = undefined;
+      if (summary && summary.startTime) {
+        latestRideInfo = {
+          date: safeFormatDate(summary.startTime),
+          name: summary.name || 'Cycling Activity',
+          distanceKm: Number(((summary.distance || 0) / 1000).toFixed(1)),
+          durationMinutes: Math.round((summary.duration || 0) / 60),
+          xPower: summary.xPower,
+          relativeIntensity: summary.relativeIntensity ? Number(summary.relativeIntensity.toFixed(2)) : undefined,
+          avgPower: summary.avgPower,
+          avgHeartRate: summary.avgHeartRate,
+          bikeScore: Math.round(summary.bikeScore || 0),
+          workKilojoules: summary.work
+        };
+      } else if (history && history.length > 0) {
+        const topHistory = history[0];
+        latestRideInfo = {
+          date: safeFormatDate(topHistory.date),
+          name: topHistory.name || 'Cycling Activity',
+          distanceKm: Number(((topHistory.distance || 0) / 1000).toFixed(1)),
+          durationMinutes: Math.round((topHistory.duration || 0) / 60),
+          xPower: topHistory.xPower,
+          relativeIntensity: topHistory.relativeIntensity ? Number(topHistory.relativeIntensity.toFixed(2)) : undefined,
+          avgPower: topHistory.avgPower,
+          avgHeartRate: topHistory.avgHeartRate,
+          bikeScore: Math.round(topHistory.bikeScore || 0),
+          workKilojoules: topHistory.work
+        };
+      }
+
+      // 2. Compute Real 7-day and 28-day rolling training blocks from user's history
+      const now = new Date().getTime();
+      const msInDay = 86400000;
+      const sevenDaysAgo = now - 7 * msInDay;
+      const twentyEightDaysAgo = now - 28 * msInDay;
+
+      let rides7d = 0;
+      let dist7d = 0;
+      let dur7d = 0;
+      let bikeScore7d = 0;
+
+      let rides28d = 0;
+      let dist28d = 0;
+      let dur28d = 0;
+      let bikeScore28d = 0;
+
+      if (history && history.length > 0) {
+        history.forEach(act => {
+          if (act && act.date) {
+            const actTime = new Date(act.date).getTime();
+            if (!isNaN(actTime)) {
+              if (actTime >= sevenDaysAgo) {
+                rides7d++;
+                dist7d += (act.distance || 0);
+                dur7d += (act.duration || 0);
+                bikeScore7d += (act.bikeScore || 0);
+              }
+              if (actTime >= twentyEightDaysAgo) {
+                rides28d++;
+                dist28d += (act.distance || 0);
+                dur28d += (act.duration || 0);
+                bikeScore28d += (act.bikeScore || 0);
+              }
+            }
+          }
+        });
+      }
+
+      const snapshot: AppleSiriSnapshot = {
+        timestamp: new Date().toISOString(),
+        readinessScore: Math.round(score),
+        readinessStatus: status,
+        readinessModel: modelName,
+        stressBalance: Math.round(currentSB),
+        shortTermStress: Math.round(currentSTS),
+        longTermStress: Math.round(currentLTS),
+        sleepScore: latestSleep?.score,
+        sleepDurationHours: latestSleep ? Number((latestSleep.duration / 60).toFixed(1)) : undefined,
+        hrvOvernight: alignedHRV?.overnightHRV,
+        latestRide: latestRideInfo,
+        trainingBlock7Days: {
+          totalRides: rides7d,
+          totalKm: Number((dist7d / 1000).toFixed(1)),
+          totalHours: Number((dur7d / 3600).toFixed(1)),
+          totalBikeScore: Math.round(bikeScore7d)
+        },
+        trainingBlock28Days: {
+          totalRides: rides28d,
+          totalKm: Number((dist28d / 1000).toFixed(1)),
+          totalHours: Number((dur28d / 3600).toFixed(1)),
+          totalBikeScore: Math.round(bikeScore28d)
+        }
+      };
+
+      setSiriSnapshot(snapshot);
+      syncAppleSiriSnapshot(snapshot);
+    } catch (err) {
+      console.debug('[SnapshotSync] Non-blocking calculation error caught safely:', err);
+    }
   }, [settings.sleepHistory, settings.hrvHistory, currentPMC, summary, history, settings.aiSettings?.useExperimentalReadiness]);
 
   // Calculations
