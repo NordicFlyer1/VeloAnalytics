@@ -295,7 +295,7 @@ export default function App() {
     };
   }, [setIsRecoveryStatusExpanded, setIsPmcExpanded]);
 
-  // Compute and sync Siri snapshot whenever wellness / PMC changes
+  // Compute and sync Siri snapshot whenever wellness / PMC / activity history changes
   React.useEffect(() => {
     const latestSleep = settings.sleepHistory.length > 0 ? settings.sleepHistory[0] : null;
     const alignedHRV = latestSleep ? (settings.hrvHistory.find(h => h.date === latestSleep.date) || null) : null;
@@ -319,6 +319,71 @@ export default function App() {
 
     const status = score >= 80 ? "Prime / Optimal" : score >= 60 ? "Good" : score >= 40 ? "Moderate" : "Low / Rest";
 
+    // 1. Identify latest ride either from active open summary or historical records
+    let latestRideInfo: AppleSiriSnapshot['latestRide'] = undefined;
+    if (summary && summary.startTime) {
+      latestRideInfo = {
+        date: summary.startTime.toISOString().split('T')[0],
+        name: summary.name || 'Cycling Activity',
+        distanceKm: Number(((summary.distance || 0) / 1000).toFixed(1)),
+        durationMinutes: Math.round((summary.duration || 0) / 60),
+        normalizedPower: summary.xPower,
+        avgPower: summary.avgPower,
+        avgHeartRate: summary.avgHeartRate,
+        tss: Math.round(summary.bikeScore || 0),
+        kilojoules: summary.work
+      };
+    } else if (history && history.length > 0) {
+      const topHistory = history[0];
+      latestRideInfo = {
+        date: topHistory.date,
+        name: topHistory.name || 'Cycling Activity',
+        distanceKm: Number(((topHistory.distance || 0) / 1000).toFixed(1)),
+        durationMinutes: Math.round((topHistory.duration || 0) / 60),
+        normalizedPower: topHistory.xPower,
+        avgPower: topHistory.avgPower,
+        avgHeartRate: topHistory.avgHeartRate,
+        tss: Math.round(topHistory.bikeScore || 0),
+        kilojoules: topHistory.work
+      };
+    }
+
+    // 2. Compute Real 7-day and 28-day rolling training blocks from user's history
+    const now = new Date().getTime();
+    const msInDay = 86400000;
+    const sevenDaysAgo = now - 7 * msInDay;
+    const twentyEightDaysAgo = now - 28 * msInDay;
+
+    let rides7d = 0;
+    let dist7d = 0;
+    let dur7d = 0;
+    let tss7d = 0;
+
+    let rides28d = 0;
+    let dist28d = 0;
+    let dur28d = 0;
+    let tss28d = 0;
+
+    if (history && history.length > 0) {
+      history.forEach(act => {
+        const actTime = new Date(act.date).getTime();
+        if (!isNaN(actTime)) {
+          if (actTime >= sevenDaysAgo) {
+            rides7d++;
+            dist7d += (act.distance || 0);
+            dur7d += (act.duration || 0);
+            tss7d += (act.bikeScore || 0);
+          }
+          if (actTime >= twentyEightDaysAgo) {
+            rides28d++;
+            dist28d += (act.distance || 0);
+            dur28d += (act.duration || 0);
+            tss28d += (act.bikeScore || 0);
+          }
+        }
+      });
+    }
+
     const snapshot: AppleSiriSnapshot = {
       timestamp: new Date().toISOString(),
       readinessScore: Math.round(score),
@@ -330,15 +395,24 @@ export default function App() {
       sleepScore: latestSleep?.score,
       sleepDurationHours: latestSleep ? Number((latestSleep.duration / 60).toFixed(1)) : undefined,
       hrvOvernight: alignedHRV?.overnightHRV,
-      lastRideDate: summary?.startTime ? summary.startTime.toISOString().split('T')[0] : undefined,
-      lastRideName: summary?.name || (summary?.startTime ? 'Cycling Activity' : undefined),
-      lastRideNormalizedPower: summary?.xPower,
-      lastRideTSS: summary?.bikeScore
+      latestRide: latestRideInfo,
+      trainingBlock7Days: {
+        totalRides: rides7d,
+        totalKm: Number((dist7d / 1000).toFixed(1)),
+        totalHours: Number((dur7d / 3600).toFixed(1)),
+        totalTSS: Math.round(tss7d)
+      },
+      trainingBlock28Days: {
+        totalRides: rides28d,
+        totalKm: Number((dist28d / 1000).toFixed(1)),
+        totalHours: Number((dur28d / 3600).toFixed(1)),
+        totalTSS: Math.round(tss28d)
+      }
     };
 
     setSiriSnapshot(snapshot);
     syncAppleSiriSnapshot(snapshot);
-  }, [settings.sleepHistory, settings.hrvHistory, currentPMC, summary, settings.aiSettings?.useExperimentalReadiness]);
+  }, [settings.sleepHistory, settings.hrvHistory, currentPMC, summary, history, settings.aiSettings?.useExperimentalReadiness]);
 
   // Calculations
   const metricsConfig = React.useMemo(() => ({

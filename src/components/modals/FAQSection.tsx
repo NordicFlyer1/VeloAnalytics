@@ -143,9 +143,15 @@ const FAQ_DATA: FAQCategory[] = [
     items: [
       {
         question: "How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?",
-        beginnerAnswer: "You can ask Siri with your voice or use Type to Siri (double-tap Command ⌘) by saying or typing: 'What is my Velo Readiness?', 'Check my training status in Velo', or 'Ask Velo Coach'. On macOS, you can also search 'velo readiness' directly in Spotlight Search (⌘ Space)!",
-        technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.veloanalytics.app/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
-        keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey"]
+        beginnerAnswer: "You can ask Siri with your voice or use Type to Siri (double-tap Command ⌘) by saying or typing: 'What is my Velo Readiness?', 'What was my last ride?', 'How much did I ride this week?', 'Check my 28-day training load', or 'Ask Velo Coach'. On macOS, you can also search 'velo readiness' directly in Spotlight Search (⌘ Space)!",
+        technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents containing your Readiness score, latest ride metrics, and rolling 7-day and 28-day historical aggregates. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.veloanalytics.app/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
+        keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey", "last ride", "week", "28 days"]
+      },
+      {
+        question: "Can Siri tell me about my latest ride and rolling weekly/monthly mileage?",
+        beginnerAnswer: "Yes! Siri can read your most recent ride (date, distance, normalized power, TSS) and calculate your real rolling 7-day and 28-day training blocks (total rides, kilometers, hours, and TSS) directly from your activity history.",
+        technicalAnswer: "The AppleBridge aggregates the user's IndexedDB activity history across 7-day and 28-day sliding windows, formatting them into VeloRideSnapshot and VeloTrainingBlock payloads available to both Web Shortcuts and native AppIntents (GetVeloLatestRideIntent & GetVeloTrainingLoadIntent).",
+        keywords: ["latest ride", "workout", "7 days", "week", "28 days", "month", "mileage", "distance", "tss", "hours", "siri", "shortcuts"]
       },
       {
         question: "Does Siri work if I type instead of using my voice?",

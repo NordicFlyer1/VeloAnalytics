@@ -113,6 +113,9 @@ VeloAnalytics provides deep native integration with macOS Apple Intelligence, Si
 
 ### Supported Query Formats (Voice or Typed)
 * **"What is my Velo Readiness?"** - Returns today's Readiness Score (out of 100), Recovery Status, and overnight metrics.
+* **"What was my last ride in Velo?"** - Returns date, distance, normalized power, and TSS of your most recent workout.
+* **"How much did I ride this week in Velo?"** - Computes rolling 7-day total distance, duration hours, and TSS.
+* **"Check my 28-day training load in Velo"** - Returns rolling 4-week total rides, mileage, and chronic training stress.
 * **"Check my training status in Velo"** - Returns current Form (TSB), Acute Fatigue (STS), and Chronic Fitness (LTS).
 * **"Ask Velo Coach [query]"** - Automatically launches VeloAnalytics directly into the AI Coach assistant with context loaded.
 * **Spotlight Search (`⌘ Space`)** - Type `velo readiness` or `velo coach` into macOS Spotlight to view quick action cards.

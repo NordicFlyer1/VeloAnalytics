@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Command, Mic, Copy, Check, Download, ExternalLink, HelpCircle, Laptop } from 'lucide-react';
+import { Sparkles, Command, Mic, Copy, Check, Download, Laptop, Activity, Calendar, Zap } from 'lucide-react';
 import { AppleSiriSnapshot, generateAppleShortcutPayload } from './appleBridge';
 
 interface SiriModalProps {
@@ -102,40 +102,95 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                   <span>Voice or Type-to-Siri Supported</span>
                 </div>
                 <p className="text-xs text-app-muted leading-relaxed">
-                  You can use both spoken Siri commands and macOS <strong>Type to Siri</strong> (double-tap <kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">⌘</kbd>).
+                  You can use spoken Siri commands and macOS <strong>Type to Siri</strong> (double-tap <kbd className="px-1.5 py-0.5 rounded bg-app-card border border-app-border text-[10px]">⌘</kbd>).
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"What is my Velo Readiness?"</p>
-                    <p className="text-[10px] text-app-muted mt-1">Returns readiness score, status, and sleep summary.</p>
+                    <p className="text-[10px] text-app-muted mt-1">Returns readiness score, recovery status, and sleep metrics.</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
+                    <p className="font-semibold text-app-text">"What was my last ride?"</p>
+                    <p className="text-[10px] text-app-muted mt-1">Reports date, distance, normalized power, and TSS.</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
+                    <p className="font-semibold text-app-text">"How much did I ride this week?"</p>
+                    <p className="text-[10px] text-app-muted mt-1">Returns rolling 7-day total distance, hours, and TSS.</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
+                    <p className="font-semibold text-app-text">"Check my 28-day training load"</p>
+                    <p className="text-[10px] text-app-muted mt-1">Reports 4-week total rides, mileage, and chronic load.</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
                     <p className="font-semibold text-app-text">"Ask VeloCoach if I should ride"</p>
                     <p className="text-[10px] text-app-muted mt-1">Deep-links straight to the AI Coaching Drawer.</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
-                    <p className="font-semibold text-app-text">"Check my training status in Velo"</p>
-                    <p className="text-[10px] text-app-muted mt-1">Reports current TSB Form, Fatigue (STS), and Fitness (LTS).</p>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-app-card border border-app-border/70 text-xs">
-                    <p className="font-semibold text-app-text">"Spotlight Search: velo readiness"</p>
+                    <p className="font-semibold text-app-text">"Spotlight: velo readiness"</p>
                     <p className="text-[10px] text-app-muted mt-1">Shows a live visual snippet right in macOS Spotlight.</p>
                   </div>
                 </div>
               </div>
 
               {snapshot && (
-                <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500">Current Siri Snapshot</span>
-                    <span className="text-[10px] text-app-muted">{new Date(snapshot.timestamp).toLocaleTimeString()}</span>
+                <div className="space-y-3">
+                  {/* Readiness & Form card */}
+                  <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500">Live Siri State Snapshot</span>
+                      <span className="text-[10px] text-app-muted">{new Date(snapshot.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-2xl font-bold text-app-text">{snapshot.readinessScore}/100</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-500">
+                        {snapshot.readinessStatus}
+                      </span>
+                      <span className="text-xs text-app-muted">TSB: {snapshot.tsb > 0 ? `+${snapshot.tsb}` : snapshot.tsb} | STS: {snapshot.sts} | LTS: {snapshot.lts}</span>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-2xl font-bold text-app-text">{snapshot.readinessScore}/100</span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-500">
-                      {snapshot.readinessStatus}
-                    </span>
-                    <span className="text-xs text-app-muted">TSB: {snapshot.tsb > 0 ? `+${snapshot.tsb}` : snapshot.tsb}</span>
+
+                  {/* Real Ride & Training Blocks Preview */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="p-3 rounded-xl bg-app-bg/50 border border-app-border">
+                      <div className="flex items-center gap-1.5 text-app-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <Activity className="w-3.5 h-3.5 text-orange-500" />
+                        <span>Latest Ride</span>
+                      </div>
+                      {snapshot.latestRide ? (
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-semibold text-app-text truncate">{snapshot.latestRide.name}</p>
+                          <p className="text-[10px] text-app-muted">{snapshot.latestRide.date} • {snapshot.latestRide.distanceKm} KM • {snapshot.latestRide.tss} TSS</p>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-app-muted italic">No rides logged yet</p>
+                      )}
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-app-bg/50 border border-app-border">
+                      <div className="flex items-center gap-1.5 text-app-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <Zap className="w-3.5 h-3.5 text-orange-500" />
+                        <span>7-Day Total</span>
+                      </div>
+                      <p className="text-xs font-semibold text-app-text">
+                        {snapshot.trainingBlock7Days.totalRides} rides • {snapshot.trainingBlock7Days.totalKm} KM
+                      </p>
+                      <p className="text-[10px] text-app-muted">
+                        {snapshot.trainingBlock7Days.totalHours} hrs • {snapshot.trainingBlock7Days.totalTSS} TSS
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-app-bg/50 border border-app-border">
+                      <div className="flex items-center gap-1.5 text-app-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                        <span>28-Day Block</span>
+                      </div>
+                      <p className="text-xs font-semibold text-app-text">
+                        {snapshot.trainingBlock28Days.totalRides} rides • {snapshot.trainingBlock28Days.totalKm} KM
+                      </p>
+                      <p className="text-[10px] text-app-muted">
+                        {snapshot.trainingBlock28Days.totalHours} hrs • {snapshot.trainingBlock28Days.totalTSS} TSS
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -145,7 +200,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
           {activeSubTab === 'shortcuts' && (
             <div className="space-y-4">
               <p className="text-xs text-app-muted leading-relaxed">
-                For the web app in Safari or Chrome, you can import this JSON snapshot into the macOS <strong>Shortcuts.app</strong> to create instant Siri voice triggers or menu bar widgets.
+                For the web app in Safari or Chrome, you can import this JSON snapshot into the macOS <strong>Shortcuts.app</strong> to create instant Siri voice triggers or menu bar widgets that query your recovery, latest ride, and 7d/28d training loads.
               </p>
 
               <div className="flex gap-2">
@@ -166,7 +221,7 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
                 </button>
               </div>
 
-              <div className="p-3 rounded-xl bg-app-bg/80 border border-app-border font-mono text-[11px] max-h-40 overflow-y-auto text-app-muted">
+              <div className="p-3 rounded-xl bg-app-bg/80 border border-app-border font-mono text-[11px] max-h-48 overflow-y-auto text-app-muted">
                 <pre>{shortcutData}</pre>
               </div>
             </div>

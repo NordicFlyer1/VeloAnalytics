@@ -7,6 +7,27 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct VeloRideSnapshot {
+    pub date: String,
+    pub name: String,
+    pub distanceKm: f64,
+    pub durationMinutes: i32,
+    pub normalizedPower: Option<i32>,
+    pub avgPower: Option<i32>,
+    pub avgHeartRate: Option<i32>,
+    pub tss: i32,
+    pub kilojoules: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VeloTrainingBlock {
+    pub totalRides: i32,
+    pub totalKm: f64,
+    pub totalHours: f64,
+    pub totalTSS: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AppleSiriSnapshot {
     pub timestamp: String,
     pub readinessScore: i32,
@@ -18,10 +39,9 @@ pub struct AppleSiriSnapshot {
     pub sleepScore: Option<i32>,
     pub sleepDurationHours: Option<f64>,
     pub hrvOvernight: Option<f64>,
-    pub lastRideDate: Option<String>,
-    pub lastRideName: Option<String>,
-    pub lastRideNormalizedPower: Option<i32>,
-    pub lastRideTSS: Option<i32>,
+    pub latestRide: Option<VeloRideSnapshot>,
+    pub trainingBlock7Days: VeloTrainingBlock,
+    pub trainingBlock28Days: VeloTrainingBlock,
 }
 
 #[tauri::command]

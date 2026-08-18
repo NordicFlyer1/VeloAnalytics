@@ -1,8 +1,8 @@
 /**
  * Apple macOS & Siri Integration Bridge
  * 
- * Safely bridges VeloAnalytics metrics (Readiness, Form, AI Coach) to macOS Apple Intelligence,
- * Siri, Spotlight, and Apple Shortcuts.
+ * Safely bridges VeloAnalytics metrics (Readiness, Form, Latest Ride, 7-Day / 28-Day Training Loads)
+ * to macOS Apple Intelligence, Siri, Spotlight, and Apple Shortcuts.
  * 
  * Safe by design:
  * - If running in Browser / Web: Emits clipboard / URL actions safely with zero side effects.
@@ -20,10 +20,35 @@ export interface AppleSiriSnapshot {
   sleepScore?: number;
   sleepDurationHours?: number;
   hrvOvernight?: number;
-  lastRideDate?: string;
-  lastRideName?: string;
-  lastRideNormalizedPower?: number;
-  lastRideTSS?: number;
+  
+  // Real Latest Ride Metrics
+  latestRide?: {
+    date: string;
+    name: string;
+    distanceKm: number;
+    durationMinutes: number;
+    normalizedPower?: number;
+    avgPower?: number;
+    avgHeartRate?: number;
+    tss: number;
+    kilojoules?: number;
+  };
+
+  // Real 7-Day Rolling Volume Block
+  trainingBlock7Days: {
+    totalRides: number;
+    totalKm: number;
+    totalHours: number;
+    totalTSS: number;
+  };
+
+  // Real 28-Day Rolling Volume Block
+  trainingBlock28Days: {
+    totalRides: number;
+    totalKm: number;
+    totalHours: number;
+    totalTSS: number;
+  };
 }
 
 /**
@@ -60,20 +85,25 @@ export async function syncAppleSiriSnapshot(snapshot: AppleSiriSnapshot): Promis
 export function generateAppleShortcutPayload(snapshot: AppleSiriSnapshot | null): string {
   const current = snapshot || {
     timestamp: new Date().toISOString(),
-    readinessScore: 85,
-    readinessStatus: "Optimal",
+    readinessScore: 80,
+    readinessStatus: "Prime / Optimal",
     readinessModel: "Standard (Garmin-aligned)",
-    tsb: 4,
-    sts: 58,
-    lts: 54
+    tsb: 0,
+    sts: 0,
+    lts: 0,
+    trainingBlock7Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalTSS: 0 },
+    trainingBlock28Days: { totalRides: 0, totalKm: 0, totalHours: 0, totalTSS: 0 }
   };
 
   return JSON.stringify({
     appName: "VeloAnalytics",
-    version: "1.0",
+    version: "1.1",
     generatedAt: new Date().toISOString(),
     supportedQueries: [
       "What is my Velo Readiness?",
+      "What was my last ride in VeloAnalytics?",
+      "How much did I ride this week in VeloAnalytics?",
+      "Check my 28-day training load in VeloAnalytics",
       "Check my training status in VeloAnalytics",
       "Ask Velo Coach if I should ride today"
     ],
