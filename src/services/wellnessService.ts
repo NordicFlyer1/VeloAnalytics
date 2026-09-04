@@ -1,5 +1,21 @@
 import { SleepMetric, HRVMetric } from '../types';
 import { exportToCSV } from '../lib/csvExport';
+import { format } from 'date-fns';
+
+const MONTH_MAP: Record<string, number> = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12
+};
 
 /**
  * Clean UTF-8 BOM and split lines safely
@@ -10,14 +26,311 @@ function cleanCSVLines(csv: string): string[] {
 }
 
 /**
- * Parses Garmin Sleep CSV export across 1-day, 7-day, 4-week, or custom date range views.
- * Dynamically detects column headers regardless of export metadata titles.
+ * Parses any date string into canonical YYYY-MM-DD format deterministically.
  */
-export function parseSleepCSV(csv: string): SleepMetric[] {
-  const lines = cleanCSVLines(csv);
-  if (lines.length < 2) return [];
+export function parseDateToISO(dateStr: string, defaultYear: number = new Date().getFullYear()): string {
+  if (!dateStr) return '';
+  const cleanStr = dateStr.trim();
 
-  // Find header line
+  // 1. ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+    return cleanStr;
+  }
+
+  // 2. MM/DD/YYYY or M/D/YYYY
+  if (cleanStr.includes('/')) {
+    const parts = cleanStr.split('/');
+    if (parts.length === 3) {
+      const m = String(parseInt(parts[0])).padStart(2, '0');
+      const d = String(parseInt(parts[1])).padStart(2, '0');
+      let y = parseInt(parts[2]);
+      if (y < 100) y += 2000;
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  // 3. Extract 4-digit year if present
+  let year = defaultYear;
+  const yearMatch = cleanStr.match(/\b(20\d\d)\b/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[1]);
+  }
+
+  // 4. Month name and day (e.g., "Sep 4", "August 31", "Sep 4, 2026")
+  const monthMatch = cleanStr.match(/([a-zA-Z]+)/);
+  if (monthMatch && MONTH_MAP[monthMatch[1].toLowerCase()]) {
+    const monthNum = MONTH_MAP[monthMatch[1].toLowerCase()];
+    const dayMatch = cleanStr.match(/\b(\d{1,2})\b/);
+    if (dayMatch) {
+      const dayNum = parseInt(dayMatch[1]);
+      return `${year}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    }
+  }
+
+  // 5. Fallback via Date object
+  const parsed = new Date(cleanStr);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  return cleanStr;
+}
+
+/**
+ * Parses Garmin weekly date ranges (e.g. "Aug 29 - Sep 4", "Aug 22-28", "Dec 27, 2025 - Jan 2, 2026")
+ * Anchors to the end date of the week.
+ */
+export function parseGarminDateRange(dateRangeStr: string, currentYear: number = new Date().getFullYear()): string {
+  if (!dateRangeStr) return '';
+  const cleanStr = dateRangeStr.trim();
+
+  // If already ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+    return cleanStr;
+  }
+
+  // Determine year (check for explicit year in the string, taking the last 4-digit year for the end date)
+  let year = currentYear;
+  const yearMatches = cleanStr.match(/\b(20\d\d)\b/g);
+  if (yearMatches && yearMatches.length > 0) {
+    year = parseInt(yearMatches[yearMatches.length - 1]);
+  }
+
+  // Split on range separator: hyphen, en-dash, or em-dash
+  const parts = cleanStr.split(/\s*[-–—]\s*/);
+  if (parts.length >= 2) {
+    const startPart = parts[0].trim();
+    const endPart = parts[parts.length - 1].trim();
+
+    // Check if endPart has month letters (e.g. "Sep 4", "Jan 2, 2026")
+    const endMonthLetters = endPart.match(/([a-zA-Z]+)/);
+    let monthNum = 0;
+    let dayNum = 0;
+
+    if (endMonthLetters && MONTH_MAP[endMonthLetters[1].toLowerCase()]) {
+      monthNum = MONTH_MAP[endMonthLetters[1].toLowerCase()];
+      const dayMatch = endPart.match(/\b(\d{1,2})\b/);
+      if (dayMatch) dayNum = parseInt(dayMatch[1]);
+    } else {
+      // Month is in startPart (e.g., "Aug 22-28")
+      const startMonthLetters = startPart.match(/([a-zA-Z]+)/);
+      if (startMonthLetters && MONTH_MAP[startMonthLetters[1].toLowerCase()]) {
+        monthNum = MONTH_MAP[startMonthLetters[1].toLowerCase()];
+      }
+      const dayMatch = endPart.match(/\b(\d{1,2})\b/);
+      if (dayMatch) dayNum = parseInt(dayMatch[1]);
+    }
+
+    if (monthNum > 0 && dayNum > 0) {
+      return `${year}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    }
+  }
+
+  return parseDateToISO(cleanStr, year);
+}
+
+/**
+ * Defensive date formatter for charts - guarantees never throwing RangeError.
+ */
+export function safeFormatDate(dateStr: string, pattern: string = 'MMM dd'): string {
+  if (!dateStr) return '';
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      if (!isNaN(dateObj.getTime())) {
+        return format(dateObj, pattern);
+      }
+    }
+    const parsed = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
+    if (!isNaN(parsed.getTime())) {
+      return format(parsed, pattern);
+    }
+  } catch {
+    // Fallback safely to original string
+  }
+  return dateStr;
+}
+
+/**
+ * Parses duration strings like "8h 18min", "8h 18m", "55m", "7h", "07:04" into total minutes.
+ */
+function parseDurationToMinutes(duration: string): number {
+  if (!duration || duration === '--') return 0;
+
+  const hMatch = duration.match(/(\d+)\s*h/i);
+  const mMatch = duration.match(/(\d+)\s*m(?:in)?/i);
+  
+  let hours = hMatch ? parseInt(hMatch[1]) : 0;
+  let minutes = mMatch ? parseInt(mMatch[1]) : 0;
+  
+  // If hh:mm format (e.g., "07:04")
+  if (!hMatch && !mMatch && duration.includes(':')) {
+    const [h, m] = duration.split(':').map(Number);
+    hours = h || 0;
+    minutes = m || 0;
+  }
+
+  return (hours * 60) + minutes;
+}
+
+/**
+ * Parses Garmin 1-Day vertical key-value sleep export.
+ */
+function parseVerticalSleepCSV(lines: string[]): SleepMetric[] {
+  const kv: Record<string, string> = {};
+  for (const line of lines) {
+    const commaIdx = line.indexOf(',');
+    if (commaIdx === -1) continue;
+    const key = line.slice(0, commaIdx).trim().toLowerCase();
+    const val = line.slice(commaIdx + 1).trim();
+    if (key && val) {
+      kv[key] = val;
+    }
+  }
+
+  const dateRaw = kv['date'] || '';
+  if (!dateRaw) return [];
+  const date = parseDateToISO(dateRaw);
+
+  const score = parseInt(kv['sleep score'] || kv['score'] || '0') || 0;
+  const quality = kv['quality'] || '';
+  const duration = parseDurationToMinutes(kv['sleep duration'] || kv['duration'] || '');
+  const sleepNeed = parseDurationToMinutes(kv['sleep need'] || kv['avg sleep need'] || '');
+
+  // Resting heart rate (e.g. "59 bpm")
+  const rhrMatch = (kv['resting heart rate'] || kv['resting hr'] || '').match(/\d+/);
+  const restingHeartRate = rhrMatch ? parseInt(rhrMatch[0]) : 0;
+
+  // Pulse Ox / SpO2 (e.g. "Avg SpO₂,91%" or "Avg SpO2,91%")
+  const spo2Key = Object.keys(kv).find(k => k.includes('spo') || k.includes('pulse'));
+  const spo2Raw = spo2Key ? kv[spo2Key] : '';
+  const spo2Match = spo2Raw.match(/[\d.]+/);
+  const pulseOx = spo2Match ? parseFloat(spo2Match[0]) : 0;
+
+  // Respiration (e.g. "Avg Respiration,16 brpm")
+  const respKey = Object.keys(kv).find(k => k.includes('respiration'));
+  const respRaw = respKey ? kv[respKey] : '';
+  const respMatch = respRaw.match(/[\d.]+/);
+  const respiration = respMatch ? parseFloat(respMatch[0]) : 0;
+
+  // Overnight HRV (e.g. "Avg Overnight HRV,31 ms")
+  const hrvKey = Object.keys(kv).find(k => k.includes('hrv') && !k.includes('7d'));
+  const hrvRaw = hrvKey ? kv[hrvKey] : '';
+  const hrvMatch = hrvRaw.match(/\d+/);
+  const hrvStatus = hrvMatch ? parseInt(hrvMatch[0]) : 0;
+
+  return [{
+    date,
+    score,
+    restingHeartRate,
+    readinessScore: 0,
+    pulseOx,
+    respiration,
+    hrvStatus,
+    quality,
+    duration,
+    sleepNeed,
+    bedtime: kv['bedtime'] || '',
+    wakeTime: kv['wake time'] || kv['waketime'] || ''
+  }];
+}
+
+/**
+ * Parses Garmin 1-Year weekly aggregate sleep export.
+ */
+function parse1YearSleepCSV(lines: string[]): SleepMetric[] {
+  let headerIndex = -1;
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes('avg score') || l.includes('avg duration') || l.startsWith('date,')) {
+      headerIndex = i;
+      break;
+    }
+  }
+  if (headerIndex === -1) headerIndex = 0;
+
+  const metrics: SleepMetric[] = [];
+  let trackingYear = new Date().getFullYear();
+  let prevMonth = 12;
+
+  // Check top rows for any explicit 4-digit year
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    const match = lines[i].match(/\b(20\d\d)\b/);
+    if (match) {
+      const foundYear = parseInt(match[1]);
+      if (foundYear >= trackingYear) {
+        trackingYear = foundYear;
+      }
+      break;
+    }
+  }
+
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const parts = line.split(',').map(p => p.trim());
+    if (parts.length < 7) continue;
+
+    // The last 6 tokens are: Avg Score, Avg Quality, Avg Duration, Avg Sleep Need, Avg Bedtime, Avg Wake Time
+    const values = parts.slice(-6);
+    const dateRangeStr = parts.slice(0, -6).join(',').trim();
+
+    const score = parseInt(values[0]) || 0;
+    const quality = values[1] === '--' ? '' : values[1];
+    const duration = parseDurationToMinutes(values[2]);
+    const sleepNeed = parseDurationToMinutes(values[3]);
+    const bedtime = values[4] === '--' ? '' : values[4];
+    const wakeTime = values[5] === '--' ? '' : values[5];
+
+    // Filter empty rows (e.g. "--,--,--,--,--,--")
+    if (score === 0 && duration === 0 && (values[0] === '--' || values[0] === '')) {
+      continue;
+    }
+
+    const explicitYearMatch = dateRangeStr.match(/\b(20\d\d)\b/);
+    if (explicitYearMatch) {
+      trackingYear = parseInt(explicitYearMatch[1]);
+    }
+
+    let formattedDate = parseGarminDateRange(dateRangeStr, trackingYear);
+    if (!formattedDate) continue;
+
+    // Detect reverse-chronological month wraps (e.g. Jan -> Dec)
+    const monthPart = parseInt(formattedDate.split('-')[1]);
+    if (monthPart > prevMonth && !explicitYearMatch) {
+      trackingYear -= 1;
+      formattedDate = parseGarminDateRange(dateRangeStr, trackingYear);
+    }
+    prevMonth = monthPart;
+
+    metrics.push({
+      date: formattedDate,
+      score,
+      restingHeartRate: 0,
+      readinessScore: 0,
+      pulseOx: 0,
+      respiration: 0,
+      hrvStatus: 0,
+      quality,
+      duration,
+      sleepNeed,
+      bedtime,
+      wakeTime
+    });
+  }
+
+  return metrics;
+}
+
+/**
+ * Parses Garmin 7-Day, 4-Week, and tabular Sleep CSV exports.
+ */
+function parseTabularSleepCSV(lines: string[]): SleepMetric[] {
   let headerIndex = -1;
   let headers: string[] = [];
 
@@ -31,12 +344,10 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
   }
 
   if (headerIndex === -1) {
-    // Fallback to first line
     headerIndex = 0;
     headers = lines[0].split(',').map(c => c.trim().toLowerCase());
   }
 
-  // Column index map
   const getIndex = (...keywords: string[]) => {
     return headers.findIndex(h => keywords.some(k => h.includes(k)));
   };
@@ -45,7 +356,6 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
   const idxScore = headers.findIndex((h, idx) => h === 'score' || (h.includes('score') && idx !== idxDate));
   const idxRestingHR = getIndex('resting');
   const idxReadiness = getIndex('training readiness', 'readiness');
-  const idxBodyBattery = getIndex('body battery');
   const idxPulseOx = getIndex('pulse');
   const idxRespiration = getIndex('respiration');
   const idxHRVStatus = getIndex('hrv');
@@ -65,11 +375,14 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 3) continue;
 
+    // Check if the whole row is empty/placeholders
+    const isAllDashes = parts.slice(1).every(p => p === '--' || p === '');
+    if (isAllDashes) continue;
+
     const dateStr = idxDate >= 0 ? parts[idxDate] : parts[0];
     const scoreVal = idxScore >= 0 ? parseInt(parts[idxScore]) || 0 : 0;
     const restingHRVal = idxRestingHR >= 0 ? parseInt(parts[idxRestingHR]) || 0 : 0;
     
-    // Distinguish Readiness from Body Battery
     let readinessVal = 0;
     if (idxReadiness >= 0) {
       readinessVal = parseInt(parts[idxReadiness]) || 0;
@@ -78,13 +391,18 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
     const pulseOxVal = idxPulseOx >= 0 ? parseFloat(parts[idxPulseOx]) || 0 : 0;
     const respirationVal = idxRespiration >= 0 ? parseFloat(parts[idxRespiration]) || 0 : 0;
     const hrvStatusVal = idxHRVStatus >= 0 ? parseInt(parts[idxHRVStatus]) || 0 : 0;
-    const qualityVal = idxQuality >= 0 ? parts[idxQuality] : '';
+    const qualityVal = idxQuality >= 0 && parts[idxQuality] !== '--' ? parts[idxQuality] : '';
     const durationVal = idxDuration >= 0 ? parseDurationToMinutes(parts[idxDuration]) : 0;
     const sleepNeedVal = idxSleepNeed >= 0 ? parseDurationToMinutes(parts[idxSleepNeed]) : 0;
-    const bedtimeVal = idxBedtime >= 0 ? parts[idxBedtime] : '';
-    const wakeTimeVal = idxWakeTime >= 0 ? parts[idxWakeTime] : '';
+    const bedtimeVal = idxBedtime >= 0 && parts[idxBedtime] !== '--' ? parts[idxBedtime] : '';
+    const wakeTimeVal = idxWakeTime >= 0 && parts[idxWakeTime] !== '--' ? parts[idxWakeTime] : '';
 
-    const formattedDate = parseGarminDate(dateStr, currentYear);
+    if (scoreVal === 0 && durationVal === 0 && restingHRVal === 0) {
+      continue;
+    }
+
+    const formattedDate = parseDateToISO(dateStr, currentYear);
+    if (!formattedDate) continue;
 
     metrics.push({
       date: formattedDate,
@@ -103,6 +421,30 @@ export function parseSleepCSV(csv: string): SleepMetric[] {
   }
 
   return metrics;
+}
+
+/**
+ * Universal Garmin Sleep CSV parser handling 1-Day, 7-Day, 4-Week, and 1-Year formats.
+ */
+export function parseSleepCSV(csv: string): SleepMetric[] {
+  const lines = cleanCSVLines(csv);
+  if (lines.length < 2) return [];
+
+  const firstLine = lines[0].toLowerCase();
+  const secondLine = lines[1] ? lines[1].toLowerCase() : '';
+
+  // 1. Check for 1-Day vertical key-value export
+  if (firstLine.includes('1 day') || secondLine.startsWith('date,') || lines.some(l => l.toLowerCase().startsWith('sleep score factors'))) {
+    return parseVerticalSleepCSV(lines);
+  }
+
+  // 2. Check for 1-Year weekly aggregate export
+  if (firstLine.includes('avg score') || firstLine.includes('avg duration') || firstLine.includes('avg bedtime')) {
+    return parse1YearSleepCSV(lines);
+  }
+
+  // 3. Standard 7-Day, 4-Week, or custom tabular export
+  return parseTabularSleepCSV(lines);
 }
 
 /**
@@ -128,13 +470,48 @@ export async function exportSleepToCSV(data: SleepMetric[]) {
 }
 
 /**
- * Parses Garmin HRV Status CSV export across 1-day, 7-day, 4-week or custom ranges.
- * Dynamically detects column headers.
+ * Parses Garmin 1-Day vertical key-value HRV export.
  */
-export function parseHRVCSV(csv: string): HRVMetric[] {
-  const lines = cleanCSVLines(csv);
-  if (lines.length < 2) return [];
+function parseVerticalHRV(lines: string[]): HRVMetric[] {
+  const kv: Record<string, string> = {};
+  for (const line of lines) {
+    const commaIdx = line.indexOf(',');
+    if (commaIdx === -1) continue;
+    const key = line.slice(0, commaIdx).trim().toLowerCase();
+    const val = line.slice(commaIdx + 1).trim();
+    if (key && val) {
+      kv[key] = val;
+    }
+  }
 
+  const dateRaw = kv['date'] || '';
+  if (!dateRaw) return [];
+  const date = parseDateToISO(dateRaw);
+
+  const hrvStr = kv['overnight hrv'] || kv['hrv'] || '0';
+  const baselineStr = kv['baseline'] || '';
+  const avgStr = kv['7d avg'] || kv['avg'] || '0';
+
+  const overnightHRV = parseInt(hrvStr) || 0;
+  const sevenDayAvg = parseInt(avgStr) || 0;
+
+  const baselineParts = baselineStr.match(/(\d+)/g);
+  const baselineMin = baselineParts ? parseInt(baselineParts[0]) : 0;
+  const baselineMax = baselineParts && baselineParts.length > 1 ? parseInt(baselineParts[1]) : 0;
+
+  return [{
+    date,
+    overnightHRV,
+    baselineMin,
+    baselineMax,
+    sevenDayAvg
+  }];
+}
+
+/**
+ * Parses Garmin 7-Day, 4-Week, and tabular HRV exports.
+ */
+function parseTabularHRV(lines: string[]): HRVMetric[] {
   let headerIndex = -1;
   let headers: string[] = [];
 
@@ -162,10 +539,23 @@ export function parseHRVCSV(csv: string): HRVMetric[] {
   const idxAvg = getIndex('7d', 'avg', 'average');
 
   const metrics: HRVMetric[] = [];
-  const currentYear = new Date().getFullYear();
-  
+  let trackingYear = new Date().getFullYear();
+  let prevMonth = 12;
+
+  // Check top rows for explicit 4-digit year
   for (let i = headerIndex + 1; i < lines.length; i++) {
-    const line = lines[i];
+    const match = lines[i].match(/\b(20\d\d)\b/);
+    if (match) {
+      const foundYear = parseInt(match[1]);
+      if (foundYear >= trackingYear) {
+        trackingYear = foundYear;
+      }
+      break;
+    }
+  }
+
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
     if (!line) continue;
 
     const parts = line.split(',').map(p => p.trim());
@@ -176,23 +566,61 @@ export function parseHRVCSV(csv: string): HRVMetric[] {
     const baselineStr = idxBaseline >= 0 ? parts[idxBaseline] : parts[2] || '';
     const avgStr = idxAvg >= 0 ? parts[idxAvg] : parts[3] || '0';
 
-    const date = parseGarminDate(dateStr, currentYear);
-    
-    // Parse Baseline (e.g., "28ms - 35ms" or "30 - 36")
+    const overnightHRV = parseInt(hrvStr) || 0;
+    const sevenDayAvg = parseInt(avgStr) || 0;
+
+    // If both are missing/placeholders, skip empty row
+    if (hrvStr === '--' && (avgStr === '--' || avgStr === '0')) continue;
+
     const baselineParts = baselineStr.match(/(\d+)/g);
     const baselineMin = baselineParts ? parseInt(baselineParts[0]) : 0;
-    const baselineMax = baselineParts ? parseInt(baselineParts[1]) : 0;
+    const baselineMax = baselineParts && baselineParts.length > 1 ? parseInt(baselineParts[1]) : 0;
+
+    const explicitYearMatch = dateStr.match(/\b(20\d\d)\b/);
+    if (explicitYearMatch) {
+      trackingYear = parseInt(explicitYearMatch[1]);
+    }
+
+    let formattedDate = parseDateToISO(dateStr, trackingYear);
+    if (!formattedDate) continue;
+
+    // Detect reverse-chronological month wraps (e.g. Jan -> Dec)
+    const monthPart = parseInt(formattedDate.split('-')[1]);
+    if (monthPart > prevMonth && !explicitYearMatch) {
+      trackingYear -= 1;
+      formattedDate = parseDateToISO(dateStr, trackingYear);
+    }
+    prevMonth = monthPart;
 
     metrics.push({
-      date,
-      overnightHRV: parseInt(hrvStr) || 0,
+      date: formattedDate,
+      overnightHRV,
       baselineMin,
       baselineMax,
-      sevenDayAvg: parseInt(avgStr) || 0
+      sevenDayAvg
     });
   }
 
   return metrics;
+}
+
+/**
+ * Universal Garmin HRV Status CSV parser handling 1-Day, 7-Day, 4-Week, and tabular formats.
+ */
+export function parseHRVCSV(csv: string): HRVMetric[] {
+  const lines = cleanCSVLines(csv);
+  if (lines.length < 2) return [];
+
+  const firstLine = lines[0].toLowerCase();
+  const secondLine = lines[1] ? lines[1].toLowerCase() : '';
+
+  // 1. Check for 1-Day vertical key-value format
+  if (firstLine.includes('1 day') || secondLine.startsWith('date,')) {
+    return parseVerticalHRV(lines);
+  }
+
+  // 2. Tabular format (7 Days / 4 Weeks / Custom)
+  return parseTabularHRV(lines);
 }
 
 /**
@@ -208,62 +636,6 @@ export async function exportHRVToCSV(data: HRVMetric[]) {
   }));
 
   await exportToCSV(exportData, `Velo_HRVRecovery_${new Date().toISOString().split('T')[0]}.csv`);
-}
-
-function parseDurationToMinutes(duration: string): number {
-  if (!duration) return 0;
-
-  // Handle format "7h 4min", "7h 4m", "7h", "30min"
-  const hMatch = duration.match(/(\d+)\s*h/i);
-  const mMatch = duration.match(/(\d+)\s*m/i);
-  
-  let hours = hMatch ? parseInt(hMatch[1]) : 0;
-  let minutes = mMatch ? parseInt(mMatch[1]) : 0;
-  
-  // If hh:mm format (e.g., "07:04")
-  if (!hMatch && !mMatch && duration.includes(':')) {
-    const [h, m] = duration.split(':').map(Number);
-    hours = h || 0;
-    minutes = m || 0;
-  }
-
-  return (hours * 60) + minutes;
-}
-
-function parseGarminDate(dateStr: string, defaultYear: number): string {
-  if (!dateStr) return '';
-  const cleanStr = dateStr.trim();
-
-  // Standard ISO format YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
-    return cleanStr;
-  }
-
-  // Handle MM/DD/YYYY or M/D/YYYY
-  if (cleanStr.includes('/')) {
-    const parts = cleanStr.split('/');
-    if (parts.length === 3) {
-      const m = String(parseInt(parts[0])).padStart(2, '0');
-      const d = String(parseInt(parts[1])).padStart(2, '0');
-      let y = parseInt(parts[2]);
-      if (y < 100) y += 2000;
-      return `${y}-${m}-${d}`;
-    }
-  }
-
-  // Handle formats like "Jul 29" or "July 29"
-  const date = new Date(`${cleanStr} ${defaultYear}`);
-  if (!isNaN(date.getTime())) {
-    if (date > new Date()) {
-      date.setFullYear(defaultYear - 1);
-    }
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  return cleanStr;
 }
 
 /**

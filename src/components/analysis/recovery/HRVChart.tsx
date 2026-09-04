@@ -12,7 +12,7 @@ import {
   Legend
 } from 'recharts';
 import { HRVMetric } from '../../../types';
-import { format } from 'date-fns';
+import { safeFormatDate } from '../../../services/wellnessService';
 
 interface HRVChartProps {
   data: HRVMetric[];
@@ -23,10 +23,9 @@ export const HRVChart: React.FC<HRVChartProps> = ({ data }) => {
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
 
   const chartData = sortedData.map(d => {
-    const [y, m, d_part] = d.date.split('-').map(Number);
     return {
       ...d,
-      displayDate: format(new Date(y, m - 1, d_part), 'MMM dd'),
+      displayDate: safeFormatDate(d.date),
       // Range data for the Area plot
       range: [d.baselineMin, d.baselineMax]
     };

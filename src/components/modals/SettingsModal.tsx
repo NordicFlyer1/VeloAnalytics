@@ -914,39 +914,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 */}
                 <div className="space-y-6">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Wellness Data (Garmin Exports)</h3>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Wellness Data (Garmin Exports)</h3>
+                      <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-2.5 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-orange-400">1D • 7D • 4W • 1Y Supported</span>
+                      </div>
+                    </div>
                     <p className="text-[11px] text-app-muted leading-relaxed">
-                      Import your Sleep and HRV CSV exports from Garmin Connect. These files provide recovery context for your coaching analysis.
+                      Import your Sleep and HRV CSV exports from Garmin Connect. Supports 1-Day (detailed timeline), 7-Day, 4-Week, and 1-Year (weekly aggregate) exports with automatic format detection and non-destructive multi-file merging.
                     </p>
+                  </div>
+
+                  {/* Garmin Connect Export Quick Guide */}
+                  <div className="p-4 rounded-2xl bg-app-bg/20 border border-app-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px]">
+                    <div className="flex items-start sm:items-center gap-2.5 text-app-muted">
+                      <span className="w-5 h-5 rounded-full bg-app-card border border-app-border flex items-center justify-center text-[10px] font-black text-orange-500 shrink-0 mt-0.5 sm:mt-0">i</span>
+                      <span>
+                        <strong className="text-app-text font-semibold">How to export:</strong> Visit <span className="text-orange-400 font-mono text-[10px]">connect.garmin.com</span> → Reports → Health & Fitness → Sleep or HRV Status → Select any timeframe (1 Day, 7 Days, 4 Weeks, or 1 Year) → Click <strong className="text-app-text">Export CSV</strong>.
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Sleep Import Card */}
-                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
-                            <Moon className="w-5 h-5 text-orange-500" />
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                              <Moon className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Sleep Data</span>
+                              <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{sleepHistory.length} Records Loaded</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Sleep Data</span>
-                            <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{sleepHistory.length} Records Loaded</span>
-                          </div>
+                          {sleepHistory.length > 0 && (
+                            <button 
+                              onClick={() => setSleepHistory([])}
+                              className="p-2 text-app-muted hover:text-red-400 transition-colors"
+                              title="Clear Sleep History"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
-                        {sleepHistory.length > 0 && (
-                          <button 
-                            onClick={() => setSleepHistory([])}
-                            className="p-2 text-app-muted hover:text-red-400 transition-colors"
-                            title="Clear Sleep History"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+
+                        <p className="text-[10px] text-app-muted leading-relaxed">
+                          Imports sleep score, duration, resting HR, Pulse Ox (SpO₂), respiration, and sleep stages. Multi-file uploads non-destructively merge long-term trends with granular daily metrics.
+                        </p>
+
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {['1 Day Vertical', '7 Days Tabular', '4 Weeks Tabular', '1 Year Aggregates'].map(tag => (
+                            <span key={tag} className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-app-card/80 border border-app-border text-app-muted">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="relative">
+
+                      <div className="relative pt-2">
                         <input 
                           type="file" 
                           accept=".csv"
+                          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -960,10 +992,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     const merged = [...prev];
                                     data.forEach(newItem => {
                                       const idx = merged.findIndex(m => m.date === newItem.date);
-                                      if (idx >= 0) merged[idx] = newItem;
-                                      else merged.push(newItem);
+                                      if (idx >= 0) {
+                                        const existing = merged[idx];
+                                        merged[idx] = {
+                                          ...existing,
+                                          ...newItem,
+                                          score: newItem.score || existing.score,
+                                          restingHeartRate: newItem.restingHeartRate || existing.restingHeartRate,
+                                          readinessScore: newItem.readinessScore || existing.readinessScore,
+                                          pulseOx: newItem.pulseOx || existing.pulseOx,
+                                          respiration: newItem.respiration || existing.respiration,
+                                          hrvStatus: newItem.hrvStatus || existing.hrvStatus,
+                                          quality: newItem.quality || existing.quality,
+                                          duration: newItem.duration || existing.duration,
+                                          sleepNeed: newItem.sleepNeed || existing.sleepNeed,
+                                          bedtime: newItem.bedtime || existing.bedtime,
+                                          wakeTime: newItem.wakeTime || existing.wakeTime
+                                        };
+                                      } else {
+                                        merged.push(newItem);
+                                      }
                                     });
-                                    return merged;
+                                    return merged.sort((a, b) => a.date.localeCompare(b.date));
                                   });
                                 }
                               };
@@ -972,38 +1022,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }}
                           className="absolute inset-0 opacity-0 cursor-pointer z-10"
                         />
-                        <button className="w-full bg-app-card border border-app-border hover:border-orange-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                        <button className="w-full bg-app-card border border-app-border hover:border-orange-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm">
                           Upload Sleep CSV
                         </button>
                       </div>
                     </div>
 
                     {/* HRV Import Card */}
-                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                            <RefreshCw className="w-5 h-5 text-purple-500" />
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                              <RefreshCw className="w-5 h-5 text-purple-500" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">HRV Status</span>
+                              <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{hrvHistory.length} Records Loaded</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">HRV Status</span>
-                            <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">{hrvHistory.length} Records Loaded</span>
-                          </div>
+                          {hrvHistory.length > 0 && (
+                            <button 
+                              onClick={() => setHrvHistory([])}
+                              className="p-2 text-app-muted hover:text-red-400 transition-colors"
+                              title="Clear HRV History"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
-                        {hrvHistory.length > 0 && (
-                          <button 
-                            onClick={() => setHrvHistory([])}
-                            className="p-2 text-app-muted hover:text-red-400 transition-colors"
-                            title="Clear HRV History"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+
+                        <p className="text-[10px] text-app-muted leading-relaxed">
+                          Imports overnight HRV, baseline ranges (min-max bounds), and 7-day rolling averages. Filters missing nights cleanly while maintaining continuous baseline tracking.
+                        </p>
+
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {['1 Day Vertical', '7 Days Tabular', '4 Weeks Tabular', 'Custom Range'].map(tag => (
+                            <span key={tag} className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-app-card/80 border border-app-border text-app-muted">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="relative">
+
+                      <div className="relative pt-2">
                         <input 
                           type="file" 
                           accept=".csv"
+                          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -1016,10 +1082,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     const merged = [...prev];
                                     data.forEach(newItem => {
                                       const idx = merged.findIndex(m => m.date === newItem.date);
-                                      if (idx >= 0) merged[idx] = newItem;
-                                      else merged.push(newItem);
+                                      if (idx >= 0) {
+                                        const existing = merged[idx];
+                                        merged[idx] = {
+                                          ...existing,
+                                          ...newItem,
+                                          overnightHRV: newItem.overnightHRV || existing.overnightHRV,
+                                          baselineMin: newItem.baselineMin || existing.baselineMin,
+                                          baselineMax: newItem.baselineMax || existing.baselineMax,
+                                          sevenDayAvg: newItem.sevenDayAvg || existing.sevenDayAvg
+                                        };
+                                      } else {
+                                        merged.push(newItem);
+                                      }
                                     });
-                                    return merged;
+                                    return merged.sort((a, b) => a.date.localeCompare(b.date));
                                   });
                                 }
                               };
@@ -1028,7 +1105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           }}
                           className="absolute inset-0 opacity-0 cursor-pointer z-10"
                         />
-                        <button className="w-full bg-app-card border border-app-border hover:border-purple-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                        <button className="w-full bg-app-card border border-app-border hover:border-purple-500/30 text-app-text px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm">
                           Upload HRV CSV
                         </button>
                       </div>

@@ -66,6 +66,14 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 *   **Sleep Quality**: A multi-parametric index (0-100) combining duration, quality, and sleep architecture.
 *   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**.
 
+#### Garmin Connect Ingestion Architecture & Supported Formats
+VeloAnalytics implements an automated multi-range ingestion pipeline that accepts official CSV exports from Garmin Connect (`connect.garmin.com > Reports > Health & Fitness > Sleep / HRV Status`). The engine dynamically identifies file format variations without requiring manual user configuration:
+1.  **1-Day Vertical Key-Value Exports**: Contains granular single-night telemetry including overall Sleep Score, deep/light/REM sleep stages, resting heart rate, pulse oximetry (SpO₂ average and minimum), awake respiration rate, and overnight HRV status.
+2.  **7-Day & 4-Week Tabular Exports**: Chronological daily rows recording continuous daily metrics (sleep scores, total sleep time, deep sleep percentages, awake times, and daily overnight HRV readings).
+3.  **1-Year Macro Aggregates (Weekly Averages)**: Multi-month reporting where each entry represents a 7-day rolling period (e.g., `Aug 29 - Sep 4` or year-spanning periods like `Dec 27, 2025 - Jan 2, 2026`). The engine parses the date bounds and anchors the weekly aggregate values to the interval end-date, enabling long-term baseline history.
+4.  **Non-Destructive Metric Merging**: Importing overlapping files merges data safely by date. Uploading a 1-year macro file establishes baseline continuity, while subsequent 1-day or 7-day uploads enrich existing dates with detailed factor data (e.g., SpO₂, respiration rate, bedtime/wake times) without overwriting them with blank values.
+5.  **Robust Date Normalization**: All timestamps and date strings are standardized to ISO `YYYY-MM-DD`. Defensive parsing guards (`safeFormatDate`) prevent runtime exceptions in charts across legacy or cross-locale date strings.
+
 ### 10. Experimental Velo Readiness (Opt-in)
 **Concept**: A hypothesized weighted algorithm designed to approximate aggregate physiological readiness by combining sleep quality, autonomic status, and chronic training load. Unlike standard linear averages, it uses **Non-Linear Multiplicative Inhibitors** to model fatigue correctly—preventing high scores in one area from masking critical deficits in another.
 

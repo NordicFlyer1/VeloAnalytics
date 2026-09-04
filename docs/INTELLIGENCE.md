@@ -56,8 +56,8 @@ When you send a message, the app bundle provides the AI with a dense, **structur
     *   **Efficiency**: **Efficiency Factor (EF)** (xPower per BPM) and **Aerobic Decoupling** (Pw:HR).
     *   **Geography**: Total **Distance** and **Total Ascent** (Climbing).
 3.  **Wellness & Recovery Trends**:
-    *   **Sleep Sequence**: Multi-day history of sleep scores, quality, and duration.
-    *   **HRV Sequence**: Multi-day history of overnight HRV vs. your personal baseline.
+    *   **Sleep Sequence**: Multi-day history of sleep scores, quality, duration, resting heart rate, pulse oximetry (SpO₂), and respiration rate derived from Garmin Connect Sleep exports (supports 1-Day, 7-Day, 4-Week, and 1-Year formats with automatic format detection and non-destructive merging).
+    *   **HRV Sequence**: Multi-day history of overnight HRV vs. your personal baseline bounds from Garmin Connect HRV Status exports (supports 1-Day, 7-Day, 4-Week, and custom range formats).
     *   **Velo-Readiness**: The complete breakdown of the experimental readiness score, including active penalties (e.g., Sleep Debt, ACWR spikes).
 4.  **Fitness Trends (PMC)**: Your current **CTL** (Fitness), **ATL** (Fatigue), and **TSB** (Form/Freshness), plus a 14-day projection.
 5.  **Historical Library**: A searchable index of your 20 most recent activities (Name, Date, FileName, and BikeScore).
@@ -99,6 +99,12 @@ The coach understands your naming conventions and historical data.
 *   **Functionality:** Found in Settings > Maintenance.
 *   **Export Settings:** Captures all `localStorage` configuration (Settings, API Keys, Physiological Thresholds, Equipment Profiles) into a single `.json` blob (`veloanalytics_config_backup.json`). Activity history is excluded to keep backups portable and focused on configuration and secrets.
 *   **Import Settings:** Overwrites the current `localStorage` settings with the backup content and reloads the application to sync state.
+
+### Garmin Wellness Data Ingestion (Sleep & HRV)
+*   **Functionality:** Found in Settings > Maintenance under "Wellness Data (Garmin Exports)".
+*   **Supported Timeframes:** 1 Day, 7 Days, 4 Weeks, and 1 Year (weekly aggregates).
+*   **Automatic Sniffing:** Automatically determines whether an uploaded CSV is a single-day vertical file, a continuous daily table, or a weekly macro aggregate.
+*   **Non-Destructive Multi-File Merging:** Users can upload a 1-year historical baseline followed by 7-day or 1-day detailed exports; VeloAnalytics deduplicates by date and merges high-resolution variables (such as SpO₂ and Respiration Rate) into existing daily entries without erasing them.
 
 ### Export Internal AI Context (JSON)
 *   **Functionality:** Found in the Intelligence Drawer (AI Chat) via the **Download** icon.

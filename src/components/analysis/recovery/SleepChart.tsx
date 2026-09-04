@@ -12,8 +12,7 @@ import {
   Cell
 } from 'recharts';
 import { SleepMetric, HRVMetric, PMCDataPoint, AISettings } from '../../../types';
-import { format } from 'date-fns';
-import { calculateVeloReadiness, calculateStandardReadiness } from '../../../services/wellnessService';
+import { calculateVeloReadiness, calculateStandardReadiness, safeFormatDate } from '../../../services/wellnessService';
 
 interface SleepChartProps {
   data: SleepMetric[];
@@ -32,8 +31,6 @@ export const SleepChart: React.FC<SleepChartProps> = ({
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
 
   const chartData = sortedData.map(d => {
-    const [y, m, d_part] = d.date.split('-').map(Number);
-    
     // Find matching HRV and PMC data for this date
     const hrvOnDate = hrvHistory.find(h => h.date === d.date);
     const pmcOnDate = pmcData.find(p => p.date === d.date);
@@ -54,7 +51,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({
 
     return {
       ...d,
-      displayDate: format(new Date(y, m - 1, d_part), 'MMM dd'),
+      displayDate: safeFormatDate(d.date),
       hours: (d.duration / 60).toFixed(1),
       calculatedReadiness: displayReadiness,
       veloCalculation: veloCalc

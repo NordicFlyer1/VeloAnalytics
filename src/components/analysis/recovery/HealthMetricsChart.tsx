@@ -10,7 +10,7 @@ import {
   Legend
 } from 'recharts';
 import { SleepMetric } from '../../../types';
-import { format } from 'date-fns';
+import { safeFormatDate } from '../../../services/wellnessService';
 
 interface HealthMetricsChartProps {
   data: SleepMetric[];
@@ -21,10 +21,9 @@ export const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ data }) 
   const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
 
   const chartData = sortedData.map(d => {
-    const [y, m, d_part] = d.date.split('-').map(Number);
     return {
       ...d,
-      displayDate: format(new Date(y, m - 1, d_part), 'MMM dd'),
+      displayDate: safeFormatDate(d.date),
     };
   });
 
