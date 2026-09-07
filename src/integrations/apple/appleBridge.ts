@@ -13,9 +13,17 @@
 
 export interface AppleSiriSnapshot {
   timestamp: string;
+  // Standard (Garmin-aligned / PMC) Readiness
   readinessScore: number;
   readinessStatus: string;
   readinessModel: string;
+
+  // Experimental Velo Readiness (multi-pillar fatigue, sleep, HRV, PMC engine)
+  veloReadinessScore?: number;
+  veloReadinessStatus?: string;
+  isVeloReadinessEnabled: boolean;
+  activeScoreType: 'standard' | 'veloReadiness';
+
   stressBalance: number; // SB (Stress Balance / Form)
   shortTermStress: number; // STS (Acute Fatigue, 7-day EWMA)
   longTermStress: number; // LTS (Chronic Fitness, 42-day EWMA)
@@ -57,14 +65,21 @@ export interface AppleSiriSnapshot {
 /**
  * Sync state with macOS Siri / Shortcuts cache.
  * Completely safe: will gracefully do nothing if not in a Tauri desktop environment.
+ * Supports both Tauri v1 and Tauri v2 IPC APIs.
  */
 export async function syncAppleSiriSnapshot(snapshot: AppleSiriSnapshot): Promise<boolean> {
   try {
-    // Check if running inside Tauri on macOS
-    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-      const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__;
-      if (typeof invoke === 'function') {
-        await invoke('sync_siri_snapshot', { snapshot });
+    // Check if running inside Tauri on macOS (supports Tauri v1 and v2 __TAURI__ and __TAURI_INTERNALS__)
+    if (typeof window !== 'undefined') {
+      const tauriGlobal = (window as any).__TAURI__;
+      const tauriInternals = (window as any).__TAURI_INTERNALS__;
+      
+      const invokeFn = tauriGlobal?.core?.invoke 
+        || tauriGlobal?.invoke 
+        || tauriInternals?.invoke;
+
+      if (typeof invokeFn === 'function') {
+        await invokeFn('sync_siri_snapshot', { snapshot });
         return true;
       }
     }

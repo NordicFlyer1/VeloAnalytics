@@ -39,6 +39,10 @@ public struct VeloSnapshot: Codable {
     public let readinessScore: Int
     public let readinessStatus: String
     public let readinessModel: String
+    public let veloReadinessScore: Int?
+    public let veloReadinessStatus: String?
+    public let isVeloReadinessEnabled: Bool?
+    public let activeScoreType: String?
     public let stressBalance: Int
     public let shortTermStress: Int
     public let longTermStress: Int
@@ -46,23 +50,25 @@ public struct VeloSnapshot: Codable {
     public let sleepDurationHours: Double?
     public let hrvOvernight: Double?
     public let latestRide: VeloRideSnapshot?
-    public let trainingBlock7Days: VeloTrainingBlock
-    public let trainingBlock28Days: VeloTrainingBlock
+    public let trainingBlock7Days: VeloTrainingBlock?
+    public let trainingBlock28Days: VeloTrainingBlock?
 }
 
 // MARK: - 2. Local File Loader
 public func loadVeloSnapshot() -> VeloSnapshot? {
-    // Looks in ~/Library/Application Support/com.veloanalytics.app/siri_snapshot.json
+    // Looks in ~/Library/Application Support/com.bruce.veloanalytics/siri_snapshot.json or com.veloanalytics.app
     guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
         return nil
     }
-    let fileURL = appSupport.appendingPathComponent("com.veloanalytics.app").appendingPathComponent("siri_snapshot.json")
-    
-    guard let data = try? Data(contentsOf: fileURL),
-          let snapshot = try? JSONDecoder().decode(VeloSnapshot.self, from: data) else {
-        return nil
+    let candidateIdentifiers = ["com.bruce.veloanalytics", "com.veloanalytics.app"]
+    for id in candidateIdentifiers {
+        let fileURL = appSupport.appendingPathComponent(id).appendingPathComponent("siri_snapshot.json")
+        if let data = try? Data(contentsOf: fileURL),
+           let snapshot = try? JSONDecoder().decode(VeloSnapshot.self, from: data) {
+            return snapshot
+        }
     }
-    return snapshot
+    return nil
 }
 
 // MARK: - 3. App Intent: Get Readiness
@@ -81,7 +87,18 @@ public struct GetVeloReadinessIntent: AppIntent {
             )
         }
 
-        let dialogText = "Your Velo Readiness is \(snapshot.readinessScore) out of 100 (\(snapshot.readinessStatus)). Stress Balance (SB) is \(snapshot.stressBalance > 0 ? "+\(snapshot.stressBalance)" : "\(snapshot.stressBalance)")."
+        let isVeloActive = snapshot.isVeloReadinessEnabled == true
+        var dialogText = ""
+
+        if isVeloActive, let veloScore = snapshot.veloReadinessScore {
+            let status = snapshot.veloReadinessStatus ?? "Optimal"
+            dialogText = "Your Velo Readiness is \(veloScore) out of 100 (\(status)). Standard PMC readiness is \(snapshot.readinessScore) and Stress Balance is \(snapshot.stressBalance > 0 ? "+\(snapshot.stressBalance)" : "\(snapshot.stressBalance)")."
+        } else {
+            dialogText = "Your Velo Readiness is \(snapshot.readinessScore) out of 100 (\(snapshot.readinessStatus)). Stress Balance (SB) is \(snapshot.stressBalance > 0 ? "+\(snapshot.stressBalance)" : "\(snapshot.stressBalance)")."
+            if let veloScore = snapshot.veloReadinessScore {
+                dialogText += " (Experimental Velo score: \(veloScore))."
+            }
+        }
 
         return .result(
             dialog: IntentDialog(stringLiteral: dialogText)

@@ -28,12 +28,17 @@ pub struct VeloTrainingBlock {
     pub totalBikeScore: i32,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppleSiriSnapshot {
     pub timestamp: String,
     pub readinessScore: i32,
     pub readinessStatus: String,
     pub readinessModel: String,
+    pub veloReadinessScore: Option<i32>,
+    pub veloReadinessStatus: Option<String>,
+    pub isVeloReadinessEnabled: Option<bool>,
+    pub activeScoreType: Option<String>,
     pub stressBalance: i32,
     pub shortTermStress: i32,
     pub longTermStress: i32,
@@ -41,21 +46,24 @@ pub struct AppleSiriSnapshot {
     pub sleepDurationHours: Option<f64>,
     pub hrvOvernight: Option<f64>,
     pub latestRide: Option<VeloRideSnapshot>,
-    pub trainingBlock7Days: VeloTrainingBlock,
-    pub trainingBlock28Days: VeloTrainingBlock,
+    pub trainingBlock7Days: Option<VeloTrainingBlock>,
+    pub trainingBlock28Days: Option<VeloTrainingBlock>,
 }
 
 #[tauri::command]
 pub fn sync_siri_snapshot(snapshot: AppleSiriSnapshot) -> Result<bool, String> {
     #[cfg(target_os = "macos")]
     {
-        if let Some(mut dir) = dirs_next::data_dir() {
-            dir.push("com.veloanalytics.app");
-            let _ = fs::create_dir_all(&dir);
-            
-            let file_path = dir.join("siri_snapshot.json");
-            let json = serde_json::to_string_pretty(&snapshot).map_err(|e| e.to_string())?;
-            fs::write(file_path, json).map_err(|e| e.to_string())?;
+        if let Some(data_dir) = dirs_next::data_dir() {
+            // Supports com.bruce.veloanalytics (custom identifier) and com.veloanalytics.app
+            for bundle_id in &["com.bruce.veloanalytics", "com.veloanalytics.app"] {
+                let dir = data_dir.join(bundle_id);
+                let _ = fs::create_dir_all(&dir);
+                let file_path = dir.join("siri_snapshot.json");
+                if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+                    let _ = fs::write(file_path, json);
+                }
+            }
             return Ok(true);
         }
     }

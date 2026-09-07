@@ -321,21 +321,29 @@ export default function App() {
       const currentLTS = latestPMC?.lts || 0;
       const currentBikeScore = latestPMC?.bikeScore || 0;
 
-      let score = 80;
+      let standardScore = 80;
+      let standardStatus = "Prime / Optimal";
+      let veloScore: number | undefined = undefined;
+      let veloStatus: string | undefined = undefined;
+
       const isExperimental = !!settings.aiSettings?.useExperimentalReadiness;
       const modelName = isExperimental ? "Velo Readiness (Experimental 4-Pillar)" : "Standard (Garmin-aligned)";
 
       if (latestSleep) {
-        if (isExperimental) {
-          const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, currentBikeScore);
-          score = velo.score;
-        } else {
-          const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
-          score = rawScore || calculateStandardReadiness(latestSleep, alignedHRV, currentSB);
-        }
+        // Always compute standard score
+        const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
+        standardScore = rawScore || calculateStandardReadiness(latestSleep, alignedHRV, currentSB);
+        standardStatus = standardScore >= 80 ? "Prime / Optimal" : standardScore >= 60 ? "Good" : standardScore >= 40 ? "Moderate" : "Low / Rest";
+
+        // Always compute experimental Velo Readiness score as well so both are available to Siri
+        const veloResult = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, currentBikeScore);
+        veloScore = Math.round(veloResult.score);
+        veloStatus = veloScore >= 80 ? "Prime / Optimal" : veloScore >= 60 ? "Good" : veloScore >= 40 ? "Moderate" : "Low / Rest";
       }
 
-      const status = score >= 80 ? "Prime / Optimal" : score >= 60 ? "Good" : score >= 40 ? "Moderate" : "Low / Rest";
+      // Main displayed score based on user setting
+      const primaryScore = isExperimental && veloScore !== undefined ? veloScore : standardScore;
+      const primaryStatus = isExperimental && veloStatus ? veloStatus : standardStatus;
 
       // Helper to safely format any date or timestamp representation
       const safeFormatDate = (rawDate: any): string => {
@@ -428,9 +436,15 @@ export default function App() {
 
       const snapshot: AppleSiriSnapshot = {
         timestamp: new Date().toISOString(),
-        readinessScore: Math.round(score),
-        readinessStatus: status,
-        readinessModel: modelName,
+        readinessScore: Math.round(standardScore),
+        readinessStatus: standardStatus,
+        readinessModel: "Standard (Garmin-aligned)",
+
+        veloReadinessScore: veloScore,
+        veloReadinessStatus: veloStatus,
+        isVeloReadinessEnabled: isExperimental,
+        activeScoreType: isExperimental ? 'veloReadiness' : 'standard',
+
         stressBalance: Math.round(currentSB),
         shortTermStress: Math.round(currentSTS),
         longTermStress: Math.round(currentLTS),
