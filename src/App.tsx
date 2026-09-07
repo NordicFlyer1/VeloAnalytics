@@ -303,11 +303,23 @@ export default function App() {
   // Compute and sync Siri snapshot whenever wellness / PMC / activity history changes
   React.useEffect(() => {
     try {
-      const latestSleep = settings.sleepHistory && settings.sleepHistory.length > 0 ? settings.sleepHistory[0] : null;
+      // Sort descending by date to guarantee the most recent night is selected (matching SummaryCards and SleepAnalysis)
+      const latestSleep = settings.sleepHistory && settings.sleepHistory.length > 0 
+        ? [...settings.sleepHistory].sort((a, b) => b.date.localeCompare(a.date))[0] 
+        : null;
       const alignedHRV = latestSleep ? (settings.hrvHistory?.find(h => h.date === latestSleep.date) || null) : null;
-      const currentSB = currentPMC?.sb || 0;
-      const currentSTS = currentPMC?.sts || 0;
-      const currentLTS = currentPMC?.lts || 0;
+      
+      // Align PMC metrics to the date of the latest sleep record, falling back to the latest real PMC point or currentPMC
+      const pmcOnDate = latestSleep && pmcData ? pmcData.find(p => p.date === latestSleep.date) : null;
+      const realPmcFallback = (!pmcOnDate && pmcData && pmcData.length > 0)
+        ? [...pmcData.filter(p => !p.isPredictive)].sort((a, b) => b.date.localeCompare(a.date))[0]
+        : null;
+      const latestPMC = pmcOnDate || realPmcFallback || currentPMC;
+
+      const currentSB = latestPMC?.sb || 0;
+      const currentSTS = latestPMC?.sts || 0;
+      const currentLTS = latestPMC?.lts || 0;
+      const currentBikeScore = latestPMC?.bikeScore || 0;
 
       let score = 80;
       const isExperimental = !!settings.aiSettings?.useExperimentalReadiness;
@@ -315,7 +327,7 @@ export default function App() {
 
       if (latestSleep) {
         if (isExperimental) {
-          const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, summary?.bikeScore || 0);
+          const velo = calculateVeloReadiness(latestSleep, alignedHRV, currentSB, currentSTS, currentBikeScore);
           score = velo.score;
         } else {
           const rawScore = (latestSleep.readinessScore && latestSleep.readinessScore > 0) ? latestSleep.readinessScore : null;
@@ -445,7 +457,7 @@ export default function App() {
     } catch (err) {
       console.debug('[SnapshotSync] Non-blocking calculation error caught safely:', err);
     }
-  }, [settings.sleepHistory, settings.hrvHistory, currentPMC, summary, history, settings.aiSettings?.useExperimentalReadiness]);
+  }, [settings.sleepHistory, settings.hrvHistory, pmcData, currentPMC, summary, history, settings.aiSettings?.useExperimentalReadiness]);
 
   // Calculations
   const metricsConfig = React.useMemo(() => ({
