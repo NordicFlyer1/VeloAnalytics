@@ -1,4 +1,4 @@
-# 🍎 VeloAnalytics macOS & Siri Integration Guide (Baby Steps)
+# 🍎 VeloAnalytics macOS & Siri Integration Guide 
 
 This guide walks you through enabling **Siri Voice, Type to Siri, and macOS Spotlight** integration with VeloAnalytics.
 
@@ -24,7 +24,7 @@ If you use VeloAnalytics in Safari or Google Chrome:
 
 ## 🛠️ Option 2: Tauri Desktop App (Native macOS Build in Xcode)
 
-Follow these baby steps to compile native macOS App Intents directly into your Tauri app bundle.
+Follow these steps to compile native macOS App Intents directly into your Tauri app bundle.
 
 ### Prerequisites on your Mac:
 * macOS 14 (Sonoma) or macOS 15+ (Sequoia / Apple Intelligence beta).
