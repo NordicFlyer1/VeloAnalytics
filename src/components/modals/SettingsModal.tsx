@@ -914,26 +914,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 */}
                 <div className="space-y-6">
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Wellness Data (Garmin Exports)</h3>
-                      <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-2.5 py-0.5 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-orange-400">1D • 7D • 4W • 1Y Supported</span>
-                      </div>
-                    </div>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Wellness Data (Garmin Exports)</h3>
                     <p className="text-[11px] text-app-muted leading-relaxed">
-                      Import your Sleep and HRV CSV exports from Garmin Connect. Supports 1-Day (detailed timeline), 7-Day, 4-Week, and 1-Year (weekly aggregate) exports with automatic format detection and non-destructive multi-file merging.
+                      Import your Sleep and HRV CSV exports from Garmin Connect. These files provide recovery context for your coaching analysis.
                     </p>
-                  </div>
-
-                  {/* Garmin Connect Export Quick Guide */}
-                  <div className="p-4 rounded-2xl bg-app-bg/20 border border-app-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px]">
-                    <div className="flex items-start sm:items-center gap-2.5 text-app-muted">
-                      <span className="w-5 h-5 rounded-full bg-app-card border border-app-border flex items-center justify-center text-[10px] font-black text-orange-500 shrink-0 mt-0.5 sm:mt-0">i</span>
-                      <span>
-                        <strong className="text-app-text font-semibold">How to export:</strong> Visit <span className="text-orange-400 font-mono text-[10px]">connect.garmin.com</span> → Reports → Health & Fitness → Sleep or HRV Status → Select any timeframe (1 Day, 7 Days, 4 Weeks, or 1 Year) → Click <strong className="text-app-text">Export CSV</strong>.
-                      </span>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -962,16 +946,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
 
                         <p className="text-[10px] text-app-muted leading-relaxed">
-                          Imports sleep score, duration, resting HR, Pulse Ox (SpO₂), respiration, and sleep stages. Multi-file uploads non-destructively merge long-term trends with granular daily metrics.
+                          Imports sleep score, duration, resting HR, Pulse Ox (SpO₂), respiration, and sleep stages.
                         </p>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {['1 Day Vertical', '7 Days Tabular', '4 Weeks Tabular', '1 Year Aggregates'].map(tag => (
-                            <span key={tag} className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-app-card/80 border border-app-border text-app-muted">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
                       </div>
 
                       <div className="relative pt-2">
@@ -1053,16 +1029,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
 
                         <p className="text-[10px] text-app-muted leading-relaxed">
-                          Imports overnight HRV, baseline ranges (min-max bounds), and 7-day rolling averages. Filters missing nights cleanly while maintaining continuous baseline tracking.
+                          Imports overnight HRV, baseline ranges (min-max bounds), and 7-day rolling averages.
                         </p>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {['1 Day Vertical', '7 Days Tabular', '4 Weeks Tabular', 'Custom Range'].map(tag => (
-                            <span key={tag} className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-app-card/80 border border-app-border text-app-muted">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
                       </div>
 
                       <div className="relative pt-2">

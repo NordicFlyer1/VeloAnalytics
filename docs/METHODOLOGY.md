@@ -67,7 +67,7 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 *   **Overnight HRV**: Measurement of the Root Mean Square of Successive Differences (RMSSD) between heartbeats. VeloAnalytics compares your nightly values against a rolling **7-day baseline**.
 
 #### Garmin Connect Ingestion Architecture & Supported Formats
-VeloAnalytics implements an automated multi-range ingestion pipeline that accepts official CSV exports from Garmin Connect (`connect.garmin.com > Reports > Health & Fitness > Sleep / HRV Status`). The engine dynamically identifies file format variations without requiring manual user configuration:
+VeloAnalytics implements an automated multi-range ingestion pipeline that accepts official Sleep and HRV Status CSV exports from Garmin Connect. The engine dynamically identifies file format variations without requiring manual user configuration:
 1.  **1-Day Vertical Key-Value Exports**: Contains granular single-night telemetry including overall Sleep Score, deep/light/REM sleep stages, resting heart rate, pulse oximetry (SpO₂ average and minimum), awake respiration rate, and overnight HRV status.
 2.  **7-Day & 4-Week Tabular Exports**: Chronological daily rows recording continuous daily metrics (sleep scores, total sleep time, deep sleep percentages, awake times, and daily overnight HRV readings).
 3.  **1-Year Macro Aggregates (Weekly Averages)**: Multi-month reporting where each entry represents a 7-day rolling period (e.g., `Aug 29 - Sep 4` or year-spanning periods like `Dec 27, 2025 - Jan 2, 2026`). The engine parses the date bounds and anchors the weekly aggregate values to the interval end-date, enabling long-term baseline history.

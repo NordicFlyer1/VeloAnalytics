@@ -285,15 +285,15 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I import my Garmin health data?",
-        beginnerAnswer: "Log in to Garmin Connect (connect.garmin.com) on your computer, navigate to Reports > Health & Fitness > Sleep or HRV Status. Select your desired timeframe (1 Day, 7 Days, 4 Weeks, or 1 Year) and click 'Export CSV' in the top right. Then go to VeloAnalytics Settings > Maintenance and click 'Upload Sleep CSV' or 'Upload HRV CSV'.",
-        technicalAnswer: "VeloAnalytics features an automated universal parser for Garmin Connect CSV exports. It dynamically detects whether the export is a single-day vertical key-value file, a 7-day or 4-week daily tabular report, or a 1-year weekly aggregate. All timestamps and date intervals (including week ranges like 'Aug 29 - Sep 4') are normalized to ISO YYYY-MM-DD format and mapped locally into your browser's persistent storage.",
-        keywords: ["import", "garmin", "csv", "wellness", "health", "data", "upload", "export", "connect"]
+        beginnerAnswer: "Export your Sleep and HRV Status as CSV files from Garmin, and then upload them in VeloAnalytics Settings > Maintenance under 'Wellness Data'.",
+        technicalAnswer: "VeloAnalytics supports standard Garmin CSV exports for Sleep and HRV. Data is parsed locally in your browser and correlated by date with your activities to provide physiological recovery context for your coaching analysis.",
+        keywords: ["import", "garmin", "csv", "wellness", "health", "data", "upload"]
       },
       {
-        question: "Which Garmin Connect CSV export timeframes and formats are supported?",
-        beginnerAnswer: "All standard Garmin Connect timeframes are supported: 1 Day, 7 Days, 4 Weeks, and 1 Year. You don't need to select a format manually—VeloAnalytics detects it automatically. You can also upload multiple files; for example, you can upload a 1-Year file to establish long-term trends and then upload a 1-Day or 7-Day file to fill in detailed metrics like SpO2 and respiration without losing anything.",
-        technicalAnswer: "The ingestion pipeline supports: 1) 1-Day vertical key-value exports containing granular factors (Sleep Score, SpO2/Pulse Ox, respiration, sleep stages, resting HR, HRV status); 2) 7-Day and 4-Week horizontal tabular exports with daily chronological entries; and 3) 1-Year macro exports containing weekly average aggregates (anchored to interval end-dates). Records are merged non-destructively by date, preserving high-resolution metrics from single-day files when combined with long-term 1-year macro trends.",
-        keywords: ["garmin", "csv", "format", "1 year", "4 weeks", "7 days", "1 day", "sleep", "hrv", "merge", "spo2", "pulseox", "respiration"]
+        question: "Which Garmin CSV export formats are supported?",
+        beginnerAnswer: "Standard Garmin Sleep and HRV CSV exports across daily, weekly, and yearly views are supported. The parser detects the format automatically when uploaded.",
+        technicalAnswer: "VeloAnalytics automatically parses standard Garmin CSV exports, normalizing timestamps into ISO dates and storing records locally in your browser.",
+        keywords: ["garmin", "csv", "format", "sleep", "hrv", "wellness"]
       }
     ]
   },
