@@ -11,7 +11,8 @@ import {
   Settings, 
   ChevronRight,
   History as HistoryIcon,
-  Sparkles
+  Sparkles,
+  Mic
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -33,6 +34,7 @@ interface HeaderProps {
   isHistorySidebarOpen: boolean;
   showIntelligence: boolean;
   setShowIntelligence: (show: boolean) => void;
+  onSiriClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -52,7 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
   onActivityHistoryClick,
   isHistorySidebarOpen,
   showIntelligence,
-  setShowIntelligence
+  setShowIntelligence,
+  onSiriClick
 }) => {
   return (
     <header className="border-b border-app-border bg-app-bg/50 backdrop-blur-md sticky top-0 z-50">
@@ -144,6 +147,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                 <span className="hidden lg:inline text-[9px] font-bold uppercase tracking-widest">Coach</span>
               </button>
+
+              {onSiriClick && (
+                <button 
+                  onClick={onSiriClick}
+                  className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
+                  title="Apple Siri & Intelligence"
+                >
+                  <Mic className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                </button>
+              )}
 
               <button 
                 onClick={() => setShowSettings(true)}

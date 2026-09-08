@@ -3,5 +3,8 @@
   "description": "Advanced cycling performance analytics for .fit files with GPS mapping and power metrics.",
   "requestFramePermissions": [
     "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

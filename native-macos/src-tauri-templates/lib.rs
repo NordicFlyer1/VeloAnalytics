@@ -4,52 +4,54 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
-pub struct VeloRideSnapshot {
-    pub date: String,
-    pub name: String,
-    pub distanceKm: f64,
-    pub durationMinutes: i32,
-    pub xPower: Option<i32>,
-    pub relativeIntensity: Option<f64>,
-    pub avgPower: Option<i32>,
-    pub avgHeartRate: Option<i32>,
-    pub bikeScore: i32,
-    pub workKilojoules: Option<i32>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct VeloTrainingBlock {
-    pub totalRides: i32,
-    pub totalKm: f64,
-    pub totalHours: f64,
-    pub totalBikeScore: i32,
+struct VeloRideSnapshot {
+    date: String,
+    name: String,
+    distanceKm: f64,
+    durationMinutes: i32,
+    xPower: Option<i32>,
+    relativeIntensity: Option<f64>,
+    avgPower: Option<i32>,
+    avgHeartRate: Option<i32>,
+    bikeScore: i32,
+    workKilojoules: Option<i32>,
 }
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AppleSiriSnapshot {
-    pub timestamp: String,
-    pub readinessScore: i32,
-    pub readinessStatus: String,
-    pub readinessModel: String,
-    pub veloReadinessScore: Option<i32>,
-    pub veloReadinessStatus: Option<String>,
-    pub isVeloReadinessEnabled: Option<bool>,
-    pub activeScoreType: Option<String>,
-    pub stressBalance: i32,
-    pub shortTermStress: i32,
-    pub longTermStress: i32,
-    pub sleepScore: Option<i32>,
-    pub sleepDurationHours: Option<f64>,
-    pub hrvOvernight: Option<f64>,
-    pub latestRide: Option<VeloRideSnapshot>,
-    pub trainingBlock7Days: Option<VeloTrainingBlock>,
-    pub trainingBlock28Days: Option<VeloTrainingBlock>,
+struct VeloTrainingBlock {
+    totalRides: i32,
+    totalKm: f64,
+    totalHours: f64,
+    totalBikeScore: i32,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize)]
+struct AppleSiriSnapshot {
+    timestamp: String,
+    readinessScore: i32,
+    readinessStatus: String,
+    readinessModel: String,
+    veloReadinessScore: Option<i32>,
+    veloReadinessStatus: Option<String>,
+    isVeloReadinessEnabled: Option<bool>,
+    activeScoreType: Option<String>,
+    stressBalance: i32,
+    shortTermStress: i32,
+    longTermStress: i32,
+    sleepScore: Option<i32>,
+    sleepDurationHours: Option<f64>,
+    hrvOvernight: Option<f64>,
+    latestRide: Option<VeloRideSnapshot>,
+    trainingBlock7Days: Option<VeloTrainingBlock>,
+    trainingBlock28Days: Option<VeloTrainingBlock>,
 }
 
 #[tauri::command]
-pub fn sync_siri_snapshot(snapshot: AppleSiriSnapshot) -> Result<bool, String> {
+fn sync_siri_snapshot(snapshot: AppleSiriSnapshot) -> Result<bool, String> {
     #[cfg(target_os = "macos")]
     {
         if let Some(data_dir) = dirs_next::data_dir() {
