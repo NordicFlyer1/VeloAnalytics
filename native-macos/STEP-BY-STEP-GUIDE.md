@@ -116,14 +116,25 @@ Once registered, you can use any of these phrases:
 
 ## 📦 Building the Final macOS App for Release
 
-When you are ready to distribute:
+> **Important macOS Rule:** Always ensure your project folder path has **no spaces or parentheses** (e.g. `~/Documents/VeloAnalyticsBuild/VeloAnalytics`), which avoids macOS linker string-table offset errors.
+
+To build the full release macOS `.app` and `.dmg` bundle with a single command:
 
 ```bash
-npx tauri build
+npm run tauri:build
+```
+
+*(This automatically runs Vite build and passes `-j 1` to Cargo so all macros link smoothly on Apple Silicon).*
+
+If your binary is already compiled and you just want to re-bundle the `.app` and `.dmg`:
+```bash
+npm run tauri:bundle
 ```
 
 The standalone application will be located at:
 `src-tauri/target/release/bundle/macos/VeloAnalytics.app`
+and the installer `.dmg` at:
+`src-tauri/target/release/bundle/dmg/VeloAnalytics_*.dmg`
 
 To package it cleanly for friends without permission errors:
 ```bash

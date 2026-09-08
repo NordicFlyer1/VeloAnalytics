@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "vite build && tauri build -- -- -j 1",
+    "tauri:bundle": "tauri bundle"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

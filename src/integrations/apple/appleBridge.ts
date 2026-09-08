@@ -79,7 +79,11 @@ export async function syncAppleSiriSnapshot(snapshot: AppleSiriSnapshot): Promis
         || tauriInternals?.invoke;
 
       if (typeof invokeFn === 'function') {
-        await invokeFn('sync_siri_snapshot', { snapshot });
+        try {
+          await invokeFn('sync_siri_snapshot', { snapshot });
+        } catch (ipcErr) {
+          // Silently ignore if custom Tauri command is not registered in current binary
+        }
         return true;
       }
     }

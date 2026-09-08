@@ -7,10 +7,8 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
-    // Base path for deployment
-    // Use './' for Tauri/Offline bundles and AI Studio previews to ensure relative asset loading
-    // Use '/' for production Vercel/Web deployments
-    base: process.env.TAURI_PLATFORM || mode === 'development' ? './' : '/',
+    // Base path for deployment: './' ensures all assets load via relative paths in Tauri WKWebView, static bundles, and previews
+    base: './',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
@@ -23,38 +21,13 @@ export default defineConfig(({mode}) => {
     clearScreen: false,
     envPrefix: ['VITE_', 'TAURI_PLATFORM', 'TAURI_ARCH', 'TAURI_FAMILY', 'TAURI_VERSION', 'TAURI_ENV_DEBUG'],
     build: {
-      // Support for Tauri and modern browsers
-      target: mode === 'production' && !process.env.TAURI_PLATFORM ? 'es2022' : (process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : 'safari13'),
+      // Support for Tauri WKWebView (Safari 15+) and modern desktop engines
+      target: ['es2022', 'safari15'],
       // Minification behavior
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       sourcemap: !!process.env.TAURI_DEBUG,
       // Increase limit for complex React apps
-      chunkSizeWarningLimit: 1000,
-      // Code splitting to address large chunk warnings
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('recharts') || id.includes('d3')) {
-                return 'vendor-charts';
-              }
-              if (id.includes('framer-motion') || id.includes('motion')) {
-                return 'vendor-animation';
-              }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              if (id.includes('leaflet') || id.includes('google-maps')) {
-                return 'vendor-maps';
-              }
-              if (id.includes('fit-file-parser') || id.includes('react-markdown')) {
-                return 'vendor-utils';
-              }
-              return 'vendor';
-            }
-          }
-        }
-      }
+      chunkSizeWarningLimit: 2500,
     },
     server: {
       // Tauri specific settings

@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VeloAnalytics</title>
+    <meta name="description" content="Advanced cycling performance analytics for .fit files with GPS mapping and power metrics." />
+    <meta property="og:title" content="VeloAnalytics" />
+    <meta property="og:description" content="Advanced cycling performance analytics for .fit files with GPS mapping and power metrics." />
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('[VeloAnalytics Runtime Error]', e.error || e.message);
+        var el = document.getElementById('root');
+        if (el && (!el.children || el.children.length === 0)) {
+          el.innerHTML = '<div style="background:#0a0a0a;color:#f8f9fa;padding:32px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;">'
+            + '<div style="max-width:600px;width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:24px;">'
+            + '<h2 style="color:#f97316;margin-top:0;font-size:18px;">VeloAnalytics Startup Warning</h2>'
+            + '<p style="color:#a1a1aa;font-size:13px;line-height:1.5;">An error occurred while loading the application:</p>'
+            + '<pre style="background:#000;color:#f87171;padding:12px;border-radius:12px;font-size:11px;overflow:auto;max-height:200px;">'
+            + ((e.error && e.error.stack) ? e.error.stack : (e.message || 'Unknown error'))
+            + '</pre>'
+            + '<p style="color:#71717a;font-size:11px;margin-bottom:0;">File: ' + (e.filename || 'unknown') + ':' + (e.lineno || '') + '</p>'
+            + '</div></div>';
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
