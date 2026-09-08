@@ -232,15 +232,25 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
               <div className="p-4 rounded-2xl bg-app-bg/50 border border-app-border space-y-3">
                 <div className="flex items-center gap-2 text-app-text font-bold text-xs">
                   <Laptop className="w-4 h-4 text-orange-500" />
-                  <span>Native macOS Xcode Files Ready</span>
+                  <span>Native macOS Tauri & Siri Integration Ready</span>
                 </div>
                 <p className="text-xs text-app-muted leading-relaxed">
-                  All Swift <code className="text-orange-500 font-mono text-[11px]">AppIntents</code>, Shortcuts Providers, and step-by-step guides have been placed in the <code className="text-orange-500 font-mono text-[11px]">/native-macos</code> folder in this project repository.
+                  All Swift <code className="text-orange-500 font-mono text-[11px]">AppIntents</code>, Rust Tauri bridge commands, and ready-to-copy configuration files have been prepared in the <code className="text-orange-500 font-mono text-[11px]">/native-macos</code> folder of this repository.
                 </p>
+                <div className="bg-app-card/60 p-3 rounded-xl border border-app-border/70 space-y-2 text-xs">
+                  <div className="font-semibold text-app-text">Instant Drop-in Setup:</div>
+                  <pre className="text-[10px] font-mono text-orange-400 bg-app-bg/80 p-2.5 rounded-lg overflow-x-auto whitespace-pre">
+{`cp native-macos/src-tauri-templates/Cargo.toml src-tauri/Cargo.toml
+cp native-macos/src-tauri-templates/default.json src-tauri/capabilities/default.json
+cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
+cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
+cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json`}
+                  </pre>
+                </div>
                 <ol className="list-decimal list-inside space-y-1.5 text-xs text-app-muted pl-1">
-                  <li>Push your changes to GitHub and pull to your Mac.</li>
-                  <li>Follow the instructions in <code className="text-app-text font-semibold">/native-macos/STEP-BY-STEP-GUIDE.md</code>.</li>
-                  <li>Build your Tauri app via <code className="text-app-text font-semibold">npm run tauri build</code>.</li>
+                  <li>Push to GitHub, pull down on your Mac, and copy the files above.</li>
+                  <li>Run <code className="text-app-text font-semibold">npx tauri dev</code> to verify that the app writes <code className="text-app-text font-semibold">siri_snapshot.json</code>.</li>
+                  <li>Follow the updated steps in <code className="text-app-text font-semibold">/native-macos/STEP-BY-STEP-GUIDE.md</code> to enable spoken Siri commands or App Intents.</li>
                 </ol>
               </div>
             </div>

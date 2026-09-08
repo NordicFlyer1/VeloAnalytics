@@ -325,6 +325,29 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["restore", "import", "upload", "recovery", "migration"]
       }
     ]
+  },
+  {
+    name: "Apple & Siri",
+    items: [
+      {
+        question: "How does Siri know my Velo Readiness and recent rides?",
+        beginnerAnswer: "Whenever you record or look at your rides, VeloAnalytics writes a private snapshot file to your Mac. When you ask Siri or use Spotlight, macOS directly reads that file. It's fast, private, and works even when the app is closed.",
+        technicalAnswer: "The app invokes the native Rust Tauri command `sync_siri_snapshot`, which writes JSON metrics to `~/Library/Application Support/com.bruce.veloanalytics/siri_snapshot.json`. The native Swift `VeloAppIntents` and macOS Shortcuts inspect this atomic cache directly with sub-50ms latency.",
+        keywords: ["siri", "apple", "voice", "spotlight", "shortcuts", "readiness", "mac", "intents"]
+      },
+      {
+        question: "What voice phrases can I ask Siri?",
+        beginnerAnswer: "You can ask: 'What is my Velo Readiness?', 'What was my last ride?', 'How much did I ride this week?', and 'Check my 28-day training load'.",
+        technicalAnswer: "Phrases are registered via `AppShortcutsProvider` in `native-macos/VeloAppIntents.swift`. Handled intents include `GetVeloReadinessIntent`, `GetVeloLatestRideIntent`, `GetVeloTrainingLoadIntent`, and `AskVeloCoachIntent`.",
+        keywords: ["phrases", "commands", "voice", "ask", "speak", "prompts"]
+      },
+      {
+        question: "Where are the Tauri and Xcode files to build this on my Mac?",
+        beginnerAnswer: "In your project root under `native-macos/src-tauri-templates/`. You can copy them straight into your `src-tauri` folder to get full file permissions and Siri synchronization working immediately.",
+        technicalAnswer: "The `native-macos` directory contains `src-tauri-templates/` with drop-in `Cargo.toml`, `default.json` capability permissions, `lib.rs`, `main.rs`, and `tauri.conf.json`, as well as `VeloAppIntents.swift` for Xcode.",
+        keywords: ["tauri", "xcode", "swift", "build", "rust", "desktop", "native"]
+      }
+    ]
   }
 ];
 

@@ -1,6 +1,7 @@
 import Swift
 import AppIntents
 import Foundation
+import AppKit
 
 /**
  * VeloAppIntents.swift
