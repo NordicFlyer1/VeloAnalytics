@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Rust toolchain
@@ -35,7 +35,7 @@ jobs:
         run: |
           # If src-tauri does not exist, initialize it in CI mode
           if [ ! -d "src-tauri" ]; then
-            npx @tauri-apps/cli init --ci --app-name "VeloAnalytics" --window-title "VeloAnalytics" --dist-dir "../dist" --dev-url "http://localhost:3000" --before-dev-command "npm run dev" --before-build-command "npm run build"
+            npx @tauri-apps/cli init --ci --app-name "VeloAnalytics" --window-title "VeloAnalytics" --frontend-dist "../dist" --dev-url "http://localhost:3000" --before-dev-command "npm run dev" --before-build-command "npm run build"
           fi
           mkdir -p src-tauri/capabilities
           mkdir -p src-tauri/src
