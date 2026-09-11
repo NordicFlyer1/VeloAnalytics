@@ -1,4 +1,4 @@
-name: Release macOS App
+name: Release Multi-Platform App
 
 on:
   push:
@@ -7,15 +7,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
-
+  release:
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            os-name: 'macOS'
+          - platform: 'ubuntu-22.04'
+            os-name: 'Linux'
+          - platform: 'windows-latest'
+            os-name: 'Windows'
+
+    runs-on: ${{ matrix.platform }}
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install Linux Dependencies (Ubuntu only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential curl wget file libssl-dev libayatana-appindicator3-dev
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,7 +51,7 @@ jobs:
           npm install
           npm install -D @tauri-apps/cli
 
-      - name: Setup Tauri Project & Copy Native macOS Templates
+      - name: Setup Tauri Project & Copy Native Templates
         run: |
           # If src-tauri does not exist, initialize it in CI mode
           if [ ! -d "src-tauri" ]; then
@@ -59,9 +79,13 @@ jobs:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.1.0-manual-{0}', github.run_number) }}
           releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v0.1.0 (Build {0})', github.run_number) }}
           releaseBody: |
-            ### VeloAnalytics for macOS
+            ### 🚴 VeloAnalytics Multi-Platform Desktop Release
             
-            #### 🍏 macOS Installation Note
+            Welcome to the official desktop release of VeloAnalytics for macOS, Windows, and Linux!
+            
+            ---
+            
+            #### 🍏 macOS (.dmg)
             Because VeloAnalytics is an open-source build without an Apple Developer ID signature, macOS Gatekeeper may display:  
             > *"VeloAnalytics.app is damaged and can't be opened."*
             
@@ -74,5 +98,26 @@ jobs:
             3. Open VeloAnalytics normally.
             
             For a detailed walkthrough, see [docs/MACOS_INSTALL.md](https://github.com/${{ github.repository }}/blob/main/docs/MACOS_INSTALL.md).
+            
+            ---
+            
+            #### 🪟 Windows (.msi / -setup.exe)
+            Windows SmartScreen may display: *"Windows protected your PC"*.  
+            **Quick Fix:** Click **More info**, then click **Run anyway**.
+            
+            ---
+            
+            #### 🐧 Linux (.AppImage / .deb)
+            - **AppImage:** Make the file executable and run:
+              ```bash
+              chmod +x VeloAnalytics*.AppImage
+              ./VeloAnalytics*.AppImage
+              ```
+            - **Debian / Ubuntu (.deb):**
+              ```bash
+              sudo dpkg -i velo-analytics*.deb
+              ```
+            
+            For full installation instructions across all platforms, see [docs/DESKTOP_INSTALL.md](https://github.com/${{ github.repository }}/blob/main/docs/DESKTOP_INSTALL.md).
           releaseDraft: false
           prerelease: false

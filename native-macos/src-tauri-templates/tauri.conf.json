@@ -32,6 +32,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "shortDescription": "Privacy-first cycling analytics & telemetry platform",
+    "longDescription": "High-resolution cycling analytics platform featuring power curve modeling, W' balance analysis, HRV dynamics, and workout performance metrics.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
