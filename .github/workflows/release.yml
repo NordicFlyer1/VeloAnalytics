@@ -58,6 +58,21 @@ jobs:
           tauriScript: npx @tauri-apps/cli
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.1.0-manual-{0}', github.run_number) }}
           releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v0.1.0 (Build {0})', github.run_number) }}
-          releaseBody: 'Automated release build of VeloAnalytics for macOS.'
+          releaseBody: |
+            ### VeloAnalytics for macOS
+            
+            #### 🍏 macOS Installation Note
+            Because VeloAnalytics is an open-source build without an Apple Developer ID signature, macOS Gatekeeper may display:  
+            > *"VeloAnalytics.app is damaged and can't be opened."*
+            
+            **Quick 3-Second Fix:**
+            1. Drag `VeloAnalytics.app` from the `.dmg` into your **`/Applications`** folder.
+            2. Open **Terminal.app** and run:
+               ```bash
+               xattr -cr /Applications/VeloAnalytics.app
+               ```
+            3. Open VeloAnalytics normally.
+            
+            For a detailed walkthrough, see [docs/MACOS_INSTALL.md](https://github.com/${{ github.repository }}/blob/main/docs/MACOS_INSTALL.md).
           releaseDraft: false
           prerelease: false
