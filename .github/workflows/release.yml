@@ -1,0 +1,57 @@
+name: Release macOS App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Frontend & Tauri CLI Dependencies
+        run: |
+          npm install
+          npm install -D @tauri-apps/cli
+
+      - name: Setup Tauri Project & Copy Native macOS Templates
+        run: |
+          # If src-tauri does not exist, initialize it in CI mode
+          if [ ! -d "src-tauri" ]; then
+            npx @tauri-apps/cli init --ci --app-name "VeloAnalytics" --window-title "VeloAnalytics" --dist-dir "../dist" --dev-url "http://localhost:3000" --before-dev-command "npm run dev" --before-build-command "npm run build"
+          fi
+          mkdir -p src-tauri/capabilities
+          mkdir -p src-tauri/src
+          cp native-macos/src-tauri-templates/Cargo.toml src-tauri/Cargo.toml
+          cp native-macos/src-tauri-templates/default.json src-tauri/capabilities/default.json
+          cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
+          cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
+          cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json
+
+      - name: Build with Tauri Action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.1.0-manual-{0}', github.run_number) }}
+          releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v0.1.0 (Build {0})', github.run_number) }}
+          releaseBody: 'Automated release build of VeloAnalytics for macOS.'
+          releaseDraft: false
+          prerelease: false
