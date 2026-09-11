@@ -9,7 +9,9 @@ import {
   Car,
   Bike,
   Bus,
-  Image
+  Image,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, CircleMarker } from 'react-leaflet';
 import { APIProvider, Map as GoogleMap, ControlPosition } from '@vis.gl/react-google-maps';
@@ -86,8 +88,28 @@ export const ActivityMap = React.memo(({
   aiSettings
 }: ActivityMapProps) => {
   const cardRef = React.useRef<HTMLDivElement>(null);
+  const [googleMapError, setGoogleMapError] = React.useState<string | null>(null);
+  const [isGoogleBlocked, setIsGoogleBlocked] = React.useState(false);
 
   const googleMapsKey = aiSettings.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  React.useEffect(() => {
+    // Listen for Google Maps referrer restriction or authentication errors
+    const handleGoogleMapAuthError = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.warn('[VeloAnalytics] Google Maps referrer/auth restriction caught:', customEvent.detail);
+      setIsGoogleBlocked(true);
+      setGoogleMapError(
+        `Google Maps API key has HTTP Referrer restrictions for this URL (${window.location.origin}). Add this URL in Google Cloud Console or continue using OpenStreetMap.`
+      );
+      setMapProvider('osm');
+    };
+
+    window.addEventListener('velo:google-maps-auth-error', handleGoogleMapAuthError);
+    return () => {
+      window.removeEventListener('velo:google-maps-auth-error', handleGoogleMapAuthError);
+    };
+  }, [setMapProvider]);
 
   const handleExportMap = async () => {
     if (!cardRef.current) return;
@@ -182,11 +204,21 @@ export const ActivityMap = React.memo(({
                         OSM
                       </button>
                       <button 
-                        onClick={() => setMapProvider('google')}
+                        onClick={() => {
+                          if (isGoogleBlocked) {
+                            setGoogleMapError(
+                              `Google Maps API key has HTTP referrer restrictions for this URL (${window.location.origin}). Add this URL to Google Cloud Console or continue using OpenStreetMap.`
+                            );
+                            return;
+                          }
+                          setMapProvider('google');
+                        }}
                         className={cn(
                           "px-2 sm:px-2.5 py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-widest transition-all",
-                          mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text"
+                          mapProvider === 'google' ? "bg-orange-500 text-black" : "text-app-muted hover:text-app-text",
+                          isGoogleBlocked && "opacity-60"
                         )}
+                        title={isGoogleBlocked ? "Google Maps restricted on this domain" : "Switch to Google Maps"}
                       >
                         GOOGLE
                       </button>
@@ -198,9 +230,29 @@ export const ActivityMap = React.memo(({
                   <WeatherCard weather={weather} isLoading={isWeatherLoading} variant="minimal" />
                 </div>
               </div>
+
+              {/* Google Maps Error Notice Banner */}
+              {googleMapError && (
+                <div className="absolute top-16 left-4 right-4 z-30 bg-amber-500/10 border border-amber-500/30 backdrop-blur-md rounded-xl p-3 flex items-start justify-between gap-3 text-amber-200 shadow-xl export-ignore">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                    <div className="text-xs">
+                      <span className="font-semibold text-amber-300">Map Notice: </span>
+                      <span>{googleMapError}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setGoogleMapError(null)}
+                    className="text-amber-400 hover:text-white p-1 rounded-md transition-colors"
+                    title="Dismiss"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               
               {gpsPoints.length > 0 ? (
-                mapProvider === 'osm' ? (
+                mapProvider === 'osm' || isGoogleBlocked ? (
                   <div className="w-full h-full relative">
                     {activePoint !== null && (
                       <button 
@@ -331,7 +383,15 @@ export const ActivityMap = React.memo(({
                   </div>
                 ) : (
                   googleMapsKey ? (
-                    <APIProvider apiKey={googleMapsKey}>
+                    <APIProvider 
+                      apiKey={googleMapsKey}
+                      onError={(err) => {
+                        console.warn('Google Maps APIProvider error:', err);
+                        setIsGoogleBlocked(true);
+                        setGoogleMapError(`Google Maps API key has HTTP Referrer restrictions on this URL (${window.location.origin}). Switched automatically to OpenStreetMap.`);
+                        setMapProvider('osm');
+                      }}
+                    >
                       <div className="w-full h-full relative">
                         {activePoint !== null && (
                           <button 

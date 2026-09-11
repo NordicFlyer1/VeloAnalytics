@@ -20,6 +20,7 @@ export const GoogleMapPolyline = ({
   const map = useGoogleMap();
   React.useEffect(() => {
     if (!map || points.length === 0) return;
+    if (typeof google === 'undefined' || !google.maps || !google.maps.Polyline) return;
 
     const polyline = new google.maps.Polyline({
       path: points,
@@ -101,10 +102,14 @@ export const GoogleMapPolyline = ({
     observer.observe(container);
 
     return () => {
-      polyline.setMap(null);
-      google.maps.event.removeListener(mouseMoveListener);
-      google.maps.event.removeListener(mouseOutListener);
-      google.maps.event.removeListener(clickListener);
+      try {
+        polyline.setMap(null);
+        if (typeof google !== 'undefined' && google.maps?.event) {
+          google.maps.event.removeListener(mouseMoveListener);
+          google.maps.event.removeListener(mouseOutListener);
+          google.maps.event.removeListener(clickListener);
+        }
+      } catch {}
       observer.disconnect();
     };
   }, [map, points, data, setActivePoint, setIsPointLocked, isMapMaximized]);
@@ -114,22 +119,27 @@ export const GoogleMapPolyline = ({
 
 export const GoogleMapTrafficLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
-  const layerRef = React.useRef<google.maps.TrafficLayer | null>(null);
+  const layerRef = React.useRef<any>(null);
 
   React.useEffect(() => {
     if (!map) return;
-    if (!layerRef.current) {
-      layerRef.current = new google.maps.TrafficLayer();
-    }
-    layerRef.current.setMap(enabled ? map : null);
+    if (typeof google === 'undefined' || !google.maps || !google.maps.TrafficLayer) return;
+    try {
+      if (!layerRef.current) {
+        layerRef.current = new google.maps.TrafficLayer();
+      }
+      layerRef.current.setMap(enabled ? map : null);
+    } catch {}
   }, [map, enabled]);
 
   React.useEffect(() => {
     return () => {
-      if (layerRef.current) {
-        layerRef.current.setMap(null);
-        layerRef.current = null;
-      }
+      try {
+        if (layerRef.current) {
+          layerRef.current.setMap(null);
+          layerRef.current = null;
+        }
+      } catch {}
     };
   }, []);
 
@@ -138,22 +148,27 @@ export const GoogleMapTrafficLayer = ({ enabled }: { enabled: boolean }) => {
 
 export const GoogleMapBicyclingLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
-  const layerRef = React.useRef<google.maps.BicyclingLayer | null>(null);
+  const layerRef = React.useRef<any>(null);
 
   React.useEffect(() => {
     if (!map) return;
-    if (!layerRef.current) {
-      layerRef.current = new google.maps.BicyclingLayer();
-    }
-    layerRef.current.setMap(enabled ? map : null);
+    if (typeof google === 'undefined' || !google.maps || !google.maps.BicyclingLayer) return;
+    try {
+      if (!layerRef.current) {
+        layerRef.current = new google.maps.BicyclingLayer();
+      }
+      layerRef.current.setMap(enabled ? map : null);
+    } catch {}
   }, [map, enabled]);
 
   React.useEffect(() => {
     return () => {
-      if (layerRef.current) {
-        layerRef.current.setMap(null);
-        layerRef.current = null;
-      }
+      try {
+        if (layerRef.current) {
+          layerRef.current.setMap(null);
+          layerRef.current = null;
+        }
+      } catch {}
     };
   }, []);
 
@@ -162,22 +177,27 @@ export const GoogleMapBicyclingLayer = ({ enabled }: { enabled: boolean }) => {
 
 export const GoogleMapTransitLayer = ({ enabled }: { enabled: boolean }) => {
   const map = useGoogleMap();
-  const layerRef = React.useRef<google.maps.TransitLayer | null>(null);
+  const layerRef = React.useRef<any>(null);
 
   React.useEffect(() => {
     if (!map) return;
-    if (!layerRef.current) {
-      layerRef.current = new google.maps.TransitLayer();
-    }
-    layerRef.current.setMap(enabled ? map : null);
+    if (typeof google === 'undefined' || !google.maps || !google.maps.TransitLayer) return;
+    try {
+      if (!layerRef.current) {
+        layerRef.current = new google.maps.TransitLayer();
+      }
+      layerRef.current.setMap(enabled ? map : null);
+    } catch {}
   }, [map, enabled]);
 
   React.useEffect(() => {
     return () => {
-      if (layerRef.current) {
-        layerRef.current.setMap(null);
-        layerRef.current = null;
-      }
+      try {
+        if (layerRef.current) {
+          layerRef.current.setMap(null);
+          layerRef.current = null;
+        }
+      } catch {}
     };
   }, []);
 
