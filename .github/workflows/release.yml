@@ -44,6 +44,11 @@ jobs:
           cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
           cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
           cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json
+          # Copy pre-generated icons into src-tauri/icons
+          if [ -d "native-macos/icons" ]; then
+            mkdir -p src-tauri/icons
+            cp -r native-macos/icons/* src-tauri/icons/
+          fi
 
       - name: Build with Tauri Action
         uses: tauri-apps/tauri-action@v0
