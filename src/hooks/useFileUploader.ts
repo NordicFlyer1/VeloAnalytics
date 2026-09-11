@@ -89,31 +89,55 @@ export const useFileUploader = (
             fitParser.parse(e.target?.result as ArrayBuffer, async (error, fitData) => {
               if (error) reject(error);
               else {
-                const parseTimestamp = (ts: any) => {
-                  if (ts instanceof Date) return ts;
+                if (!fitData || !fitData.records || fitData.records.length === 0) {
+                  reject(new Error("No valid data records found in .fit file."));
+                  return;
+                }
+
+                const parseTimestamp = (ts: any, fallbackIndex: number) => {
+                  if (ts instanceof Date && !isNaN(ts.getTime())) return ts;
                   if (typeof ts === 'number') {
-                    if (ts < 2000000000) return new Date((ts + 631065600) * 1000);
-                    return new Date(ts);
+                    // Garmin FIT epoch start is Dec 31, 1989 00:00:00 UTC (631065600 seconds)
+                    if (ts < 2000000000) {
+                      const d = new Date((ts + 631065600) * 1000);
+                      if (!isNaN(d.getTime())) return d;
+                    }
+                    const d = new Date(ts);
+                    if (!isNaN(d.getTime())) return d;
                   }
-                  return new Date(ts);
+                  if (typeof ts === 'string') {
+                    const d = new Date(ts);
+                    if (!isNaN(d.getTime())) return d;
+                  }
+                  // Fallback synthesis if timestamp is missing from corrupt record
+                  return new Date(Date.now() + fallbackIndex * 1000);
                 };
 
-                const points: CyclingDataPoint[] = fitData.records.map((r: any) => ({
-                  timestamp: parseTimestamp(r.timestamp),
-                  power: r.power,
-                  heartRate: r.heart_rate,
-                  cadence: r.cadence,
-                  speed: r.speed,
-                  distance: r.distance,
-                  altitude: r.altitude,
-                  latitude: r.position_lat,
-                  longitude: r.position_long,
-                  temperature: r.temperature,
-                  leftRightBalance: r.left_right_balance,
+                const validRecords = fitData.records.filter((r: any) => r && typeof r === 'object');
+                if (validRecords.length === 0) {
+                  reject(new Error("No valid records found in .fit file."));
+                  return;
+                }
+
+                const points: CyclingDataPoint[] = validRecords.map((r: any, idx: number) => ({
+                  timestamp: parseTimestamp(r.timestamp, idx),
+                  power: typeof r.power === 'number' && Number.isFinite(r.power) ? r.power : undefined,
+                  heartRate: typeof r.heart_rate === 'number' && Number.isFinite(r.heart_rate) ? r.heart_rate : undefined,
+                  cadence: typeof r.cadence === 'number' && Number.isFinite(r.cadence) ? r.cadence : undefined,
+                  speed: typeof r.speed === 'number' && Number.isFinite(r.speed) ? r.speed : undefined,
+                  distance: typeof r.distance === 'number' && Number.isFinite(r.distance) ? r.distance : undefined,
+                  altitude: typeof r.altitude === 'number' && Number.isFinite(r.altitude) ? r.altitude : undefined,
+                  latitude: typeof r.position_lat === 'number' && Number.isFinite(r.position_lat) ? r.position_lat : undefined,
+                  longitude: typeof r.position_long === 'number' && Number.isFinite(r.position_long) ? r.position_long : undefined,
+                  temperature: typeof r.temperature === 'number' && Number.isFinite(r.temperature) ? r.temperature : undefined,
+                  leftRightBalance: typeof r.left_right_balance === 'number' && Number.isFinite(r.left_right_balance) ? r.left_right_balance : undefined,
                 }));
+
+                // Ensure records are ordered chronologically
+                points.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 
                 setUploadQueue(prev => prev.map(item => item.id === id ? { ...item, progress: 60 } : item));
-                const processedLaps = (fitData.laps || []).map((l: any) => ({ ...l, start_time: parseTimestamp(l.start_time) }));
+                const processedLaps = (fitData.laps || []).map((l: any, lapIdx: number) => ({ ...l, start_time: parseTimestamp(l.start_time, lapIdx) }));
                 const summary = await processData(points, file.name, processedLaps);
                 resolve({ summary, points });
               }

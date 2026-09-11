@@ -161,10 +161,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                         <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
                           <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
                             <Scale className="w-3 h-3 text-cyan-500" />
-                            Open Governance
+                            Source-Available
                           </h4>
                           <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
-                            Shared under non-commercial terms to ensure the community retains the right to analyze and audit.
+                            Shared under source-available, non-commercial license terms for athlete transparency, peer review, and personal performance analysis.
                           </p>
                         </div>
                       </div>

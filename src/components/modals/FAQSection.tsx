@@ -241,6 +241,12 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "Yes. Your data stays on your device in your browser's private storage. We do not see, store, or sell your ride data.",
         technicalAnswer: "VeloAnalytics uses a local-first architecture. Data is persisted in your browser's IndexedDB storage (a secure, browser-based database). No Personally Identifiable Information (PII) or ride telemetry is transmitted to our servers beyond the initial application load.",
         keywords: ["privacy", "security", "database", "storage"]
+      },
+      {
+        question: "Is VeloAnalytics open source or source available?",
+        beginnerAnswer: "VeloAnalytics is source-available under a non-commercial license. Anyone can inspect the code and use it for their personal training, but commercial reuse and distribution are restricted.",
+        technicalAnswer: "The project is licensed under the VeloAnalytics Software License Version 1.1 (Source-Available, Non-Commercial). Users and athletes are granted the right to inspect, build, modify, and audit the source code locally for non-commercial personal analysis. Commercial exploitation and unauthorized third-party redistribution are strictly prohibited without written consent from the author.",
+        keywords: ["license", "source available", "open source", "commercial", "terms", "legal", "copyright"]
       }
     ]
   },
