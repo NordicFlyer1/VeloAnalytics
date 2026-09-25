@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeloAnalytics | High-Performance Cycling Analytics</title>
+    <meta name="description" content="A standalone, local-first engine for high-resolution FIT file analysis, physiological modeling, and AI-powered performance coaching.">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <style>
+        @theme {
+          --font-display: "Anton", sans-serif;
+          --font-sans: "Inter", sans-serif;
+          --font-mono: "JetBrains Mono", monospace;
+          --font-serif: "Playfair Display", serif;
+          --color-orange-500: #f97316;
+          --color-app-bg: #0a0a0a;
+        }
+
+        :root {
+            --orange: #f97316;
+            --bg: #0a0a0a;
+            --card: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            line-height: 0.85;
+            letter-spacing: -0.02em;
+        }
+
+        .glass {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        @keyframes slamIn {
+            0% { transform: scale(1.2) translateY(40px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .animate-slam {
+            animation: slamIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1px;
+            background-color: var(--border);
+        }
+
+        .metric-card {
+            background-color: var(--bg);
+            padding: 2rem;
+            transition: background 0.3s ease;
+        }
+
+        .metric-card:hover {
+            background-color: rgba(249, 115, 22, 0.05);
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+<body class="selection:bg-orange-500 selection:text-black">
+
+    <!-- Nav -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-8 flex justify-between items-center mix-blend-difference transition-all duration-300">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a3 3 0 1 0-3-3"/><circle cx="8" cy="8" r="3"/><path d="M5.3 12.5A5.9 5.9 0 0 0 14 10.5"/><path d="M9 19a3 3 0 1 0 3-3"/><path d="M12 19H5.3a2.3 2.3 0 0 1 0-4.6H17.4a2.3 2.3 0 0 1 0 4.6H12Z"/></svg>
+            </div>
+            <span class="font-bold tracking-tighter text-xl uppercase">VeloAnalytics</span>
+        </div>
+        <div class="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity">
+            <a href="#features" class="hover:text-orange-500 transition-colors">Features</a>
+            <a href="#metrics" class="hover:text-orange-500 transition-colors">Metrics</a>
+            <a href="#tech" class="hover:text-orange-500 transition-colors">Technology</a>
+            <a href="https://github.com/NordicFlyer1/VeloAnalytics/releases" target="_blank" rel="noopener" class="hover:text-orange-500 transition-colors">Downloads</a>
+            <a href="https://github.com/NordicFlyer1/VeloAnalytics" target="_blank" rel="noopener" class="text-orange-500 border-b border-orange-500 pb-1">GitHub Repo</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="min-h-screen flex flex-col justify-center px-6 pt-24 max-w-7xl mx-auto">
+        <div class="space-y-4 animate-slam">
+            <div class="flex items-center gap-4">
+                <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Elite Performance Suite</span>
+                <div class="h-px w-24 bg-orange-500/30"></div>
+            </div>
+            <h1 class="hero-title text-[clamp(4rem,20vw,14rem)] text-white">
+                PRECISION<br/>
+                <span class="text-transparent" style="-webkit-text-stroke: 1px rgba(255,255,255,0.2);">ANALYTICS</span>
+            </h1>
+            <div class="max-w-xl space-y-8">
+                <p class="text-xl md:text-2xl font-light text-zinc-400 leading-tight">
+                    A standalone, local-first engine for high-resolution <span class="text-white">FIT file analysis</span>, physiological modeling, and AI-powered performance coaching.
+                </p>
+                <div class="flex flex-wrap gap-4 pt-4">
+                    <a href="https://github.com/NordicFlyer1/VeloAnalytics/releases" target="_blank" rel="noopener" class="bg-orange-500 text-black px-8 py-4 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20">
+                        Download App
+                    </a>
+                    <a href="https://github.com/NordicFlyer1/VeloAnalytics" target="_blank" rel="noopener" class="glass px-8 py-4 rounded-full font-bold uppercase text-xs tracking-widest hover:bg-white/10 transition-all">
+                        GitHub Repo
+                    </a>
+                    <a href="#features" class="glass px-8 py-4 rounded-full font-bold uppercase text-xs tracking-widest hover:bg-white/10 transition-all text-zinc-400">
+                        Deep Dive
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-32 px-6 max-w-7xl mx-auto space-y-24">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-24">
+            <div class="space-y-6">
+                <h3 class="text-4xl font-bold tracking-tight">The Engine Behind the Ride.</h3>
+                <p class="text-zinc-500 text-lg leading-relaxed">
+                    VeloAnalytics isn't just a viewer. It's a complete physiological lab in your browser and on your desktop. From aerodynamic modeling to anaerobic battery simulation, we've built the tools professionals use.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-6 rounded-3xl space-y-4">
+                    <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm uppercase tracking-tight">AI Coach</h4>
+                        <p class="text-xs text-zinc-500 mt-2">Personalized feedback using your entire fitness context.</p>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-3xl space-y-4">
+                    <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="M2 12h20"/><path d="m4.93 19.07 14.14-14.14"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm uppercase tracking-tight">W' Balance</h4>
+                        <p class="text-xs text-zinc-500 mt-2">Dynamic real-time anaerobic battery modeling.</p>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-3xl space-y-4">
+                    <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm uppercase tracking-tight">Wellness</h4>
+                        <p class="text-xs text-zinc-500 mt-2">HRV, Sleep, and Respiration correlation.</p>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-3xl space-y-4">
+                    <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-8 0 4 4 0 0 0-8 0 4 4 0 0 1-8 0"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm uppercase tracking-tight">Aero Drag</h4>
+                        <p class="text-xs text-zinc-500 mt-2">Virtual power estimation with CdA modeling.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Metrics Glossary -->
+    <section id="metrics" class="bg-white text-black py-32">
+        <div class="px-6 max-w-7xl mx-auto space-y-12">
+            <div class="flex justify-between items-end">
+                <div class="space-y-4 uppercase">
+                    <span class="text-[10px] font-bold tracking-[0.3em] text-orange-500">Glossary</span>
+                    <h2 class="text-6xl font-bold tracking-tighter">THE DATA<br/>SYSTEM</h2>
+                </div>
+                <div class="hidden md:block text-[10px] font-bold uppercase tracking-widest text-zinc-400 vertical-text pb-12">
+                    Metric Handbook v1.0
+                </div>
+            </div>
+
+            <div class="metric-grid border-t border-zinc-200">
+                <!-- Power -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">01 / POWER</span>
+                        <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">Critical Power (CP)</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        The highest power output maintainable for a quasi-steady state without exhaustion. Calculated using a 2-parameter linear model.
+                    </p>
+                </div>
+                <!-- WPrime -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">02 / CAPACITY</span>
+                        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">W' Balance</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        The anaerobic matchbox. A dynamic model of work capacity performed above Critical Power, integrating both discharge and recovery rates.
+                    </p>
+                </div>
+                <!-- xPower -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">03 / STRESS</span>
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">xPower</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        Accounts for metabolic cost of variable efforts using 4th-power weighting to emphasize the exponential cost of high intensity.
+                    </p>
+                </div>
+                <!-- HRV -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">04 / RECOVERY</span>
+                        <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">HRV Status</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        Measures autonomic balance. A drop in R-R interval variation relative to baseline signals systemic fatigue.
+                    </p>
+                </div>
+                <!-- Efficiency -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">05 / ENGINE</span>
+                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">Efficiency Factor</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        The ratio of normalized output to physiological input. EF = xPower ÷ Avg HR. Quantifies aerobic efficiency gains.
+                    </p>
+                </div>
+                <!-- Load -->
+                <div class="metric-card">
+                    <div class="flex justify-between items-start mb-12">
+                        <span class="font-mono text-xs opacity-40">06 / PROGRESS</span>
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                    </div>
+                    <h4 class="font-serif italic text-2xl mb-4">Fitness (LTS)</h4>
+                    <p class="text-xs text-zinc-500 leading-relaxed">
+                        An exponentially weighted moving average of daily training stress, typically over a 42-day time constant.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology -->
+    <section id="tech" class="py-32 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-12 items-center">
+            <div class="flex-1 space-y-8">
+                <div class="space-y-2 uppercase">
+                    <span class="text-[10px] font-bold tracking-[0.3em] text-orange-500">Performance Stack</span>
+                    <h2 class="text-5xl font-bold tracking-tight">Edge-First Architecture.</h2>
+                </div>
+                <p class="text-zinc-500 text-lg leading-relaxed">
+                    VeloAnalytics is built for speed and privacy. No server-side processing for your ride files—everything happens in your browser and on your machine using IndexedDB and native FIT parsers.
+                </p>
+                <ul class="grid grid-cols-2 gap-4">
+                    <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <div class="w-1.5 h-1.5 bg-orange-500"></div> React & Vite
+                    </li>
+                    <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <div class="w-1.5 h-1.5 bg-orange-500"></div> TypeScript
+                    </li>
+                    <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <div class="w-1.5 h-1.5 bg-orange-500"></div> D3 & Recharts
+                    </li>
+                    <li class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <div class="w-1.5 h-1.5 bg-orange-500"></div> Tauri & Rust
+                    </li>
+                </ul>
+            </div>
+            <div class="flex-1 w-full glass p-8 rounded-3xl aspect-square flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.1) 1px, transparent 0); background-size: 24px 24px;"></div>
+                <div class="text-center space-y-4 relative z-10">
+                    <div class="text-8xl font-black text-orange-500/10">FIT</div>
+                    <p class="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Native Binary Parsing</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-24 px-6 border-t border-white/5 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+            <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a3 3 0 1 0-3-3"/><circle cx="8" cy="8" r="3"/><path d="M5.3 12.5A5.9 5.9 0 0 0 14 10.5"/><path d="M9 19a3 3 0 1 0 3-3"/><path d="M12 19H5.3a2.3 2.3 0 0 1 0-4.6H17.4a2.3 2.3 0 0 1 0 4.6H12Z"/></svg>
+                    </div>
+                    <span class="font-bold tracking-tighter text-lg uppercase">VeloAnalytics</span>
+                </div>
+                <p class="text-xs text-zinc-500 max-w-xs">
+                    Advanced physiological analytics engine for the modern cyclist. Source-Available. Local First. Privacy Focused.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 gap-16">
+                <div class="space-y-4">
+                    <h5 class="text-[10px] font-bold uppercase tracking-widest text-white">Project</h5>
+                    <ul class="text-xs text-zinc-500 space-y-2">
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub Repository</a></li>
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics/tree/main/docs" target="_blank" rel="noopener" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases & Downloads</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-4">
+                    <h5 class="text-[10px] font-bold uppercase tracking-widest text-white">Guides</h5>
+                    <ul class="text-xs text-zinc-500 space-y-2">
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics/blob/main/docs/MACOS_INSTALL.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">macOS Setup</a></li>
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Methodology</a></li>
+                        <li><a href="https://github.com/NordicFlyer1/VeloAnalytics/blob/main/docs/LOCAL_BUILD.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Local Build Guide</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="mt-24 pt-8 border-t border-white/5 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+            <span>© 2026 VELO ANALYTICS</span>
+            <div class="flex gap-6">
+                <span>Made for Elite Performance</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll reveal for nav
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (!nav) return;
+            if (window.scrollY > 50) {
+                nav.classList.add('glass');
+                nav.classList.add('px-12');
+                nav.classList.add('mt-4');
+                nav.classList.add('rounded-full');
+                nav.classList.add('w-[90%]');
+                nav.classList.add('left-[5%]');
+                nav.classList.remove('w-full');
+            } else {
+                nav.classList.remove('glass');
+                nav.classList.remove('px-12');
+                nav.classList.remove('mt-4');
+                nav.classList.remove('rounded-full');
+                nav.classList.remove('w-[90%]');
+                nav.classList.remove('left-[5%]');
+                nav.classList.add('w-full');
+            }
+        });
+    </script>
+</body>
+</html>
