@@ -7,6 +7,9 @@
   ],
   "permissions": [
     "core:default",
+    "core:window:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     "dialog:allow-save",
     "fs:allow-write",
     "fs:allow-write-text-file",
