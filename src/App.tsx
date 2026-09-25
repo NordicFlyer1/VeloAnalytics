@@ -150,6 +150,7 @@ export default function App() {
   const [showBicycling, setShowBicycling] = useState(false);
   const [showTransit, setShowTransit] = useState(false);
   const [isMapMaximized, setIsMapMaximized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const mmpCurveRef = useRef<HTMLDivElement>(null);
@@ -236,11 +237,72 @@ export default function App() {
     baseUpdateActivityName(id, newName);
   };
 
-  const toggleFullScreen = () => {
+  // Hybrid Fullscreen handler supporting both standard web and Tauri native OS windows
+  const toggleFullScreen = async () => {
+    const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+    if (isTauri) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const appWindow = getCurrentWindow();
+        const currentlyFull = await appWindow.isFullscreen();
+        const nextState = !currentlyFull;
+        await appWindow.setFullscreen(nextState);
+        setIsFullscreen(nextState);
+        setIsMapMaximized(nextState);
+        return;
+      } catch (err) {
+        console.warn('Tauri window setFullscreen failed, falling back to browser API:', err);
+      }
+    }
+
+    // Standard web browser fallback
     if (!mapContainerRef.current) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else mapContainerRef.current.requestFullscreen().catch(err => console.error(err));
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.error(err));
+    } else {
+      mapContainerRef.current.requestFullscreen().catch(err => {
+        console.error('Browser requestFullscreen error:', err);
+        // Fallback: if browser blocks DOM requestFullscreen, toggle maximized map
+        setIsMapMaximized(prev => !prev);
+      });
+    }
   };
+
+  // Sync DOM fullscreen and keyboard escape events
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isDocFull = !!document.fullscreenElement;
+      setIsFullscreen(isDocFull);
+      if (!isDocFull && isMapMaximized) {
+        // Do not force collapse if user simply maximized via card button
+      }
+    };
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+        if (isTauri && isFullscreen) {
+          try {
+            const { getCurrentWindow } = await import('@tauri-apps/api/window');
+            const appWindow = getCurrentWindow();
+            await appWindow.setFullscreen(false);
+            setIsFullscreen(false);
+            setIsMapMaximized(false);
+          } catch (err) {
+            console.error('Error exiting Tauri fullscreen via Escape:', err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen, isMapMaximized]);
 
   // Weather service integration
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
@@ -636,6 +698,7 @@ export default function App() {
                       <ActivityMap 
                         isMapExpanded={isMapExpanded} setIsMapExpanded={setIsMapExpanded}
                         mapContainerRef={mapContainerRef} isMapMaximized={isMapMaximized} setIsMapMaximized={setIsMapMaximized}
+                        isFullscreen={isFullscreen}
                         toggleFullScreen={toggleFullScreen} setActivePoint={throttledSetActivePoint} setIsPointLocked={setIsPointLocked}
                         mapProvider={mapProvider} setMapProvider={setMapProvider} weather={weather} isWeatherLoading={isWeatherLoading}
                         gpsPoints={gpsPoints} activePoint={activePoint} isPointLocked={isPointLocked}

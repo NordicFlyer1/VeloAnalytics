@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Map as MapIcon, 
   Expand, 
+  Shrink,
   Maximize, 
   Navigation, 
   CheckCircle2,
@@ -34,6 +35,7 @@ interface ActivityMapProps {
   mapContainerRef: React.RefObject<HTMLDivElement>;
   isMapMaximized: boolean;
   setIsMapMaximized: (maximized: boolean) => void;
+  isFullscreen?: boolean;
   toggleFullScreen: () => void;
   setActivePoint: (index: number | null) => void;
   setIsPointLocked: (locked: boolean) => void;
@@ -64,6 +66,7 @@ export const ActivityMap = React.memo(({
   mapContainerRef,
   isMapMaximized,
   setIsMapMaximized,
+  isFullscreen = false,
   toggleFullScreen,
   setActivePoint,
   setIsPointLocked,
@@ -130,35 +133,48 @@ export const ActivityMap = React.memo(({
   ];
 
   return (
-    <div ref={cardRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
-      <SectionHeader 
-        icon={MapIcon}
-        title="Activity Map"
-        description="GPS track visualization with interactive data point inspection"
-        isExpanded={isMapExpanded}
-        onToggle={() => setIsMapExpanded(!isMapExpanded)}
-        exportActions={exportActions}
-        infoContent={{
-          title: "Activity Map",
-          description: "A geographical view of your effort. Synchronized with the charts, so you can see exactly where on the route a specific metric peak or drop occurred."
-        }}
-      />
+    <div 
+      ref={cardRef} 
+      className={cn(
+        "bg-app-card border border-app-border transition-all duration-300",
+        isFullscreen 
+          ? "fixed inset-0 z-[100] rounded-none p-0 border-0 flex flex-col h-screen w-screen overflow-hidden" 
+          : "rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8"
+      )}
+    >
+      {!isFullscreen && (
+        <SectionHeader 
+          icon={MapIcon}
+          title="Activity Map"
+          description="GPS track visualization with interactive data point inspection"
+          isExpanded={isMapExpanded}
+          onToggle={() => setIsMapExpanded(!isMapExpanded)}
+          exportActions={exportActions}
+          infoContent={{
+            title: "Activity Map",
+            description: "A geographical view of your effort. Synchronized with the charts, so you can see exactly where on the route a specific metric peak or drop occurred."
+          }}
+        />
+      )}
 
       <AnimatePresence>
-        {isMapExpanded && (
+        {(isMapExpanded || isFullscreen) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: isFullscreen ? '100%' : 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className={isFullscreen ? "h-full w-full flex-1" : undefined}
           >
             <div 
               ref={mapContainerRef}
               className={cn(
-                "bg-app-bg border border-app-border rounded-2xl relative overflow-hidden group transition-all duration-500",
-                isMapMaximized 
-                  ? "h-[600px] sm:h-[750px] md:h-[900px]" 
-                  : "h-[350px] sm:h-[450px] md:h-[600px]"
+                "bg-app-bg border border-app-border relative overflow-hidden group transition-all duration-500",
+                isFullscreen
+                  ? "h-full w-full rounded-none border-0"
+                  : isMapMaximized 
+                    ? "rounded-2xl h-[600px] sm:h-[750px] md:h-[900px]" 
+                    : "rounded-2xl h-[350px] sm:h-[450px] md:h-[600px]"
               )}
             >
               {/* Unified Header Bar - Stacked Top Right */}
@@ -167,10 +183,15 @@ export const ActivityMap = React.memo(({
                   <div className="bg-app-bg/90 backdrop-blur-md p-1 rounded-full border border-app-border flex items-center gap-1 shadow-lg">
                     <button 
                       onClick={toggleFullScreen}
-                      className="p-1.5 rounded-full text-app-muted hover:text-orange-500 transition-all"
-                      title="Full Screen"
+                      className={cn(
+                        "p-1.5 rounded-full transition-all",
+                        isFullscreen 
+                          ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                          : "text-app-muted hover:text-orange-500"
+                      )}
+                      title={isFullscreen ? "Exit Full Screen (Esc)" : "Full Screen"}
                     >
-                      <Expand className="w-3.5 h-3.5" />
+                      {isFullscreen ? <Shrink className="w-3.5 h-3.5" /> : <Expand className="w-3.5 h-3.5" />}
                     </button>
                     <button 
                       onClick={() => setIsMapMaximized(!isMapMaximized)}

@@ -76,8 +76,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: npx @tauri-apps/cli
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.1.1-manual-{0}', github.run_number) }}
-          releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v0.1.1 (Build {0})', github.run_number) }}
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.2.0-manual-{0}', github.run_number) }}
+          releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v0.2.0 (Build {0})', github.run_number) }}
           releaseBody: |
             ### 🚴 VeloAnalytics Multi-Platform Desktop Release
             
