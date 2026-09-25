@@ -237,6 +237,9 @@ export default function App() {
     baseUpdateActivityName(id, newName);
   };
 
+  // Track whether the app entered native OS fullscreen as a result of clicking map fullscreen
+  const didEnterNativeFullscreenForMap = useRef<boolean>(false);
+
   // Hybrid Fullscreen handler supporting both standard web and Tauri native OS windows
   const toggleFullScreen = async () => {
     const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -246,10 +249,30 @@ export default function App() {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const appWindow = getCurrentWindow();
         const currentlyFull = await appWindow.isFullscreen();
-        const nextState = !currentlyFull;
-        await appWindow.setFullscreen(nextState);
-        setIsFullscreen(nextState);
-        setIsMapMaximized(nextState);
+
+        if (isFullscreen) {
+          // Exiting fullscreen map mode
+          setIsFullscreen(false);
+          setIsMapMaximized(false);
+          // If we elevated to native fullscreen specifically for the map, restore window back
+          if (didEnterNativeFullscreenForMap.current) {
+            await appWindow.setFullscreen(false);
+            didEnterNativeFullscreenForMap.current = false;
+          }
+        } else {
+          // Entering fullscreen map mode
+          // 1. If window is not native full screen, elevate it so map fills physical display
+          if (!currentlyFull) {
+            didEnterNativeFullscreenForMap.current = true;
+            await appWindow.setFullscreen(true);
+          } else {
+            // Window was already full screen by the user, keep it full screen!
+            didEnterNativeFullscreenForMap.current = false;
+          }
+          // 2. Expand the map to fill the entire screen
+          setIsFullscreen(true);
+          setIsMapMaximized(true);
+        }
         return;
       } catch (err) {
         console.warn('Tauri window setFullscreen failed, falling back to browser API:', err);
@@ -257,15 +280,20 @@ export default function App() {
     }
 
     // Standard web browser fallback
-    if (!mapContainerRef.current) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(err => console.error(err));
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      setIsMapMaximized(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error(err));
+      }
     } else {
-      mapContainerRef.current.requestFullscreen().catch(err => {
-        console.error('Browser requestFullscreen error:', err);
-        // Fallback: if browser blocks DOM requestFullscreen, toggle maximized map
-        setIsMapMaximized(prev => !prev);
-      });
+      setIsFullscreen(true);
+      setIsMapMaximized(true);
+      if (mapContainerRef.current && !document.fullscreenElement) {
+        mapContainerRef.current.requestFullscreen().catch(err => {
+          console.warn('Browser requestFullscreen error (using fixed overlay fallback):', err);
+        });
+      }
     }
   };
 
@@ -273,25 +301,33 @@ export default function App() {
   React.useEffect(() => {
     const handleFullscreenChange = () => {
       const isDocFull = !!document.fullscreenElement;
-      setIsFullscreen(isDocFull);
-      if (!isDocFull && isMapMaximized) {
-        // Do not force collapse if user simply maximized via card button
+      if (!isDocFull && isFullscreen) {
+        // Exited browser fullscreen via browser controls
+        setIsFullscreen(false);
+        setIsMapMaximized(false);
       }
     };
 
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-        if (isTauri && isFullscreen) {
-          try {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window');
-            const appWindow = getCurrentWindow();
-            await appWindow.setFullscreen(false);
-            setIsFullscreen(false);
-            setIsMapMaximized(false);
-          } catch (err) {
-            console.error('Error exiting Tauri fullscreen via Escape:', err);
+        if (isFullscreen) {
+          const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+          if (isTauri) {
+            try {
+              const { getCurrentWindow } = await import('@tauri-apps/api/window');
+              const appWindow = getCurrentWindow();
+              if (didEnterNativeFullscreenForMap.current) {
+                await appWindow.setFullscreen(false);
+                didEnterNativeFullscreenForMap.current = false;
+              }
+            } catch (err) {
+              console.error('Error handling Tauri Escape:', err);
+            }
+          } else if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.error(err));
           }
+          setIsFullscreen(false);
+          setIsMapMaximized(false);
         }
       }
     };
@@ -302,7 +338,7 @@ export default function App() {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFullscreen, isMapMaximized]);
+  }, [isFullscreen]);
 
   // Weather service integration
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
