@@ -287,14 +287,13 @@ export const ActivityMap = React.memo(({
                       <TileLayer
                         {...{
                           url: mapType === 'terrain' 
-                            ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" 
-                            : theme === 'dark'
-                              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png" ,
+                            ? "https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png" 
+                            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                           attribution: mapType === 'terrain'
-                            ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-                            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                          maxZoom: 19
+                            ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Style: &copy; <a href="https://www.cyclosm.org">CyclOSM</a>'
+                            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                          maxZoom: mapType === 'terrain' ? 18 : 19,
+                          subdomains: mapType === 'terrain' ? ['a', 'b', 'c'] : ['a', 'b', 'c']
                         } as any}
                       />
                       <LeafletPolyline 
