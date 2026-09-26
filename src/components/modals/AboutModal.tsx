@@ -42,7 +42,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                   <span>Performance Insights</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v0.2.1</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.0.0</span>
                 </h2>
                 <button 
                   onClick={() => setShowAboutModal(false)}
