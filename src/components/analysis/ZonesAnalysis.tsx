@@ -77,9 +77,12 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
                         <span className="text-app-muted">{Math.floor(z.seconds / 60)}M {z.seconds % 60}S ({z.percentage.toFixed(1)}%)</span>
                       </div>
                       <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                        <div 
-                          className="h-full transition-all duration-1000" 
-                          style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${z.percentage}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="h-full rounded-full" 
+                          style={{ backgroundColor: z.color }} 
                         />
                       </div>
                     </div>
@@ -97,9 +100,12 @@ export const ZonesAnalysis: React.FC<ZonesAnalysisProps> = ({
                           <span className="text-app-muted">{Math.floor(z.seconds / 60)}M {z.seconds % 60}S ({z.percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="h-1.5 w-full bg-app-card rounded-full overflow-hidden">
-                          <div 
-                            className="h-full transition-all duration-1000" 
-                            style={{ width: `${z.percentage}%`, backgroundColor: z.color }} 
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${z.percentage}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="h-full rounded-full" 
+                            style={{ backgroundColor: z.color }} 
                           />
                         </div>
                       </div>
