@@ -10,8 +10,26 @@ export interface CyclingDataPoint {
   longitude?: number;
   slope?: number;
   temperature?: number;
-  leftRightBalance?: number;
+  leftRightBalance?: number; // % Left (e.g. 48 means 48% Left / 52% Right)
   wPrimeBalance?: number;
+  // Cycling Dynamics
+  leftPco?: number; // Platform Center Offset in mm (-30 to +30)
+  rightPco?: number; // Platform Center Offset in mm (-30 to +30)
+  leftPowerPhaseStart?: number; // degrees 0-360
+  leftPowerPhaseEnd?: number; // degrees 0-360
+  leftPowerPhasePeakStart?: number; // degrees 0-360
+  leftPowerPhasePeakEnd?: number; // degrees 0-360
+  rightPowerPhaseStart?: number; // degrees 0-360
+  rightPowerPhaseEnd?: number; // degrees 0-360
+  rightPowerPhasePeakStart?: number; // degrees 0-360
+  rightPowerPhasePeakEnd?: number; // degrees 0-360
+  leftTorqueEffectiveness?: number; // %
+  rightTorqueEffectiveness?: number; // %
+  leftPedalSmoothness?: number; // %
+  rightPedalSmoothness?: number; // %
+  riderPosition?: 'seated' | 'standing'; // Rider position if recorded
+  respirationRate?: number; // Breaths per minute
+  stamina?: number; // Real-time stamina %
 }
 
 export interface Lap {
@@ -59,6 +77,26 @@ export interface PowerCurvePoint {
   label: string; // e.g., "5s", "1m"
 }
 
+export interface CyclingDynamicsSummary {
+  hasDynamics: boolean;
+  hasPco: boolean;
+  hasPowerPhase: boolean;
+  avgLeftBalance?: number; // % Left (e.g. 49.2)
+  avgRightBalance?: number; // % Right (e.g. 50.8)
+  avgLeftPco?: number; // mm
+  avgRightPco?: number; // mm
+  avgLeftPowerPhase?: { start: number; end: number; peakStart: number; peakEnd: number };
+  avgRightPowerPhase?: { start: number; end: number; peakStart: number; peakEnd: number };
+  avgLeftTorqueEffectiveness?: number; // %
+  avgRightTorqueEffectiveness?: number; // %
+  avgLeftPedalSmoothness?: number; // %
+  avgRightPedalSmoothness?: number; // %
+  seatedSeconds?: number;
+  standingSeconds?: number;
+  seatedAvgPower?: number;
+  standingAvgPower?: number;
+}
+
 export interface ActivitySummary {
   name: string;
   startTime: Date;
@@ -83,6 +121,7 @@ export interface ActivitySummary {
   hrZones?: ZoneDistribution[];
   powerCurve?: PowerCurvePoint[];
   aerobicDecoupling?: number;
+  cyclingDynamics?: CyclingDynamicsSummary;
 }
 
 export interface PowerMetrics {

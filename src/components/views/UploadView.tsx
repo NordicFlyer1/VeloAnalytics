@@ -64,14 +64,14 @@ export const UploadView: React.FC<UploadViewProps> = ({
       </div>
       <h2 className="text-2xl font-semibold mb-2">Drop your activity files</h2>
       <p className="text-app-muted mb-8 max-w-md text-center">
-        Support for Garmin <span className="text-app-text/60">.fit</span> files.
+        Support for Garmin <span className="text-app-text/60">.fit</span> and <span className="text-app-text/60">.csv</span> activity files.
       </p>
       <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
         Select Files
         <input 
           type="file" 
           className="hidden" 
-          accept=".fit" 
+          accept=".fit,.csv" 
           multiple 
           onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
           onChange={(e) => {

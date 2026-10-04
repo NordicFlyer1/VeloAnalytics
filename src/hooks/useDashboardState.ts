@@ -15,6 +15,8 @@ export const useDashboardState = () => {
   const [isSleepExpanded, setIsSleepExpanded] = useState(true);
   const [isRecoveryStatusExpanded, setIsRecoveryStatusExpanded] = useState(true);
   const [isHealthExpanded, setIsHealthExpanded] = useState(true);
+  const [isCyclingDynamicsExpanded, setIsCyclingDynamicsExpanded] = useState(true);
+  const [isCyclingDynamicsChartsExpanded, setIsCyclingDynamicsChartsExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
 
   const toggleAllPanels = (expand: boolean) => {
@@ -32,6 +34,8 @@ export const useDashboardState = () => {
     setIsSleepExpanded(expand);
     setIsRecoveryStatusExpanded(expand);
     setIsHealthExpanded(expand);
+    setIsCyclingDynamicsExpanded(expand);
+    setIsCyclingDynamicsChartsExpanded(expand);
     setIsHistoryExpanded(expand);
   };
 
@@ -50,6 +54,8 @@ export const useDashboardState = () => {
     !isSleepExpanded && 
     !isRecoveryStatusExpanded && 
     !isHealthExpanded && 
+    !isCyclingDynamicsExpanded &&
+    !isCyclingDynamicsChartsExpanded &&
     !isHistoryExpanded;
 
   return {
@@ -67,6 +73,8 @@ export const useDashboardState = () => {
     isSleepExpanded, setIsSleepExpanded,
     isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
     isHealthExpanded, setIsHealthExpanded,
+    isCyclingDynamicsExpanded, setIsCyclingDynamicsExpanded,
+    isCyclingDynamicsChartsExpanded, setIsCyclingDynamicsChartsExpanded,
     isHistoryExpanded, setIsHistoryExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed

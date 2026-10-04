@@ -1,43 +1,44 @@
-# 🚴 VeloAnalytics
+# VeloAnalytics
 
 > **High-Performance Cycling Analytics & Physiological Modeling**  
-> A standalone, local-first engine for high-resolution `.FIT` file analysis, W' Balance modeling, and training load analytics.
+> A standalone, local-first engine for high-resolution .FIT file analysis, W' Balance modeling, and training load analytics.
 
-**[🌐 Visit Landing Page](https://NordicFlyer1.github.io/VeloAnalytics/)** &nbsp;•&nbsp; **[📦 Releases & Downloads](https://github.com/NordicFlyer1/VeloAnalytics/releases)** &nbsp;•&nbsp; **[⚖️ Source-Available License](LICENSE)**
-
----
-
-## ⚡ Overview
-
-VeloAnalytics is an elite, local-first cycling analysis suite built for cyclists and performance enthusiasts who want uncompromising precision without sacrificing data sovereignty.
-
-- **🔒 100% Local & Private:** All `.FIT` file parsing, mathematical recalculations, and database records remain exclusively on your device. Your telemetry never leaves your hardware.
-- **🔋 W' Balance & Anaerobic Battery:** Dynamic recovery and expenditure tracking modeled on Critical Power (CP) and Skiba mathematical equations.
-- **⚡ Power Duration Curve:** High-resolution Mean Maximal Power (MMP) analysis from 1-second sprints to multi-hour endurance efforts, featuring multi-ride comparative overlays.
-- **🗺️ Interactive Route Telemetry:** Synchronized cross-scrubbing between power output, altitude, cadence, and GPS tracks with full-screen expansion.
-- **🩺 Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
-- **🖥️ Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
+[Visit Landing Page](https://NordicFlyer1.github.io/VeloAnalytics/) • [Releases & Downloads](https://github.com/NordicFlyer1/VeloAnalytics/releases) • [Source-Available License](LICENSE)
 
 ---
 
-## 🚀 Downloads
+## Overview
+
+VeloAnalytics is a high-precision, local-first cycling analysis suite built for cyclists and performance practitioners who demand mathematical transparency and complete data sovereignty.
+
+- **100% Local & Private:** All .FIT file parsing, mathematical recalculations, and database records remain exclusively on your device. Telemetry is processed locally and never transmitted to external servers.
+- **W' Balance & Anaerobic Battery:** Dynamic recovery and expenditure tracking modeled on Critical Power (CP) and Skiba mathematical equations with fatigue non-stationarity adjustments.
+- **Power Duration Curve:** High-resolution Mean Maximal Power (MMP) analysis from 1-second sprints to multi-hour endurance efforts, featuring multi-ride comparative overlays.
+- **Cycling Dynamics & Biomechanical Modeling:** Dedicated multi-channel telemetry timelines and polar vector crank dials for Left/Right Balance, Platform Center Offset (PCO), Power Phase (PP), Peak Power Phase (PPP), seated vs. standing transitions, and torque effectiveness.
+- **Interactive Route Telemetry:** Synchronized cross-scrubbing between power output, altitude, cadence, and GPS tracks with full-screen expansion.
+- **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
+- **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
+
+---
+
+## Downloads
 
 Native desktop packages and installers are available directly from the repository's releases:
 
-📦 **[Download Desktop Releases](https://github.com/NordicFlyer1/VeloAnalytics/releases)**
+[Download Desktop Releases](https://github.com/NordicFlyer1/VeloAnalytics/releases)
 
 ---
 
-## 📖 Documentation & Guides
+## Documentation & Guides
 
-- 🌐 **[Landing Page](https://NordicFlyer1.github.io/VeloAnalytics/)**
-- 📐 **[Physiological Methodology & Formulae](docs/METHODOLOGY.md)**
-- 🍏 **[macOS Desktop Installation Guide](docs/MACOS_INSTALL.md)**
-- 🛠️ **[Local Build Guide](docs/LOCAL_BUILD.md)**
+- [Landing Page](https://NordicFlyer1.github.io/VeloAnalytics/)
+- [Physiological Methodology & Formulae](docs/METHODOLOGY.md)
+- [macOS Desktop Installation Guide](docs/MACOS_INSTALL.md)
+- [Local Build Guide](docs/LOCAL_BUILD.md)
 
 ---
 
-## ⚖️ License & Attribution
+## License & Attribution
 
 VeloAnalytics is **Source-Available software** and is **not open source**. 
 

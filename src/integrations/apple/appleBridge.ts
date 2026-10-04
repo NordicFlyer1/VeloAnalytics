@@ -119,7 +119,7 @@ export function generateAppleShortcutPayload(snapshot: AppleSiriSnapshot | null)
 
   return JSON.stringify({
     appName: "VeloAnalytics",
-    version: "1.2",
+    version: "1.3",
     generatedAt: new Date().toISOString(),
     supportedQueries: [
       "What is my Velo Readiness?",

@@ -67,6 +67,9 @@ export const useDataSmoothing = (data: CyclingDataPoint[], smoothingWindow: numb
       const currentEnd = Math.min(data.length - 1, i + halfWindow);
       const windowSize = currentEnd - currentStart + 1;
 
+      // Note: Cycling dynamics (balance, PCO, Power Phase, Torque Effectiveness, Pedal Smoothness)
+      // are stroke-level biomechanical telemetry and MUST NEVER be flattened by rolling time-window smoothing.
+      // They are passed through directly as raw instantaneous points matching Garmin Connect.
       result[i] = {
         ...data[i],
         power: sumPower / windowSize,

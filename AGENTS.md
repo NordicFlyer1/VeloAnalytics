@@ -77,6 +77,10 @@ This document serves as the source of truth for the visual and structural design
 - **HRV:** Indigo (`#6366f1`)
 - **PulseOX:** Fuchsia (`#d946ef`)
 - **Respiration:** Emerald (`#10b981`)
+- **Left Pedal / Power Phase:** Sky Blue (`#38bdf8`)
+- **Right Pedal / Power Phase:** Rose (`#fb7185`)
+- **Platform Center Offset (PCO):** Teal (`#14b8a6`)
+- **Peak Power Phase:** Amber (`#fbbf24`)
 
 ## 12. Mobile Responsiveness & Patterns
 - **Capsule Sliders:** For selection groups with many items (e.g., AI Providers), use a horizontal scroll pattern on mobile: `flex overflow-x-auto no-scrollbar whitespace-nowrap`. This maintains the "Capsule" aesthetic without breaking the layout or forcing awkward abbreviations.

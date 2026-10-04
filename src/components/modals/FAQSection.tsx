@@ -139,6 +139,71 @@ const FAQ_DATA: FAQCategory[] = [
     ]
   },
   {
+    name: "Cycling Dynamics & Biomechanics",
+    items: [
+      {
+        question: "How are Cycling Dynamics presented in VeloAnalytics?",
+        beginnerAnswer: "VeloAnalytics presents Cycling Dynamics across a synchronized three-tier architecture: (1) In Metric Analysis, core engine metrics (Power, Cadence, HR, Speed) scrub synchronously with your route. (2) In the Cycling Dynamics Timeline panel, dedicated scatter charts display your Left/Right Balance, Left and Right Platform Center Offset (PCO), Power Phase Start/End angles, and Seated vs. Standing status. (3) In the Cycling Dynamics Biomechanics panel below, 360° circular crank dials and anatomical pedal models provide visual readouts of your drive arcs and foot pressure.",
+        technicalAnswer: "VeloAnalytics implements a three-tier synchronized architecture: Tier 1 (Metric Analysis) provides physiological and environmental streams; Tier 2 (Cycling Dynamics Timeline - CyclingDynamicsCharts) delivers high-resolution scatter channels for L/R Balance, Left/Right PCO (centered at 0 mm with Avg benchmarks), Power Phase Start/End (with Drive vs. Peak toggles), Rider Position, Torque Effectiveness, and Pedal Smoothness, featuring Time vs. Distance axes, Power Heatmap coloring, and 30s trendlines; Tier 3 (Cycling Dynamics Biomechanics - CyclingDynamicsSection) renders open 360° polar vector dials, anatomical pedal models with ±15 mm safety clamping, and Max Avg Power sliding windows (5s, 1m, 5m, 20m). All tiers are cross-wired via a global synchronized scrubber.",
+        keywords: ["dynamics", "garmin", "scrubbing", "timeline", "max avg power", "pco", "power phase", "balance", "three-tier"]
+      },
+      {
+        question: "What is Garmin / Favero Cycling Dynamics?",
+        beginnerAnswer: "Cycling Dynamics is advanced pedaling telemetry recorded by dual-sided power pedals (like Garmin Rally/Vector or Favero Assioma DUO). It reveals how you pedal, where your feet apply pressure, and whether you are balanced.",
+        technicalAnswer: "Cycling Dynamics is an ANT+ and Bluetooth protocol standard that streams per-stroke biomechanical telemetry inside FIT record messages. This includes Left/Right balance, Platform Center Offset (PCO), angular Power Phase (PP), Peak Power Phase (PPP), Torque Effectiveness (TE), Pedal Smoothness (PS), and seated vs. standing transitions.",
+        keywords: ["dynamics", "pedals", "garmin", "assioma", "rally", "vector", "biomechanics", "pedaling"]
+      },
+      {
+        question: "What is the purpose of the '30s Trend Baseline' button in the Dynamics Timeline?",
+        beginnerAnswer: "Because human pedaling naturally fluctuates from stroke to stroke, raw scatter dots can look noisy. Turning on the '30s Baseline' draws a smooth dashed line through the middle of your points, making it easy to see if your leg balance or foot pressure is steadily drifting over time as you get tired.",
+        technicalAnswer: "The 30s Trend Baseline calculates a centered 30-second moving average (TREND_WINDOW = 30) across each dynamics stream (Balance, Left/Right PCO, and Power Phase Start/End). By filtering out high-frequency stochastic variance, it isolates macro biomechanical trends—such as progressive unilateral balance decay or outward foot displacement during sustained threshold intervals.",
+        keywords: ["trend", "baseline", "30s", "rolling average", "noise", "fatigue", "drift"]
+      },
+      {
+        question: "How does the 'Lock Scrubber' button work across panels?",
+        beginnerAnswer: "Normally, moving your mouse off a chart clears your selection and resets the dials to whole-ride averages. Clicking any point on a timeline (or clicking 'Lock Scrubber') freezes the vertical scrubber needle right there. This lets you freely scroll down to inspect your 360° crank dials or zoom into the GPS map without losing your place. Clicking it again unlocks the needle.",
+        technicalAnswer: "VeloAnalytics maintains a unified global activePoint and isPointLocked state at the root level. When locked, the vertical reference line pins across Metric Analysis and the Dynamics Timeline, the lock badge turns red ('Scrubber Locked'), the circular crank dials switch to instantaneous 'Live Stroke Mode' displaying that exact stroke's power, cadence, and angles, and the Activity Map centers on the corresponding GPS coordinate.",
+        keywords: ["lock", "scrubber", "freeze", "pin", "inspect", "hover", "synchronized", "map"]
+      },
+      {
+        question: "What do the 'Live Stroke' badge and dashed 'Habitual Ride Avg' arc mean in the Power Phase dial?",
+        beginnerAnswer: "When you hover or lock onto a point in the timeline, a blue 'Live Stroke' badge appears above the dials showing that single pedal stroke's watts, cadence, and seated/standing position. In the dial, the bright colored arc shows that specific stroke, while a faint dashed gray arc appears underneath showing your overall ride average. This lets you see if you started pedaling earlier or pushed through a wider sweep during that hard effort.",
+        technicalAnswer: "In Live Stroke Mode (activePoint !== null), the dial transitions from ride-wide aggregates to single-stroke polar geometry. Telemetry (timestamp, instantaneous power, cadence, rider position) displays in the header badge. The solid arc renders the instantaneous Power Phase (PP) and Peak Power Phase (PPP) for that specific revolution, while the subtle dashed arc (Habitual Ride Avg) projects the athlete's entire-activity mean propulsive sector along the same angular track, providing instantaneous biomechanical benchmarking against the rider's baseline signature.",
+        keywords: ["live stroke", "habitual", "average", "arc", "polar dial", "instantaneous", "power phase", "comparison"]
+      },
+      {
+        question: "How does the 'Max Avg Power' selector work in Cycling Dynamics?",
+        beginnerAnswer: "Clicking '5 sec', '1 min', '5 min', or '20 min' automatically locates your highest mean maximal power effort of that duration during the ride, and updates the crank clocks and pedal offset diagrams to show how your mechanics held up under that peak load.",
+        technicalAnswer: "The Max Avg Power controller scans your ride's power time-series for the sliding window of maximal mean power (MMP). It extracts the subset of records for that window and dynamically recalculates Left/Right balance, average Left/Right PCO, and angular start/end arcs for both full and peak power phase.",
+        keywords: ["max avg power", "peak", "effort", "5 min", "20 min", "window", "sprint", "power phase"]
+      },
+      {
+        question: "What is Platform Center Offset (PCO) and how is it oriented?",
+        beginnerAnswer: "PCO tells you where your foot presses down on the pedal relative to the exact center of the pedal spindle. A positive number (+) means your foot is pushing toward the outside (outboard), away from the bike. A negative number (-) means you are pushing toward the inside (inboard), toward the crank arm. Our pedal graphics accurately place the pedal spindle on the crank side for both left and right pedals.",
+        technicalAnswer: "Platform Center Offset (PCO) is measured in millimeters (-30 mm to +30 mm) from the center of the pedal platform. Following the Garmin specification, positive values indicate outboard force (lateral force away from the frame), and negative values indicate inboard force (medial force toward the crank arm). In VeloAnalytics, pedal models reflect true anatomy: Left pedal spindle connects on the right (with + Outboard to the left and − Inboard to the right), while the Right pedal spindle connects on the left (with − Inboard to the left and + Outboard to the right). A safety clamp restricts visual needle translation to ±15 mm while reporting the true numerical offset.",
+        keywords: ["pco", "cleat", "offset", "spindle", "inboard", "outboard", "anatomy", "bike fit"]
+      },
+      {
+        question: "What are Power Phase (PP) and Peak Power Phase (PPP)?",
+        beginnerAnswer: "Think of your pedal stroke as a clock (12 o'clock is 0° / TDC, 6 o'clock is 180° / BDC). Power Phase is the range of degrees where you push forward and down. Peak Power Phase is the 'sweet spot' where you produce more than 50% of your power.",
+        technicalAnswer: "Power Phase defines the crank arc (in degrees from Top Dead Center at 0°) where positive propulsive torque is generated (typically starting around 10°-25° and ending around 200°-220°). Peak Power Phase represents the concentrated angular sector generating the top 50% of driving force (often 65°-115°).",
+        keywords: ["power phase", "peak", "angle", "crank", "degrees", "stroke", "pedal clock", "tdc", "bdc"]
+      },
+      {
+        question: "Why don't I see the Cycling Dynamics charts on my ride?",
+        beginnerAnswer: "The Cycling Dynamics section and Dynamics metric lanes only appear automatically when your ride was recorded with dual-sided power pedals that support dynamics. If you ride on a smart trainer or single-sided crank arm, these charts remain completely hidden to keep your dashboard clean.",
+        technicalAnswer: "VeloAnalytics inspects binary FIT record messages for dual-channel fields (left_right_balance, left_pco, left_power_phase). If no dual-sided dynamics fields exist, the parser flags hasCyclingDynamics as false, and both the dedicated Biomechanics section and the Metric Analysis dynamics lanes remain unrendered.",
+        keywords: ["missing", "invisible", "hidden", "why", "single sided", "dual sided", "trainer"]
+      },
+      {
+        question: "What are Torque Effectiveness and Pedal Smoothness?",
+        beginnerAnswer: "Torque Effectiveness measures whether your relaxing leg is resting like dead weight on the pedal during the upstroke. Pedal Smoothness measures how evenly power is spread throughout the complete circular rotation.",
+        technicalAnswer: "Torque Effectiveness (TE, in %) calculates (Positive Torque + Negative Torque) ÷ Positive Torque × 100. 100% means zero negative drag on the backstroke. Pedal Smoothness (PS, in %) calculates Average Power ÷ Peak Power × 100 across each revolution (typically 15-25% for road cyclists).",
+        keywords: ["torque effectiveness", "pedal smoothness", "te", "ps", "efficiency", "upstroke"]
+      }
+    ]
+  },
+  {
     name: "AI Intelligence",
     items: [
       {

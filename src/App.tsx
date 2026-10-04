@@ -21,6 +21,8 @@ import { TrainingLoadAnalysis } from './components/analysis/TrainingLoadAnalysis
 import { SleepAnalysis } from './components/analysis/recovery/SleepAnalysis';
 import { RecoveryAnalysis } from './components/analysis/recovery/RecoveryAnalysis';
 import { HealthAnalysis } from './components/analysis/recovery/HealthAnalysis';
+import { CyclingDynamicsSection } from './components/analysis/CyclingDynamicsSection';
+import { CyclingDynamicsCharts } from './components/analysis/CyclingDynamicsCharts';
 import { AboutModal } from './components/modals/AboutModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { UploadView } from './components/views/UploadView';
@@ -123,6 +125,8 @@ export default function App() {
     isSleepExpanded, setIsSleepExpanded,
     isRecoveryStatusExpanded, setIsRecoveryStatusExpanded,
     isHealthExpanded, setIsHealthExpanded,
+    isCyclingDynamicsExpanded, setIsCyclingDynamicsExpanded,
+    isCyclingDynamicsChartsExpanded, setIsCyclingDynamicsChartsExpanded,
     toggleAllPanels,
     areAllPanelsCollapsed
   } = dashboardState;
@@ -572,15 +576,53 @@ export default function App() {
   }, [settings.sleepHistory, settings.hrvHistory, pmcData, currentPMC, summary, history, settings.aiSettings?.useExperimentalReadiness]);
 
   // Calculations
-  const metricsConfig = React.useMemo(() => ({
-    power: { label: 'POWER', color: '#f97316', unit: 'W' },
-    wPrimeBalance: { label: "W' BALANCE", color: '#a855f7', unit: 'J' },
-    heartRate: { label: 'HEART RATE', color: '#ef4444', unit: 'BPM' },
-    cadence: { label: 'CADENCE', color: '#22c55e', unit: 'RPM' },
-    speed: { label: 'SPEED', color: '#06b6d4', unit: 'KM/H' },
-    altitude: { label: 'ALTITUDE', color: '#f59e0b', unit: 'M' },
-    slope: { label: 'SLOPE', color: '#64748b', unit: '%' },
-  }), []);
+  const metricsConfig = React.useMemo(() => {
+    return {
+      power: { label: 'POWER', color: '#f97316', unit: 'W' },
+      wPrimeBalance: { label: "W' BALANCE", color: '#a855f7', unit: 'J' },
+      heartRate: { label: 'HEART RATE', color: '#ef4444', unit: 'BPM' },
+      cadence: { label: 'CADENCE', color: '#22c55e', unit: 'RPM' },
+      speed: { label: 'SPEED', color: '#06b6d4', unit: 'KM/H' },
+      altitude: { label: 'ALTITUDE', color: '#f59e0b', unit: 'M' },
+      slope: { label: 'SLOPE', color: '#64748b', unit: '%' },
+    };
+  }, []);
+
+  const dynamicsMetricsConfig = React.useMemo(() => {
+    const base: Record<string, { label: string, color: string, unit: string }> = {};
+    const hasDynamics = summary?.cyclingDynamics?.hasDynamics;
+    const hasBalance = Boolean((data && data.some(p => typeof p.leftRightBalance === 'number')) || (hasDynamics && typeof summary?.cyclingDynamics?.avgLeftBalance === 'number'));
+    const hasPco = Boolean((data && data.some(p => typeof p.leftPco === 'number' || typeof p.rightPco === 'number')) || (hasDynamics && summary?.cyclingDynamics?.hasPco));
+    const hasPPStart = Boolean((data && data.some(p => typeof p.leftPowerPhaseStart === 'number' || typeof p.rightPowerPhaseStart === 'number')) || (hasDynamics && summary?.cyclingDynamics?.hasPowerPhase));
+    const hasPPEnd = Boolean((data && data.some(p => typeof p.leftPowerPhaseEnd === 'number' || typeof p.rightPowerPhaseEnd === 'number')) || (hasDynamics && summary?.cyclingDynamics?.hasPowerPhase));
+    const hasPosition = Boolean((data && data.some(p => p.riderPosition !== undefined)) || (hasDynamics && summary?.cyclingDynamics?.seatedSeconds !== undefined));
+
+    // 1. L/R Balance MUST be FIRST
+    if (hasBalance) {
+      base.leftRightBalance = { label: 'L/R BALANCE', color: '#d946ef', unit: '%' };
+    }
+    if (hasPco) {
+      base.leftPco = { label: 'LEFT PCO', color: '#ef4444', unit: 'MM' };
+      base.rightPco = { label: 'RIGHT PCO', color: '#f59e0b', unit: 'MM' };
+    }
+    if (hasPPStart) {
+      base.powerPhaseStart = { label: 'POWER PHASE: START', color: '#22c55e', unit: '°' };
+    }
+    if (hasPPEnd) {
+      base.powerPhaseEnd = { label: 'POWER PHASE: END', color: '#06b6d4', unit: '°' };
+    }
+    if (hasPosition) {
+      base.riderPosition = { label: 'RIDER POSITION', color: '#38bdf8', unit: '' };
+    }
+    if (data && data.some(p => typeof p.leftTorqueEffectiveness === 'number' || typeof p.rightTorqueEffectiveness === 'number')) {
+      base.torqueEffectiveness = { label: 'TORQUE EFFECTIVENESS', color: '#10b981', unit: '%' };
+    }
+    if (data && data.some(p => typeof p.leftPedalSmoothness === 'number' || typeof p.rightPedalSmoothness === 'number')) {
+      base.pedalSmoothness = { label: 'PEDAL SMOOTHNESS', color: '#8b5cf6', unit: '%' };
+    }
+
+    return base;
+  }, [data, summary]);
 
   const currentLaps = React.useMemo(() => {
     if (!summary || !data || data.length === 0) return [];
@@ -729,6 +771,31 @@ export default function App() {
                       powerZoneDefinitions={powerZoneDefinitions} hrZoneDefinitions={hrZoneDefinitions}
                       maxHR={maxHR} cpMode={cpMode} setCpMode={setCpMode}
                     />
+
+                    {summary && summary.cyclingDynamics && summary.cyclingDynamics.hasDynamics && (
+                      <>
+                        <CyclingDynamicsCharts
+                          summary={summary}
+                          data={data}
+                          dynamicsMetricsConfig={dynamicsMetricsConfig}
+                          activePoint={activePoint}
+                          setActivePoint={throttledSetActivePoint}
+                          isPointLocked={isPointLocked}
+                          setIsPointLocked={setIsPointLocked}
+                          isExpanded={isCyclingDynamicsChartsExpanded}
+                          setIsExpanded={setIsCyclingDynamicsChartsExpanded}
+                        />
+
+                        <CyclingDynamicsSection
+                          summary={summary}
+                          data={data}
+                          activePoint={activePoint}
+                          setActivePoint={throttledSetActivePoint}
+                          isExpanded={isCyclingDynamicsExpanded}
+                          setIsExpanded={setIsCyclingDynamicsExpanded}
+                        />
+                      </>
+                    )}
 
                     <Suspense fallback={<div className="bg-app-card border border-app-border rounded-3xl p-4 sm:p-8 h-[450px] sm:h-[600px] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>}>
                       <ActivityMap 

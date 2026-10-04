@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, TrendingUp, Activity, BookOpen, Scale, HelpCircle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import methodologyContent from '../../../docs/METHODOLOGY.md?raw';
+import methodologyContent from '../../content/inAppMethodology.md?raw';
 import licenseContent from '../../../LICENSE?raw';
 import { FAQSection } from './FAQSection';
 import { cn } from '../../lib/utils';
@@ -42,7 +42,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                   <span>Performance Insights</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.0.0</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.3.0</span>
                 </h2>
                 <button 
                   onClick={() => setShowAboutModal(false)}
@@ -157,6 +157,15 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                           </h4>
                           <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
                             Experimental weighted readiness score using non-linear inhibitors to model physiological recovery.
+                          </p>
+                        </div>
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-1.5 flex items-center gap-2">
+                            <Activity className="w-3 h-3 text-sky-400" />
+                            Cycling Dynamics
+                          </h4>
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed">
+                            Dual-sided pedal stroke power phase, platform center offset (PCO), and seated vs. standing transitions.
                           </p>
                         </div>
                         <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">

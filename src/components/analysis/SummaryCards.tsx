@@ -198,10 +198,13 @@ export const SummaryCards = React.memo(({
             {data.some(p => p.leftRightBalance !== undefined) && (
               <div>
                 <span>L/R: {(() => {
+                  if (summary.cyclingDynamics?.avgLeftBalance !== undefined && summary.cyclingDynamics?.avgRightBalance !== undefined) {
+                    return `${summary.cyclingDynamics.avgLeftBalance.toFixed(0)}/${summary.cyclingDynamics.avgRightBalance.toFixed(0)}`;
+                  }
                   const balances = data.filter(p => p.leftRightBalance !== undefined).map(p => p.leftRightBalance!);
                   if (balances.length === 0) return '50/50';
-                  const avg = balances.reduce((a, b) => a + b, 0) / balances.length;
-                  return `${Math.round(avg)}/${100 - Math.round(avg)}`;
+                  const avgRight = balances.reduce((a, b) => a + b, 0) / balances.length;
+                  return `${Math.round(100 - avgRight)}/${Math.round(avgRight)}`;
                 })()}</span>
               </div>
             )}

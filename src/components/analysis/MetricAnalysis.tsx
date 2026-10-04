@@ -78,18 +78,28 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
     }
   ];
 
+  const toggleMetric = (key: string) => {
+    setActiveMetrics(prev => {
+      const next = prev.includes(key) 
+        ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
+        : [...prev, key];
+      const order = Object.keys(metricsConfig);
+      return [...next].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    });
+  };
+
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <SectionHeader 
         icon={BarChart3}
         title="Metric Analysis"
-        description="Deep dive into your performance data with synchronized charts"
+        description="Deep dive into your performance data with synchronized power, heart rate, and pacing charts"
         isExpanded={isChartExpanded}
         onToggle={() => setIsChartExpanded(!isChartExpanded)}
         exportActions={exportActions}
         infoContent={{
           title: "Metric Analysis",
-          description: "Explore point-by-point data for Power, W' Balance, Heart Rate, Cadence, Speed, Altitude, and Slope. Use the smoothing controls to filter out raw data noise and find significant trends."
+          description: "Explore point-by-point data for Power, W' Balance, Heart Rate, Cadence, Speed, Altitude, and Slope. Use the smoothing controls to filter out raw data noise, inspect training zones, and evaluate Critical Power benchmarks."
         }}
       />
       
@@ -101,27 +111,22 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8 gap-6 sm:gap-8 export-ignore">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Metrics</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar">
+            <div className="flex flex-col gap-4 mb-6 sm:mb-8 export-ignore">
+              {/* Category: Ride Metrics */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4 w-full">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0 shrink-0 w-24">
+                  Ride Metrics
+                </span>
+                <div className="flex items-center overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border scrollbar-hide no-scrollbar max-w-full">
                   {Object.entries(metricsConfig).map(([key, config]) => {
                     const typedConfig = config as { label: string, color: string, unit: string };
                     const isActive = activeMetrics.includes(key);
                     return (
                       <button
                         key={key}
-                        onClick={() => {
-                          setActiveMetrics(prev => {
-                            const next = prev.includes(key) 
-                              ? (prev.length > 1 ? prev.filter(m => m !== key) : prev)
-                              : [...prev, key];
-                            const order = Object.keys(metricsConfig);
-                            return [...next].sort((a, b) => order.indexOf(a) - order.indexOf(b));
-                          });
-                        }}
+                        onClick={() => toggleMetric(key)}
                         className={cn(
-                          "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                          "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap shrink-0",
                           isActive 
                             ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                             : "text-app-muted hover:text-app-text"
@@ -139,16 +144,19 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                   })}
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0">Smoothing</span>
-                <div className="flex overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar">
+
+              {/* Category: Smoothing Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-1 sm:ml-0 shrink-0 w-24">
+                  Smoothing
+                </span>
+                <div className="flex items-center overflow-x-auto pb-1 sm:pb-0 gap-1 bg-app-bg/50 p-1 rounded-full border border-app-border no-scrollbar shrink-0">
                   {[1, 3, 10, 30, 60].map((window) => (
                     <button
                       key={window}
                       onClick={() => setSmoothingWindow(window)}
                       className={cn(
-                        "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                        "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap shrink-0",
                         smoothingWindow === window 
                           ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                           : "text-app-muted hover:text-app-text"
@@ -166,7 +174,7 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                 <MetricLane 
                   key={metric}
                   metric={metric}
-                  config={metricsConfig[metric]}
+                  config={metricsConfig[metric] || { label: metric.toUpperCase(), color: '#f97316', unit: '' }}
                   data={smoothedData}
                   activePoint={activePoint}
                   onMouseMove={(e) => {
@@ -179,16 +187,18 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                   }}
                   onClick={(e) => {
                     if (e && e.activeTooltipIndex !== undefined) {
-                      setActivePoint(e.activeTooltipIndex);
-                      setIsPointLocked(true);
-                    } else {
-                      setIsPointLocked(false);
-                      setActivePoint(null);
+                      if (isPointLocked && activePoint === e.activeTooltipIndex) {
+                        setIsPointLocked(false);
+                        setActivePoint(null);
+                      } else {
+                        setIsPointLocked(true);
+                        setActivePoint(e.activeTooltipIndex);
+                      }
                     }
                   }}
                   isLast={index === activeMetrics.length - 1}
-                  syncId="activityAnalysis"
-                  height={window.innerWidth < 768 ? 160 : (activeMetrics.length > 3 ? 160 : 200)}
+                  syncId="activity-sync"
+                  height={metric === 'riderPosition' ? 90 : 160}
                   estimatedCp={estimatedCp}
                   cp={cp}
                   manualCP={manualCP}
@@ -200,36 +210,6 @@ export const MetricAnalysis: React.FC<MetricAnalysisProps> = ({
                 />
               ))}
             </div>
-
-            {activeMetrics.includes('power') && (
-              <div className="flex items-center justify-center gap-3 py-3 border-t border-app-border/30 bg-app-card/10 export-ignore">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Analysis Mode</span>
-                <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
-                  <button 
-                    onClick={() => setCpMode('manual')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                      cpMode === 'manual' 
-                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
-                        : "text-app-muted hover:text-app-text"
-                    )}
-                  >
-                    Active CP
-                  </button>
-                  <button 
-                    onClick={() => setCpMode('estimated')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                      cpMode === 'estimated' 
-                        ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
-                        : "text-app-muted hover:text-app-text"
-                    )}
-                  >
-                    Estimated CP
-                  </button>
-                </div>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
