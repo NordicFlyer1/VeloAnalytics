@@ -58,7 +58,7 @@ export const useFileUploader = (
     }
   };
 
-  const handleFileUpload = async (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     
     const validFiles = Array.from(files).filter(f => {

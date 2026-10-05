@@ -11,13 +11,15 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
     "dialog:allow-save",
+    "fs:allow-read-file",
     "fs:allow-write",
     "fs:allow-write-text-file",
     {
       "identifier": "fs:scope",
       "allow": [
         { "path": "$HOME/**" },
-        { "path": "$APPDATA/**" }
+        { "path": "$APPDATA/**" },
+        { "path": "/Volumes/**" }
       ]
     }
   ]
