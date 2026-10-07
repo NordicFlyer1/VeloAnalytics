@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Upload, Loader2, CheckCircle2, XCircle, Activity } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { FileStatus, ActivitySummary, CyclingDataPoint } from '../../types';
@@ -9,7 +9,7 @@ interface UploadViewProps {
   setShowUploadView: (show: boolean) => void;
   isDragging: boolean;
   setIsDragging: (dragging: boolean) => void;
-  handleFileUpload: (files: FileList | File[] | null) => void;
+  handleFileUpload: (files: FileList | null) => void;
   uploadQueue: FileStatus[];
   setUploadQueue: React.Dispatch<React.SetStateAction<FileStatus[]>>;
   setSummary: (summary: ActivitySummary) => void;
@@ -47,67 +47,6 @@ export const UploadView: React.FC<UploadViewProps> = ({
   history,
   summary
 }) => {
-  // Native Tauri v2 Window Drop Listener
-  useEffect(() => {
-    let isMounted = true;
-    let unlistenFn: (() => void) | undefined;
-
-    const setupTauriDropListener = async () => {
-      // Execute only in desktop builds where Tauri internal API is injected
-      if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-        try {
-          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
-          const { readFile } = await import('@tauri-apps/plugin-fs');
-
-          const unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
-            if (event.payload.type === 'over') {
-              setIsDragging(true);
-            } else if (event.payload.type === 'leave') {
-              setIsDragging(false);
-            } else if (event.payload.type === 'drop') {
-              setIsDragging(false);
-              const paths = event.payload.paths;
-              if (!paths || paths.length === 0) return;
-
-              const droppedFiles: File[] = [];
-              for (const filePath of paths) {
-                const fileName = filePath.split(/[/\\]/).pop() || 'activity.fit';
-                const lowerName = fileName.toLowerCase();
-
-                // Pre-filter to prevent loading non-activity or huge binary files into memory
-                if (!lowerName.endsWith('.fit') && !lowerName.endsWith('.csv')) continue;
-
-                // Read binary bytes via Tauri FS plugin
-                const bytes = await readFile(filePath);
-                const mime = lowerName.endsWith('.csv') ? 'text/csv' : 'application/octet-stream';
-                droppedFiles.push(new File([bytes], fileName, { type: mime }));
-              }
-
-              if (droppedFiles.length > 0) {
-                handleFileUpload(droppedFiles);
-              }
-            }
-          });
-
-          if (!isMounted) {
-            unlisten();
-          } else {
-            unlistenFn = unlisten;
-          }
-        } catch (err) {
-          console.warn('Tauri native drag-drop listener initialization skipped:', err);
-        }
-      }
-    };
-
-    setupTauriDropListener();
-
-    return () => {
-      isMounted = false;
-      if (unlistenFn) unlistenFn();
-    };
-  }, [handleFileUpload, setIsDragging]);
-
   if (!showUploadView && (summary || history.length > 0)) return null;
 
   return (

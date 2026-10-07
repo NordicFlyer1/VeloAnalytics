@@ -200,6 +200,12 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "Torque Effectiveness measures whether your relaxing leg is resting like dead weight on the pedal during the upstroke. Pedal Smoothness measures how evenly power is spread throughout the complete circular rotation.",
         technicalAnswer: "Torque Effectiveness (TE, in %) calculates (Positive Torque + Negative Torque) ÷ Positive Torque × 100. 100% means zero negative drag on the backstroke. Pedal Smoothness (PS, in %) calculates Average Power ÷ Peak Power × 100 across each revolution (typically 15-25% for road cyclists).",
         keywords: ["torque effectiveness", "pedal smoothness", "te", "ps", "efficiency", "upstroke"]
+      },
+      {
+        question: "What CSV spreadsheets can I export from Cycling Dynamics?",
+        beginnerAnswer: "You can export four dedicated CSV spreadsheets: Dynamics Time-Series Data (second-by-second stroke telemetry), Dynamics Rolling Trends (smoothed 30s balance and PCO baselines), Dynamics Summary & Position Breakdown (overall stats and seated vs. standing posture), and Peak Power Window Dynamics (biomechanics during your 5s, 1m, 5m, 20m, or 60m peak power efforts). Both panels also support day and dark mode high-resolution PNG image exports.",
+        technicalAnswer: "From the Cycling Dynamics Timeline panel, you can export full second-by-second FIT dynamics time-series or 30-second rolling trend baselines (Balance, Left/Right PCO, and Power Phase start/end/arc angles). From the Cycling Dynamics Biomechanics panel, you can export the ride-wide aggregate and seated vs. standing posture telemetry, or the exact MMP-windowed biomechanics corresponding to the active peak power selection (5s, 1m, 5m, 20m, 60m). All CSV files format ISO timestamps, elapsed seconds, balance percentages, millimeter PCO offsets, and angular degree arcs.",
+        keywords: ["csv", "export", "dynamics", "time-series", "trends", "peak power", "seated standing", "biomechanics", "spreadsheet"]
       }
     ]
   },

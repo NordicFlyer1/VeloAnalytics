@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   RotateCw, 
   MoveHorizontal, 
-  Image
+  Image,
+  FileSpreadsheet
 } from 'lucide-react';
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { ActivitySummary, CyclingDataPoint } from '../../types';
 import { exportComponentAsImage } from '../../lib/chartExport';
+import { exportToCSV } from '../../lib/csvExport';
 import { cn } from '../../lib/utils';
 import seatedSvg from '../../assets/images/seated_cyclist.svg';
 import standingSvg from '../../assets/images/standing_cyclist.svg';
@@ -362,19 +364,6 @@ export const CyclingDynamicsSection: React.FC<CyclingDynamicsSectionProps> = ({
     return null;
   }
 
-  const exportActions: ExportAction[] = [
-    {
-      label: 'Dynamics Panel (PNG)',
-      icon: Image,
-      onClick: async () => {
-        if (containerRef.current) {
-          const fileName = `Velo_CyclingDynamics_${new Date().getTime()}.png`;
-          await exportComponentAsImage(containerRef.current, fileName);
-        }
-      }
-    }
-  ];
-
   const peakWindowIndices = useMemo(() => {
     if (maxAvgPowerWindow === 'none' || !data || data.length === 0) return null;
     let windowSeconds = 0;
@@ -592,6 +581,168 @@ export const CyclingDynamicsSection: React.FC<CyclingDynamicsSectionProps> = ({
       standingAvgPower
     };
   }, [data, peakWindowIndices, dynamics, activePoint]);
+
+  const exportActions: ExportAction[] = [
+    {
+      label: 'Dynamics Panel (PNG)',
+      icon: Image,
+      onClick: async () => {
+        if (containerRef.current) {
+          const fileName = `Velo_CyclingDynamics_${new Date().getTime()}.png`;
+          await exportComponentAsImage(containerRef.current, fileName);
+        }
+      }
+    },
+    {
+      label: 'Dynamics Summary & Position Breakdown (CSV)',
+      icon: FileSpreadsheet,
+      onClick: async () => {
+        const totalDuration = (dynamics.seatedSeconds ?? 0) + (dynamics.standingSeconds ?? 0) || summary.duration || 1;
+        const seatedSec = dynamics.seatedSeconds ?? 0;
+        const standingSec = dynamics.standingSeconds ?? 0;
+        const seatedPct = Math.round((seatedSec / totalDuration) * 100);
+        const standingPct = Math.round((standingSec / totalDuration) * 100);
+
+        const leftArc = (typeof dynamics.avgLeftPowerPhase?.end === 'number' && typeof dynamics.avgLeftPowerPhase?.start === 'number')
+          ? ((dynamics.avgLeftPowerPhase.end - dynamics.avgLeftPowerPhase.start + 360) % 360).toFixed(1)
+          : '';
+        const rightArc = (typeof dynamics.avgRightPowerPhase?.end === 'number' && typeof dynamics.avgRightPowerPhase?.start === 'number')
+          ? ((dynamics.avgRightPowerPhase.end - dynamics.avgRightPowerPhase.start + 360) % 360).toFixed(1)
+          : '';
+        const leftPeakArc = (typeof dynamics.avgLeftPowerPhase?.peakEnd === 'number' && typeof dynamics.avgLeftPowerPhase?.peakStart === 'number')
+          ? ((dynamics.avgLeftPowerPhase.peakEnd - dynamics.avgLeftPowerPhase.peakStart + 360) % 360).toFixed(1)
+          : '';
+        const rightPeakArc = (typeof dynamics.avgRightPowerPhase?.peakEnd === 'number' && typeof dynamics.avgRightPowerPhase?.peakStart === 'number')
+          ? ((dynamics.avgRightPowerPhase.peakEnd - dynamics.avgRightPowerPhase.peakStart + 360) % 360).toFixed(1)
+          : '';
+
+        const rows = [
+          {
+            'Category': 'Overall Ride',
+            'Subcategory': 'Averages',
+            'Time (s)': summary.duration || '',
+            'Share of Ride (%)': '100%',
+            'Avg Power (W)': summary.avgPower || '',
+            'L/R Balance (% Left)': dynamics.avgLeftBalance !== undefined ? `${Math.round(dynamics.avgLeftBalance)}%` : '',
+            'L/R Balance (% Right)': dynamics.avgRightBalance !== undefined ? `${Math.round(dynamics.avgRightBalance)}%` : '',
+            'Left PCO (mm)': dynamics.avgLeftPco !== undefined ? dynamics.avgLeftPco.toFixed(1) : '',
+            'Right PCO (mm)': dynamics.avgRightPco !== undefined ? dynamics.avgRightPco.toFixed(1) : '',
+            'Left PP Start (°)': dynamics.avgLeftPowerPhase?.start ?? '',
+            'Left PP End (°)': dynamics.avgLeftPowerPhase?.end ?? '',
+            'Left PP Arc (°)': leftArc,
+            'Right PP Start (°)': dynamics.avgRightPowerPhase?.start ?? '',
+            'Right PP End (°)': dynamics.avgRightPowerPhase?.end ?? '',
+            'Right PP Arc (°)': rightArc,
+            'Left Peak PP Start (°)': dynamics.avgLeftPowerPhase?.peakStart ?? '',
+            'Left Peak PP End (°)': dynamics.avgLeftPowerPhase?.peakEnd ?? '',
+            'Left Peak PP Arc (°)': leftPeakArc,
+            'Right Peak PP Start (°)': dynamics.avgRightPowerPhase?.peakStart ?? '',
+            'Right Peak PP End (°)': dynamics.avgRightPowerPhase?.peakEnd ?? '',
+            'Right Peak PP Arc (°)': rightPeakArc
+          },
+          {
+            'Category': 'Rider Position',
+            'Subcategory': 'Seated',
+            'Time (s)': seatedSec,
+            'Share of Ride (%)': `${seatedPct}%`,
+            'Avg Power (W)': dynamics.seatedAvgPower ?? '',
+            'L/R Balance (% Left)': '',
+            'L/R Balance (% Right)': '',
+            'Left PCO (mm)': '',
+            'Right PCO (mm)': '',
+            'Left PP Start (°)': '',
+            'Left PP End (°)': '',
+            'Left PP Arc (°)': '',
+            'Right PP Start (°)': '',
+            'Right PP End (°)': '',
+            'Right PP Arc (°)': '',
+            'Left Peak PP Start (°)': '',
+            'Left Peak PP End (°)': '',
+            'Left Peak PP Arc (°)': '',
+            'Right Peak PP Start (°)': '',
+            'Right Peak PP End (°)': '',
+            'Right Peak PP Arc (°)': ''
+          },
+          {
+            'Category': 'Rider Position',
+            'Subcategory': 'Standing',
+            'Time (s)': standingSec,
+            'Share of Ride (%)': `${standingPct}%`,
+            'Avg Power (W)': dynamics.standingAvgPower ?? '',
+            'L/R Balance (% Left)': '',
+            'L/R Balance (% Right)': '',
+            'Left PCO (mm)': '',
+            'Right PCO (mm)': '',
+            'Left PP Start (°)': '',
+            'Left PP End (°)': '',
+            'Left PP Arc (°)': '',
+            'Right PP Start (°)': '',
+            'Right PP End (°)': '',
+            'Right PP Arc (°)': '',
+            'Left Peak PP Start (°)': '',
+            'Left Peak PP End (°)': '',
+            'Left Peak PP Arc (°)': '',
+            'Right Peak PP Start (°)': '',
+            'Right Peak PP End (°)': '',
+            'Right Peak PP Arc (°)': ''
+          }
+        ];
+
+        await exportToCSV(rows, `Velo_Dynamics_Summary_Postural_${Date.now()}.csv`);
+      }
+    },
+    {
+      label: 'Peak Power Window Dynamics (CSV)',
+      icon: FileSpreadsheet,
+      onClick: async () => {
+        if (!peakWindowIndices) {
+          const rows = [{
+            'Status': 'No Peak Power Window Selected',
+            'Note': 'Select a Peak Power Window (5s, 1m, 5m, 20m, 60m) above the dials to export interval dynamics.'
+          }];
+          await exportToCSV(rows, `Velo_Dynamics_PeakPower_None_${Date.now()}.csv`);
+          return;
+        }
+
+        const { start, end } = peakWindowIndices;
+        const windowData = data.slice(start, end + 1);
+
+        const lArc = ((computedMetrics.leftPP.end - computedMetrics.leftPP.start + 360) % 360).toFixed(1);
+        const rArc = ((computedMetrics.rightPP.end - computedMetrics.rightPP.start + 360) % 360).toFixed(1);
+        const lPeakArc = ((computedMetrics.leftPP.peakEnd - computedMetrics.leftPP.peakStart + 360) % 360).toFixed(1);
+        const rPeakArc = ((computedMetrics.rightPP.peakEnd - computedMetrics.rightPP.peakStart + 360) % 360).toFixed(1);
+
+        const powers = windowData.map(d => d.power || 0);
+        const avgPower = powers.length > 0 ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length) : 0;
+
+        const rows = windowData.map((pt, i) => ({
+          'Interval Window': maxAvgPowerWindow,
+          'Interval Avg Power (W)': avgPower,
+          'Interval L/R Balance (% Left)': computedMetrics.leftBalance.toFixed(1),
+          'Interval Left PCO (mm)': computedMetrics.leftPco.toFixed(1),
+          'Interval Right PCO (mm)': computedMetrics.rightPco.toFixed(1),
+          'Interval Left PP Arc (°)': lArc,
+          'Interval Right PP Arc (°)': rArc,
+          'Interval Left Peak PP Arc (°)': lPeakArc,
+          'Interval Right Peak PP Arc (°)': rPeakArc,
+          'Second in Window': i + 1,
+          'Timestamp': pt.timestamp || '',
+          'Instant Power (W)': pt.power ?? '',
+          'Instant Cadence (rpm)': pt.cadence ?? '',
+          'Instant L/R Balance (% Left)': pt.leftRightBalance ?? '',
+          'Instant Left PCO (mm)': pt.leftPco ?? '',
+          'Instant Right PCO (mm)': pt.rightPco ?? '',
+          'Instant Left PP Start (°)': pt.leftPowerPhaseStart ?? '',
+          'Instant Left PP End (°)': pt.leftPowerPhaseEnd ?? '',
+          'Instant Right PP Start (°)': pt.rightPowerPhaseStart ?? '',
+          'Instant Right PP End (°)': pt.rightPowerPhaseEnd ?? '',
+          'Rider Position': pt.riderPosition === 'standing' ? 'Standing' : (pt.riderPosition === 'seated' ? 'Seated' : '')
+        }));
+
+        await exportToCSV(rows, `Velo_Dynamics_PeakPower_${maxAvgPowerWindow}_${Date.now()}.csv`);
+      }
+    }
+  ];
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">

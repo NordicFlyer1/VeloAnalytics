@@ -7,7 +7,8 @@ import {
   Lock, 
   Unlock, 
   HelpCircle,
-  SlidersHorizontal
+  SlidersHorizontal,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -22,6 +23,7 @@ import {
 import { SectionHeader, ExportAction } from '../ui/SectionHeader';
 import { CyclingDataPoint, ActivitySummary } from '../../types';
 import { exportComponentAsImage } from '../../lib/chartExport';
+import { exportToCSV } from '../../lib/csvExport';
 import { cn } from '../../lib/utils';
 
 const ReferenceLineAny = ReferenceLine as any;
@@ -152,6 +154,98 @@ export const CyclingDynamicsCharts: React.FC<CyclingDynamicsChartsProps> = ({
         if (chartAreaRef.current) {
           await exportComponentAsImage(chartAreaRef.current, `Velo_CyclingDynamics_Charts_${Date.now()}.png`);
         }
+      }
+    },
+    {
+      label: 'Dynamics Time-Series Data (CSV)',
+      icon: FileSpreadsheet,
+      onClick: async () => {
+        const rows = data.map((p, idx) => {
+          const lArc = (typeof p.leftPowerPhaseStart === 'number' && typeof p.leftPowerPhaseEnd === 'number')
+            ? ((p.leftPowerPhaseEnd - p.leftPowerPhaseStart + 360) % 360)
+            : '';
+          const rArc = (typeof p.rightPowerPhaseStart === 'number' && typeof p.rightPowerPhaseEnd === 'number')
+            ? ((p.rightPowerPhaseEnd - p.rightPowerPhaseStart + 360) % 360)
+            : '';
+          const lPeakArc = (typeof p.leftPowerPhasePeakStart === 'number' && typeof p.leftPowerPhasePeakEnd === 'number')
+            ? ((p.leftPowerPhasePeakEnd - p.leftPowerPhasePeakStart + 360) % 360)
+            : '';
+          const rPeakArc = (typeof p.rightPowerPhasePeakStart === 'number' && typeof p.rightPowerPhasePeakEnd === 'number')
+            ? ((p.rightPowerPhasePeakEnd - p.rightPowerPhasePeakStart + 360) % 360)
+            : '';
+
+          return {
+            'Timestamp': p.timestamp || '',
+            'Elapsed (s)': idx,
+            'Distance (km)': typeof p.distance === 'number' ? (p.distance / 1000).toFixed(2) : '',
+            'Power (W)': p.power ?? '',
+            'Cadence (rpm)': p.cadence ?? '',
+            'L/R Balance (% Left)': p.leftRightBalance ?? '',
+            'Left PCO (mm)': p.leftPco ?? '',
+            'Right PCO (mm)': p.rightPco ?? '',
+            'Left PP Start (°)': p.leftPowerPhaseStart ?? '',
+            'Left PP End (°)': p.leftPowerPhaseEnd ?? '',
+            'Left PP Arc (°)': lArc,
+            'Right PP Start (°)': p.rightPowerPhaseStart ?? '',
+            'Right PP End (°)': p.rightPowerPhaseEnd ?? '',
+            'Right PP Arc (°)': rArc,
+            'Left Peak PP Start (°)': p.leftPowerPhasePeakStart ?? '',
+            'Left Peak PP End (°)': p.leftPowerPhasePeakEnd ?? '',
+            'Left Peak PP Arc (°)': lPeakArc,
+            'Right Peak PP Start (°)': p.rightPowerPhasePeakStart ?? '',
+            'Right Peak PP End (°)': p.rightPowerPhasePeakEnd ?? '',
+            'Right Peak PP Arc (°)': rPeakArc,
+            'Rider Position': p.riderPosition === 'standing' ? 'Standing' : (p.riderPosition === 'seated' ? 'Seated' : '')
+          };
+        });
+        await exportToCSV(rows, `Velo_CyclingDynamics_Telemetry_${Date.now()}.csv`);
+      }
+    },
+    {
+      label: 'Dynamics Rolling Trends (CSV)',
+      icon: FileSpreadsheet,
+      onClick: async () => {
+        const TREND_WINDOW = 30;
+        const rows = data.map((p, idx) => {
+          const wStart = Math.max(0, idx - Math.floor(TREND_WINDOW / 2));
+          const wEnd = Math.min(data.length - 1, idx + Math.floor(TREND_WINDOW / 2));
+          let balSum = 0, balCnt = 0;
+          let lpSum = 0, lpCnt = 0;
+          let rpSum = 0, rpCnt = 0;
+          let lpsSum = 0, lpsCnt = 0;
+          let rpsSum = 0, rpsCnt = 0;
+          let lpeSum = 0, lpeCnt = 0;
+          let rpeSum = 0, rpeCnt = 0;
+
+          for (let i = wStart; i <= wEnd; i++) {
+            const pt = data[i];
+            if (typeof pt.leftRightBalance === 'number') { balSum += pt.leftRightBalance; balCnt++; }
+            if (typeof pt.leftPco === 'number') { lpSum += pt.leftPco; lpCnt++; }
+            if (typeof pt.rightPco === 'number') { rpSum += pt.rightPco; rpCnt++; }
+            if (typeof pt.leftPowerPhaseStart === 'number') { lpsSum += pt.leftPowerPhaseStart; lpsCnt++; }
+            if (typeof pt.rightPowerPhaseStart === 'number') { rpsSum += pt.rightPowerPhaseStart; rpsCnt++; }
+            if (typeof pt.leftPowerPhaseEnd === 'number') { lpeSum += pt.leftPowerPhaseEnd; lpeCnt++; }
+            if (typeof pt.rightPowerPhaseEnd === 'number') { rpeSum += pt.rightPowerPhaseEnd; rpeCnt++; }
+          }
+
+          return {
+            'Timestamp': p.timestamp || '',
+            'Elapsed (s)': idx,
+            'Distance (km)': typeof p.distance === 'number' ? (p.distance / 1000).toFixed(2) : '',
+            'Power (W)': p.power ?? '',
+            'Instantaneous Balance (% Left)': p.leftRightBalance ?? '',
+            '30s Rolling Balance (% Left)': balCnt >= 3 ? (balSum / balCnt).toFixed(1) : '',
+            'Instantaneous Left PCO (mm)': p.leftPco ?? '',
+            '30s Rolling Left PCO (mm)': lpCnt >= 3 ? (lpSum / lpCnt).toFixed(1) : '',
+            'Instantaneous Right PCO (mm)': p.rightPco ?? '',
+            '30s Rolling Right PCO (mm)': rpCnt >= 3 ? (rpSum / rpCnt).toFixed(1) : '',
+            '30s Rolling Left PP Start (°)': lpsCnt >= 3 ? (lpsSum / lpsCnt).toFixed(1) : '',
+            '30s Rolling Left PP End (°)': lpeCnt >= 3 ? (lpeSum / lpeCnt).toFixed(1) : '',
+            '30s Rolling Right PP Start (°)': rpsCnt >= 3 ? (rpsSum / rpsCnt).toFixed(1) : '',
+            '30s Rolling Right PP End (°)': rpeCnt >= 3 ? (rpeSum / rpeCnt).toFixed(1) : ''
+          };
+        });
+        await exportToCSV(rows, `Velo_CyclingDynamics_Trends_${Date.now()}.csv`);
       }
     }
   ];

@@ -68,6 +68,13 @@ Measures the lateral distribution of pressure relative to the pedal spindle cent
 * **Negative ($-$ mm)**: Force biased **Inboard** (toward the crank arm).
 * **Anatomical Alignment**: Left pedal spindle connects on the right; Right pedal spindle connects on the left. Visual needle translation is safely clamped to $\pm 15\text{ mm}$ to preserve clean visual boundaries while reporting exact numerical values.
 
+### CSV & Visual Telemetry Exports
+* **Dynamics Time-Series Data (CSV)**: Second-by-second FIT dynamics telemetry (L/R Balance, Left/Right PCO, angular start/end/arc for Drive & Peak phases, Rider Position, Watts, Cadence).
+* **Dynamics Rolling Trends (CSV)**: Centered 30-second moving averages revealing macro biomechanical drift and unilateral fatigue.
+* **Dynamics Summary & Position Breakdown (CSV)**: Ride-level aggregates and seated vs. standing posture comparisons (duration, average power, phase arcs, and balance).
+* **Peak Power Window Dynamics (CSV)**: Biomechanical metrics isolated strictly to the selected Max Avg Power interval (5s, 1m, 5m, 20m, 60m).
+* **High-Resolution PNG Exports**: Day and Dark Mode vector-rasterized graphics with true dark theme styling matching on-screen presentation.
+
 ---
 
 ## Scientific Attribution
