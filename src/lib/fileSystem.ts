@@ -58,14 +58,16 @@ export async function saveAs(
           const buffer = await content.arrayBuffer();
           await writeFile(filePath, new Uint8Array(buffer));
         }
+        console.debug(`[FileSystem] Successfully saved file to: ${filePath}`);
         return;
       } else {
         console.debug('[FileSystem] User cancelled native save dialog.');
         return;
       }
     } catch (err) {
-      console.error('[FileSystem] Tauri native save failed. This usually means the "dialog" or "fs" plugin is not enabled in your tauri.conf.json.', err);
-      // Fall through to browser methods
+      console.error('[FileSystem] Tauri native save failed:', err);
+      // In native desktop mode, do not fall through to browser download which forces files into ~/Downloads
+      throw new Error(`Failed to save file to chosen destination: ${err instanceof Error ? err.message : String(err)}`);
     }
   } else {
     console.debug('[FileSystem] Standard browser environment detected (non-Tauri).');

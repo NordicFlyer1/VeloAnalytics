@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Command, Mic, Copy, Check, Download, Laptop, Activity, Calendar, Zap } from 'lucide-react';
 import { AppleSiriSnapshot, generateAppleShortcutPayload } from './appleBridge';
+import { saveAs } from '../../lib/fileSystem';
 
 interface SiriModalProps {
   isOpen: boolean;
@@ -22,14 +23,15 @@ export const SiriModal: React.FC<SiriModalProps> = ({ isOpen, onClose, snapshot 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([shortcutData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'velo-siri-context.json';
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async () => {
+    try {
+      await saveAs(shortcutData, 'velo-siri-context.json', {
+        description: 'JSON File',
+        accept: { 'application/json': ['.json'] }
+      });
+    } catch (err) {
+      console.error('Failed to download Siri context:', err);
+    }
   };
 
   return (
