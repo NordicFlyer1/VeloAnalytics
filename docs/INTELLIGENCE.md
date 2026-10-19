@@ -59,7 +59,7 @@ When you send a message, the app bundle provides the AI with a dense, **structur
     *   **Sleep Sequence**: Multi-day history of sleep scores, quality, duration, resting heart rate, pulse oximetry (SpO₂), and respiration rate derived from Garmin Connect Sleep exports (supports 1-Day, 7-Day, 4-Week, and 1-Year formats with automatic format detection and non-destructive merging).
     *   **HRV Sequence**: Multi-day history of overnight HRV vs. your personal baseline bounds from Garmin Connect HRV Status exports (supports 1-Day, 7-Day, 4-Week, and custom range formats).
     *   **Velo-Readiness**: The complete breakdown of the experimental readiness score, including active penalties (e.g., Sleep Debt, ACWR spikes).
-4.  **Fitness Trends (PMC)**: Your current **CTL** (Fitness), **ATL** (Fatigue), and **TSB** (Form/Freshness), plus a 14-day projection.
+4.  **Fitness Trends (PMC)**: Your current **LTS** (Fitness), **STS** (Fatigue), and **SB** (Form/Freshness), plus a 14-day projection.
 5.  **Historical Library**: A searchable index of your 20 most recent activities (Name, Date, FileName, and BikeScore).
 
 ### Security Model:
