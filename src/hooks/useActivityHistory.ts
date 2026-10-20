@@ -328,8 +328,9 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       cp: settings.cp,
       powerCurve: target.powerCurve,
       fullSummary: target,
-      fullData: targetData,
-      originalFile: targetFile || undefined,
+      // Keep in-memory history state lightweight (IndexedDB holds fullData & originalFile)
+      fullData: undefined,
+      originalFile: undefined,
       originalFileName: targetFile?.name || undefined
     };
 
@@ -346,7 +347,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
 
     setHistory(prev => [...prev, newActivity]);
     return id;
-  }, [summary, data, originalFile, settings.cp]);
+  }, [summary, data, originalFile, settings.cp, settings.activeBikeId]);
 
   const loadFromHistory = useCallback(async (id: string) => {
     let activity = history.find(h => h.id === id);
@@ -379,10 +380,15 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       };
       const restoredData = fullData.map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
 
-      let cpWPrimeResult = null;
+      let cpWPrimeResult: { cp: number; wPrime: number } | null = null;
       let readySummary: ActivitySummary = restoredSummary;
 
-      if (restoredData.length > 0) {
+      // FAST PATH: If summary was already processed and has metrics/powerCurve,
+      // hydrate immediately without re-running heavy power curve & W' simulations.
+      const hasPrecomputedMetrics = Array.isArray(readySummary.powerCurve) && readySummary.powerCurve.length > 0;
+
+      if (!hasPrecomputedMetrics && restoredData.length > 0) {
+        // Fallback only if activity was saved with incomplete summary data
         const ctx: ProcessingContext = {
           cp: settings.cp,
           maxHR: settings.maxHR,
@@ -404,6 +410,8 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         const processed = await processActivityData(restoredData, restoredSummary.name, ctx, restoredSummary.laps);
         cpWPrimeResult = processed.cpWPrimeResult;
         readySummary = processed.summary;
+      } else if (activity.cp) {
+        cpWPrimeResult = { cp: activity.cp, wPrime: settings.manualWPrime || 20000 };
       }
 
       if (readySummary.aerobicDecoupling === undefined) {
@@ -414,7 +422,7 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       setSummary(readySummary);
       setData(restoredData);
       setCpWPrime(cpWPrimeResult);
-      setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : null);
+      setEstimatedCp(cpWPrimeResult?.cp ? Math.round(cpWPrimeResult.cp) : (activity.cp ? Math.round(activity.cp) : null));
       
       if (originalFileBlob) {
         if (originalFileBlob instanceof Blob && !(originalFileBlob instanceof File)) {

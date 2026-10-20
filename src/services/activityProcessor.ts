@@ -14,7 +14,7 @@ import {
   CRR_VALUES
 } from './metrics';
 import { CyclingDataPoint, ActivitySummary, Lap, ZoneDefinition, RidingPosition, SurfaceType } from '../types';
-import { circularMean } from '../lib/csvParser';
+import { circularMean, normalizeAngle } from '../lib/csvParser';
 
 export interface ProcessingContext {
   cp: number;
@@ -33,6 +33,40 @@ export interface ProcessingContext {
   workerCalculatePowerCurve: (points: CyclingDataPoint[]) => Promise<any>;
   workerEstimateCPWPrime: (points: CyclingDataPoint[]) => Promise<any>;
   workerCalculateWPrimeBalance: (points: CyclingDataPoint[], cp: number, wPrime: number) => Promise<number[]>;
+}
+
+/**
+ * Binary search lower bound: finds first index where point.timestamp >= targetTimeMs
+ */
+function findLowerBound(pts: CyclingDataPoint[], targetTimeMs: number): number {
+  let low = 0;
+  let high = pts.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (pts[mid].timestamp.getTime() < targetTimeMs) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+}
+
+/**
+ * Binary search upper bound: finds first index where point.timestamp > targetTimeMs
+ */
+function findUpperBound(pts: CyclingDataPoint[], targetTimeMs: number): number {
+  let low = 0;
+  let high = pts.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (pts[mid].timestamp.getTime() <= targetTimeMs) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
 }
 
 export async function processActivityData(
@@ -120,17 +154,32 @@ export async function processActivityData(
     }
   }
 
-  // Process Laps
+  // Process Laps with binary search slicing (O(laps * log N) instead of O(laps * N))
   let laps: Lap[] = [];
   if (lapData && lapData.length > 0) {
+    const isChronological = points.length > 1 && points[0].timestamp.getTime() <= points[points.length - 1].timestamp.getTime();
+
     laps = lapData.map((l, idx) => {
       const lapStartTime = l.start_time instanceof Date ? l.start_time : new Date(l.start_time);
       const lapEndTime = new Date(lapStartTime.getTime() + (l.total_elapsed_time || 0) * 1000);
-      
-      const lapPoints = points.filter(p => 
-        p.timestamp >= lapStartTime && 
-        p.timestamp <= lapEndTime
-      );
+      const lapStartTimeMs = lapStartTime.getTime();
+      const lapEndTimeMs = lapEndTime.getTime();
+
+      let lapPoints: CyclingDataPoint[] = [];
+      if (isChronological && !isNaN(lapStartTimeMs) && !isNaN(lapEndTimeMs)) {
+        const startIdx = findLowerBound(points, lapStartTimeMs);
+        const endIdx = findUpperBound(points, lapEndTimeMs);
+        if (startIdx < endIdx) {
+          lapPoints = points.slice(startIdx, endIdx);
+        }
+      } else {
+        // Fallback for non-chronological points
+        lapPoints = points.filter(p => 
+          p.timestamp >= lapStartTime && 
+          p.timestamp <= lapEndTime
+        );
+      }
+
       if (lapPoints.length > 0) {
         return calculateLapSummary(lapPoints, idx + 1);
       }
@@ -181,75 +230,165 @@ export async function processActivityData(
     });
   }
 
-  // Calculate Cycling Dynamics aggregates if present
+  // Calculate Cycling Dynamics aggregates using a single-pass accumulator (Zero temporary array allocations)
   let cyclingDynamics = undefined;
-  const pedalingPoints = points.filter(p => (p.cadence !== undefined && p.cadence > 0) || (p.power !== undefined && p.power > 0));
-  const activePoints = pedalingPoints.length > 0 ? pedalingPoints : points;
 
-  const pointsWithBalance = activePoints.filter(p => typeof p.leftRightBalance === 'number' && Number.isFinite(p.leftRightBalance) && p.leftRightBalance >= 0 && p.leftRightBalance <= 100);
-  const pointsWithPco = activePoints.filter(p => typeof p.leftPco === 'number' || typeof p.rightPco === 'number');
-  const pointsWithPowerPhase = activePoints.filter(p => typeof p.leftPowerPhaseStart === 'number' || typeof p.rightPowerPhaseStart === 'number');
-  const pointsWithTe = activePoints.filter(p => typeof p.leftTorqueEffectiveness === 'number' || typeof p.rightTorqueEffectiveness === 'number');
-  const pointsWithPosition = points.filter(p => p.riderPosition !== undefined);
+  let hasPedaling = false;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    if ((p.cadence !== undefined && p.cadence > 0) || (p.power !== undefined && p.power > 0)) {
+      hasPedaling = true;
+      break;
+    }
+  }
 
-  const hasDynamics = pointsWithBalance.length > 0 || pointsWithPco.length > 0 || pointsWithPowerPhase.length > 0 || pointsWithTe.length > 0 || pointsWithPosition.length > 0;
+  // Accumulator variables
+  let sumLeftBalance = 0;
+  let countBalance = 0;
+
+  let sumLeftPco = 0;
+  let countLeftPco = 0;
+  let sumRightPco = 0;
+  let countRightPco = 0;
+
+  let sumLeftTE = 0;
+  let countLeftTE = 0;
+  let sumRightTE = 0;
+  let countRightTE = 0;
+
+  let sumLeftPS = 0;
+  let countLeftPS = 0;
+  let sumRightPS = 0;
+  let countRightPS = 0;
+
+  // Power phase circular accumulators (start and end pairs)
+  type AnglePairAcc = { sinStart: number; cosStart: number; sinEnd: number; cosEnd: number; count: number };
+  const leftPPAcc: AnglePairAcc = { sinStart: 0, cosStart: 0, sinEnd: 0, cosEnd: 0, count: 0 };
+  const leftPPPAcc: AnglePairAcc = { sinStart: 0, cosStart: 0, sinEnd: 0, cosEnd: 0, count: 0 };
+  const rightPPAcc: AnglePairAcc = { sinStart: 0, cosStart: 0, sinEnd: 0, cosEnd: 0, count: 0 };
+  const rightPPPAcc: AnglePairAcc = { sinStart: 0, cosStart: 0, sinEnd: 0, cosEnd: 0, count: 0 };
+
+  const accumulateAnglePair = (
+    s: number | undefined, 
+    e: number | undefined, 
+    acc: AnglePairAcc
+  ) => {
+    if (typeof s === 'number' && Number.isFinite(s) && typeof e === 'number' && Number.isFinite(e)) {
+      const radS = (s * Math.PI) / 180.0;
+      const radE = (e * Math.PI) / 180.0;
+      acc.sinStart += Math.sin(radS);
+      acc.cosStart += Math.cos(radS);
+      acc.sinEnd += Math.sin(radE);
+      acc.cosEnd += Math.cos(radE);
+      acc.count++;
+    }
+  };
+
+  // Seated vs standing
+  let seatedCount = 0;
+  let standingCount = 0;
+  let seatedPowerSum = 0;
+  let standingPowerSum = 0;
+  let hasPosition = false;
+
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+
+    // Seated vs standing applies to all points
+    if (p.riderPosition !== undefined) {
+      hasPosition = true;
+      if (p.riderPosition === 'seated') {
+        seatedCount++;
+        seatedPowerSum += (p.power || 0);
+      } else if (p.riderPosition === 'standing') {
+        standingCount++;
+        standingPowerSum += (p.power || 0);
+      }
+    }
+
+    // Pedaling filter: only accumulate pedal dynamics during active pedaling (if any pedaling exists)
+    const isActive = !hasPedaling || (p.cadence !== undefined && p.cadence > 0) || (p.power !== undefined && p.power > 0);
+    if (!isActive) continue;
+
+    if (typeof p.leftRightBalance === 'number' && Number.isFinite(p.leftRightBalance) && p.leftRightBalance >= 0 && p.leftRightBalance <= 100) {
+      sumLeftBalance += p.leftRightBalance;
+      countBalance++;
+    }
+
+    if (typeof p.leftPco === 'number' && Number.isFinite(p.leftPco)) {
+      sumLeftPco += p.leftPco;
+      countLeftPco++;
+    }
+    if (typeof p.rightPco === 'number' && Number.isFinite(p.rightPco)) {
+      sumRightPco += p.rightPco;
+      countRightPco++;
+    }
+
+    accumulateAnglePair(p.leftPowerPhaseStart, p.leftPowerPhaseEnd, leftPPAcc);
+    accumulateAnglePair(p.leftPowerPhasePeakStart, p.leftPowerPhasePeakEnd, leftPPPAcc);
+    accumulateAnglePair(p.rightPowerPhaseStart, p.rightPowerPhaseEnd, rightPPAcc);
+    accumulateAnglePair(p.rightPowerPhasePeakStart, p.rightPowerPhasePeakEnd, rightPPPAcc);
+
+    if (typeof p.leftTorqueEffectiveness === 'number' && Number.isFinite(p.leftTorqueEffectiveness)) {
+      sumLeftTE += p.leftTorqueEffectiveness;
+      countLeftTE++;
+    }
+    if (typeof p.rightTorqueEffectiveness === 'number' && Number.isFinite(p.rightTorqueEffectiveness)) {
+      sumRightTE += p.rightTorqueEffectiveness;
+      countRightTE++;
+    }
+
+    if (typeof p.leftPedalSmoothness === 'number' && Number.isFinite(p.leftPedalSmoothness)) {
+      sumLeftPS += p.leftPedalSmoothness;
+      countLeftPS++;
+    }
+    if (typeof p.rightPedalSmoothness === 'number' && Number.isFinite(p.rightPedalSmoothness)) {
+      sumRightPS += p.rightPedalSmoothness;
+      countRightPS++;
+    }
+  }
+
+  const hasPco = countLeftPco > 0 || countRightPco > 0;
+  const hasPowerPhase = leftPPAcc.count > 0 || rightPPAcc.count > 0;
+  const hasDynamics = countBalance > 0 || hasPco || hasPowerPhase || countLeftTE > 0 || countRightTE > 0 || hasPosition;
 
   if (hasDynamics) {
-    const avgLeftBal = pointsWithBalance.length > 0 
-      ? pointsWithBalance.reduce((acc, p) => acc + (p.leftRightBalance || 50), 0) / pointsWithBalance.length 
-      : undefined;
+    const avgLeftBal = countBalance > 0 ? sumLeftBalance / countBalance : undefined;
     const avgRightBal = avgLeftBal !== undefined ? 100 - avgLeftBal : undefined;
 
-    const leftPcos = activePoints.map(p => p.leftPco).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const rightPcos = activePoints.map(p => p.rightPco).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const avgLeftPco = leftPcos.length > 0 ? leftPcos.reduce((a, b) => a + b, 0) / leftPcos.length : undefined;
-    const avgRightPco = rightPcos.length > 0 ? rightPcos.reduce((a, b) => a + b, 0) / rightPcos.length : undefined;
+    const avgLeftPco = countLeftPco > 0 ? sumLeftPco / countLeftPco : undefined;
+    const avgRightPco = countRightPco > 0 ? sumRightPco / countRightPco : undefined;
 
-    // Helper to calculate circular mean for pedal angles (vector sum across TDC)
-    const avgAngles = (starts: (number | undefined)[], ends: (number | undefined)[]) => {
-      const validPairs = starts.map((s, idx) => ({ s, e: ends[idx] })).filter((pair): pair is { s: number; e: number } => 
-        typeof pair.s === 'number' && Number.isFinite(pair.s) && typeof pair.e === 'number' && Number.isFinite(pair.e)
-      );
-      if (validPairs.length === 0) return { start: 0, end: 0 };
-      const avgS = circularMean(validPairs.map(p => p.s));
-      const avgE = circularMean(validPairs.map(p => p.e));
+    const finalizePair = (acc: AnglePairAcc) => {
+      if (acc.count === 0) return { start: 0, end: 0 };
+      const avgS = (acc.sinStart === 0 && acc.cosStart === 0) ? 0 : Math.round(normalizeAngle((Math.atan2(acc.sinStart, acc.cosStart) * 180.0) / Math.PI) * 10) / 10;
+      const avgE = (acc.sinEnd === 0 && acc.cosEnd === 0) ? 0 : Math.round(normalizeAngle((Math.atan2(acc.sinEnd, acc.cosEnd) * 180.0) / Math.PI) * 10) / 10;
       return { start: Math.round(avgS * 10) / 10, end: Math.round(avgE * 10) / 10 };
     };
 
-    const leftPP = avgAngles(activePoints.map(p => p.leftPowerPhaseStart), activePoints.map(p => p.leftPowerPhaseEnd));
-    const leftPPP = avgAngles(activePoints.map(p => p.leftPowerPhasePeakStart), activePoints.map(p => p.leftPowerPhasePeakEnd));
-    const rightPP = avgAngles(activePoints.map(p => p.rightPowerPhaseStart), activePoints.map(p => p.rightPowerPhaseEnd));
-    const rightPPP = avgAngles(activePoints.map(p => p.rightPowerPhasePeakStart), activePoints.map(p => p.rightPowerPhasePeakEnd));
-
-    const leftTE = activePoints.map(p => p.leftTorqueEffectiveness).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const rightTE = activePoints.map(p => p.rightTorqueEffectiveness).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const leftPS = activePoints.map(p => p.leftPedalSmoothness).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const rightPS = activePoints.map(p => p.rightPedalSmoothness).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-
-    // Seated vs Standing breakdown
-    const seatedPts = points.filter(p => p.riderPosition === 'seated');
-    const standingPts = points.filter(p => p.riderPosition === 'standing');
-    const seatedPower = seatedPts.map(p => p.power || 0);
-    const standingPower = standingPts.map(p => p.power || 0);
+    const leftPP = finalizePair(leftPPAcc);
+    const leftPPP = finalizePair(leftPPPAcc);
+    const rightPP = finalizePair(rightPPAcc);
+    const rightPPP = finalizePair(rightPPPAcc);
 
     cyclingDynamics = {
       hasDynamics: true,
-      hasPco: pointsWithPco.length > 0,
-      hasPowerPhase: pointsWithPowerPhase.length > 0,
+      hasPco,
+      hasPowerPhase,
       avgLeftBalance: avgLeftBal !== undefined ? Math.round(avgLeftBal * 10) / 10 : undefined,
       avgRightBalance: avgRightBal !== undefined ? Math.round(avgRightBal * 10) / 10 : undefined,
       avgLeftPco: avgLeftPco !== undefined ? Math.round(avgLeftPco * 10) / 10 : undefined,
       avgRightPco: avgRightPco !== undefined ? Math.round(avgRightPco * 10) / 10 : undefined,
-      avgLeftPowerPhase: pointsWithPowerPhase.length > 0 ? { start: leftPP.start, end: leftPP.end, peakStart: leftPPP.start, peakEnd: leftPPP.end } : undefined,
-      avgRightPowerPhase: pointsWithPowerPhase.length > 0 ? { start: rightPP.start, end: rightPP.end, peakStart: rightPPP.start, peakEnd: rightPPP.end } : undefined,
-      avgLeftTorqueEffectiveness: leftTE.length > 0 ? Math.round(leftTE.reduce((a, b) => a + b, 0) / leftTE.length) : undefined,
-      avgRightTorqueEffectiveness: rightTE.length > 0 ? Math.round(rightTE.reduce((a, b) => a + b, 0) / rightTE.length) : undefined,
-      avgLeftPedalSmoothness: leftPS.length > 0 ? Math.round(leftPS.reduce((a, b) => a + b, 0) / leftPS.length) : undefined,
-      avgRightPedalSmoothness: rightPS.length > 0 ? Math.round(rightPS.reduce((a, b) => a + b, 0) / rightPS.length) : undefined,
-      seatedSeconds: seatedPts.length > 0 ? seatedPts.length : undefined,
-      standingSeconds: standingPts.length > 0 ? standingPts.length : undefined,
-      seatedAvgPower: seatedPower.length > 0 ? Math.round(seatedPower.reduce((a, b) => a + b, 0) / seatedPower.length) : undefined,
-      standingAvgPower: standingPower.length > 0 ? Math.round(standingPower.reduce((a, b) => a + b, 0) / standingPower.length) : undefined,
+      avgLeftPowerPhase: hasPowerPhase ? { start: leftPP.start, end: leftPP.end, peakStart: leftPPP.start, peakEnd: leftPPP.end } : undefined,
+      avgRightPowerPhase: hasPowerPhase ? { start: rightPP.start, end: rightPP.end, peakStart: rightPPP.start, peakEnd: rightPPP.end } : undefined,
+      avgLeftTorqueEffectiveness: countLeftTE > 0 ? Math.round(sumLeftTE / countLeftTE) : undefined,
+      avgRightTorqueEffectiveness: countRightTE > 0 ? Math.round(sumRightTE / countRightTE) : undefined,
+      avgLeftPedalSmoothness: countLeftPS > 0 ? Math.round(sumLeftPS / countLeftPS) : undefined,
+      avgRightPedalSmoothness: countRightPS > 0 ? Math.round(sumRightPS / countRightPS) : undefined,
+      seatedSeconds: seatedCount > 0 ? seatedCount : undefined,
+      standingSeconds: standingCount > 0 ? standingCount : undefined,
+      seatedAvgPower: seatedCount > 0 ? Math.round(seatedPowerSum / seatedCount) : undefined,
+      standingAvgPower: standingCount > 0 ? Math.round(standingPowerSum / standingCount) : undefined,
     };
   }
 
