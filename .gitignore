@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# AI Studio internal artifacts and plans
+.aistudio/
+
+# Local safety snapshots & rollbacks (preserves them locally on disk)
+.backup-*/
+

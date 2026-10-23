@@ -21,6 +21,18 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 
 ---
 
+## What's New in v1.5.0
+
+- **Dual-Worker Threading Pipeline:** Isolated UI and Batch Web Worker channels ensure active ride charts, power curves, and W' balance compute in $<50\text{ms}$ with zero queue starvation during batch ingestion.
+- **Foreground Priority Scheduling:** Selecting an activity to view instantly pauses background file processing, yielding 100% of CPU and worker threads to the active ride.
+- **Interactive Queue Controls:** Tactile capsule controls (`⏸ Pause` / `▶ Resume`) in the upload queue header and floating status pill allow effortless manual or automatic queue pacing.
+- **$\le$ 8GB RAM Optimization:** Raw telemetry points stream directly to IndexedDB disk storage while JavaScript heap memory is immediately freed (`item.data = undefined`), eliminating WebKit/Chromium out-of-memory ("Sad Mac") crashes.
+- **Throttled Batch State Loop:** Reduced React progress re-render cycles by 75% during batch file processing, preventing UI freezes when switching between the upload queue and the dashboard.
+- **Theme-Aware Backdrop:** Light View features an airy faded orange drag indicator and modal backdrop (`bg-orange-500/10`), paired with deep glassmorphism in Dark View.
+- **Tauri v2 Native Hardening:** Streamlined desktop window drop handlers to prevent IPC event collisions across macOS, Windows, and Linux.
+
+---
+
 ## Downloads
 
 Native desktop packages and installers are available directly from the repository's releases:

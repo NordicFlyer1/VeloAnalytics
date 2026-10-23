@@ -30,14 +30,23 @@ export const useDataRecalculator = (
     manualWPrime
   } = settings;
 
+  const getPointTimeMs = (p?: CyclingDataPoint): number => {
+    if (!p || !p.timestamp) return 0;
+    return p.timestamp instanceof Date && !isNaN(p.timestamp.getTime()) 
+      ? p.timestamp.getTime() 
+      : new Date(p.timestamp).getTime() || 0;
+  };
+
   // Recalculate summary metrics when settings change
   useEffect(() => {
     if (data.length === 0 || !summary) return;
 
     const powers = data.map(p => p.power || 0);
     const heartRates = data.map(p => p.heartRate || 0).filter(h => h > 0);
-    const durationCount = (data[data.length - 1].timestamp.getTime() - data[0].timestamp.getTime()) / 1000;
-    const safeDuration = Number.isFinite(durationCount) ? durationCount : 0;
+    const startTimeMs = getPointTimeMs(data[0]);
+    const endTimeMs = getPointTimeMs(data[data.length - 1]);
+    const durationCount = (endTimeMs - startTimeMs) / 1000;
+    const safeDuration = Number.isFinite(durationCount) && durationCount >= 0 ? durationCount : 0;
     
     const xPower = calculateXPower(data);
     const safeCP = (cp && cp > 0) ? cp : 250;
@@ -76,7 +85,7 @@ export const useDataRecalculator = (
       try {
         const wBal = await workerCalculateWPrimeBalance(data, targetCP, targetWPrime);
         setData(prev => {
-          if (prev.length !== data.length || (prev[0]?.timestamp.getTime() !== data[0]?.timestamp.getTime())) {
+          if (prev.length !== data.length || (getPointTimeMs(prev[0]) !== getPointTimeMs(data[0]))) {
             return prev;
           }
           return prev.map((p, i) => ({

@@ -296,13 +296,48 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
   }, [history, bikeScoreSummaryView]);
 
   // Handlers
-  const addToHistory = useCallback(async (activitySummary?: ActivitySummary, activityData?: CyclingDataPoint[], file?: File) => {
+  const pendingActivitiesRef = useRef<HistoricalActivity[]>([]);
+  const batchDebounceTimerRef = useRef<any>(null);
+
+  const flushHistoryBuffer = useCallback(() => {
+    if (batchDebounceTimerRef.current) {
+      clearTimeout(batchDebounceTimerRef.current);
+      batchDebounceTimerRef.current = null;
+    }
+    if (pendingActivitiesRef.current.length > 0) {
+      const itemsToCommit = [...pendingActivitiesRef.current];
+      pendingActivitiesRef.current = [];
+      setHistory(prev => {
+        // Prevent duplicate IDs
+        const existingIds = new Set(prev.map(p => p.id));
+        const uniqueNew = itemsToCommit.filter(item => !existingIds.has(item.id));
+        return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (batchDebounceTimerRef.current) {
+        clearTimeout(batchDebounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const addToHistory = useCallback(async (
+    activitySummary?: ActivitySummary, 
+    activityData?: CyclingDataPoint[], 
+    file?: File,
+    options?: { debounceCommit?: boolean }
+  ) => {
     const target = activitySummary || summary;
     const targetData = activityData || data;
     const targetFile = file || originalFile;
     
-    if (!target || !target.startTime || isNaN(target.startTime.getTime())) return null;
-    const dateStr = formatLocalDate(target.startTime);
+    if (!target || !target.startTime) return null;
+    const startDate = target.startTime instanceof Date ? target.startTime : new Date(target.startTime);
+    if (isNaN(startDate.getTime())) return null;
+    const dateStr = formatLocalDate(startDate);
     const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     const newActivity: HistoricalActivity = {
@@ -345,32 +380,139 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       console.error('Failed to save activity data to IndexedDB:', e);
     }
 
-    setHistory(prev => [...prev, newActivity]);
+    if (options?.debounceCommit) {
+      // Buffer item and debounce commit to avoid 50x recalculation storms
+      pendingActivitiesRef.current.push(newActivity);
+      if (batchDebounceTimerRef.current) {
+        clearTimeout(batchDebounceTimerRef.current);
+      }
+      batchDebounceTimerRef.current = setTimeout(() => {
+        flushHistoryBuffer();
+      }, 2500);
+    } else {
+      setHistory(prev => [...prev, newActivity]);
+    }
+
     return id;
-  }, [summary, data, originalFile, settings.cp, settings.activeBikeId]);
+  }, [summary, data, originalFile, settings.cp, settings.activeBikeId, flushHistoryBuffer]);
+
+  const addBatchToHistory = useCallback(async (
+    items: Array<{ summary: ActivitySummary; data: CyclingDataPoint[]; file?: File }>
+  ): Promise<string[]> => {
+    if (!items || items.length === 0) return [];
+    const newActivities: HistoricalActivity[] = [];
+    const ids: string[] = [];
+
+    for (const item of items) {
+      const target = item.summary;
+      const targetData = item.data;
+      const targetFile = item.file;
+      if (!target || !target.startTime) continue;
+      const startDate = target.startTime instanceof Date ? target.startTime : new Date(target.startTime);
+      if (isNaN(startDate.getTime())) continue;
+
+      const dateStr = formatLocalDate(startDate);
+      const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      ids.push(id);
+
+      const newActivity: HistoricalActivity = {
+        id,
+        date: dateStr,
+        name: target.name,
+        bikeId: settings.activeBikeId,
+        bikeScore: target.bikeScore || 0,
+        duration: target.duration,
+        distance: target.distance,
+        avgPower: target.avgPower,
+        maxPower: target.maxPower,
+        xPower: target.xPower,
+        relativeIntensity: target.relativeIntensity,
+        avgHeartRate: target.avgHeartRate,
+        maxHeartRate: target.maxHeartRate,
+        avgCadence: target.avgCadence,
+        maxCadence: target.maxCadence,
+        avgSpeed: target.avgSpeed,
+        totalAscent: target.totalAscent,
+        work: target.work,
+        aerobicDecoupling: target.aerobicDecoupling,
+        cp: settings.cp,
+        powerCurve: target.powerCurve,
+        fullSummary: target,
+        fullData: undefined,
+        originalFile: undefined,
+        originalFileName: targetFile?.name || undefined
+      };
+
+      try {
+        await saveActivityData(id, { 
+          fullSummary: target, 
+          fullData: targetData,
+          originalFile: targetFile || undefined,
+          originalFileName: targetFile?.name || undefined
+        });
+      } catch (e) {
+        console.error('Failed to save batch activity data to IndexedDB:', e);
+      }
+
+      newActivities.push(newActivity);
+    }
+
+    if (newActivities.length > 0) {
+      setHistory(prev => [...prev, ...newActivities]);
+    }
+    return ids;
+  }, [settings.cp, settings.activeBikeId]);
 
   const loadFromHistory = useCallback(async (id: string) => {
     let activity = history.find(h => h.id === id);
-    if (!activity) return;
+    let stored: any = null;
 
-    let fullSummary = activity.fullSummary;
-    let fullData = activity.fullData;
-    let originalFileBlob = activity.originalFile;
-    let originalFileName = activity.originalFileName;
-
-    if (!fullSummary || !fullData || !originalFileBlob) {
-      try {
-        const stored = await getActivityData(id);
-        if (stored) {
-          fullSummary = stored.fullSummary;
-          fullData = stored.fullData;
-          originalFileBlob = stored.originalFile;
-          originalFileName = stored.originalFileName;
-        }
-      } catch (e) {
-        console.error('Failed to fetch activity data from IndexedDB:', e);
-      }
+    try {
+      stored = await getActivityData(id);
+    } catch (e) {
+      console.error('Failed to fetch activity data from IndexedDB:', e);
     }
+
+    // Direct hydration even if item was just uploaded and in pending buffer
+    if (!activity && stored?.fullSummary) {
+      const summaryDate = stored.fullSummary.startTime instanceof Date 
+        ? stored.fullSummary.startTime 
+        : new Date(stored.fullSummary.startTime);
+      activity = {
+        id,
+        date: formatLocalDate(summaryDate),
+        name: stored.fullSummary.name,
+        bikeId: settings.activeBikeId,
+        bikeScore: stored.fullSummary.bikeScore || 0,
+        duration: stored.fullSummary.duration,
+        distance: stored.fullSummary.distance,
+        avgPower: stored.fullSummary.avgPower,
+        maxPower: stored.fullSummary.maxPower,
+        xPower: stored.fullSummary.xPower,
+        relativeIntensity: stored.fullSummary.relativeIntensity,
+        avgHeartRate: stored.fullSummary.avgHeartRate,
+        maxHeartRate: stored.fullSummary.maxHeartRate,
+        avgCadence: stored.fullSummary.avgCadence,
+        maxCadence: stored.fullSummary.maxCadence,
+        avgSpeed: stored.fullSummary.avgSpeed,
+        totalAscent: stored.fullSummary.totalAscent,
+        work: stored.fullSummary.work,
+        aerobicDecoupling: stored.fullSummary.aerobicDecoupling,
+        cp: settings.cp,
+        powerCurve: stored.fullSummary.powerCurve,
+        fullSummary: stored.fullSummary,
+        fullData: undefined,
+        originalFile: undefined,
+        originalFileName: stored.originalFileName
+      };
+    }
+
+    if (!activity && !stored) return false;
+
+    let fullSummary = activity?.fullSummary || stored?.fullSummary;
+    let fullData = activity?.fullData || stored?.fullData;
+    let originalFileBlob = activity?.originalFile || stored?.originalFile;
+    let originalFileName = activity?.originalFileName || stored?.originalFileName;
 
     if (fullSummary && fullData) {
       const restoredSummary: ActivitySummary = {
@@ -509,6 +651,8 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     rolling90DayBestCurve,
     
     addToHistory,
+    addBatchToHistory,
+    flushHistoryBuffer,
     loadFromHistory,
     removeFromHistory,
     removeMultipleFromHistory,

@@ -134,9 +134,15 @@ export function calculateWPrimeBalance(data: CyclingDataPoint[], cp: number, wPr
     // Calculate time difference
     let dt = 1;
     if (data[i].timestamp && data[i-1].timestamp) {
-      dt = (data[i].timestamp.getTime() - data[i-1].timestamp.getTime()) / 1000;
+      const t1 = data[i].timestamp instanceof Date && !isNaN(data[i].timestamp.getTime())
+        ? data[i].timestamp.getTime()
+        : new Date(data[i].timestamp).getTime() || 0;
+      const t0 = data[i-1].timestamp instanceof Date && !isNaN(data[i-1].timestamp.getTime())
+        ? data[i-1].timestamp.getTime()
+        : new Date(data[i-1].timestamp).getTime() || 0;
+      dt = (t1 - t0) / 1000;
     }
-    if (dt <= 0) dt = 1;
+    if (dt <= 0 || !Number.isFinite(dt)) dt = 1;
 
     // Accumulate total work in kJ
     cumulativeWorkKJ += (p * dt) / 1000;
@@ -258,7 +264,13 @@ export function calculateLapSummary(points: CyclingDataPoint[], lapId: number): 
   const avgPower = powers.length > 0 ? powers.reduce((a, b) => a + b, 0) / powers.length : 0;
   const maxPower = powers.length > 0 ? Math.max(...powers) : 0;
   const xPower = calculateXPower(points);
-  const duration = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000;
+  const tEnd = points[points.length - 1].timestamp instanceof Date && !isNaN(points[points.length - 1].timestamp.getTime())
+    ? points[points.length - 1].timestamp.getTime()
+    : new Date(points[points.length - 1].timestamp).getTime() || 0;
+  const tStart = points[0].timestamp instanceof Date && !isNaN(points[0].timestamp.getTime())
+    ? points[0].timestamp.getTime()
+    : new Date(points[0].timestamp).getTime() || 0;
+  const duration = Math.max(0, (tEnd - tStart) / 1000);
   const distance = (points[points.length - 1].distance || 0) - (points[0].distance || 0);
   
   let totalAscent = 0;

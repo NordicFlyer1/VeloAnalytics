@@ -43,7 +43,10 @@ function findLowerBound(pts: CyclingDataPoint[], targetTimeMs: number): number {
   let high = pts.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (pts[mid].timestamp.getTime() < targetTimeMs) {
+    const ptTime = pts[mid].timestamp instanceof Date && !isNaN(pts[mid].timestamp.getTime())
+      ? pts[mid].timestamp.getTime()
+      : new Date(pts[mid].timestamp).getTime() || 0;
+    if (ptTime < targetTimeMs) {
       low = mid + 1;
     } else {
       high = mid;
@@ -60,7 +63,10 @@ function findUpperBound(pts: CyclingDataPoint[], targetTimeMs: number): number {
   let high = pts.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (pts[mid].timestamp.getTime() <= targetTimeMs) {
+    const ptTime = pts[mid].timestamp instanceof Date && !isNaN(pts[mid].timestamp.getTime())
+      ? pts[mid].timestamp.getTime()
+      : new Date(pts[mid].timestamp).getTime() || 0;
+    if (ptTime <= targetTimeMs) {
       low = mid + 1;
     } else {
       high = mid;
@@ -76,6 +82,13 @@ export async function processActivityData(
   lapData?: any[]
 ): Promise<{ summary: ActivitySummary; cpWPrimeResult: any }> {
   if (points.length === 0) throw new Error("No data points");
+
+  // Defensively hydrate and validate all timestamps
+  for (let i = 0; i < points.length; i++) {
+    if (!(points[i].timestamp instanceof Date) || isNaN(points[i].timestamp.getTime())) {
+      points[i].timestamp = new Date(points[i].timestamp);
+    }
+  }
 
   // Calculate slope for each point
   for (let i = 1; i < points.length; i++) {

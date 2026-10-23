@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutList, Loader2, RefreshCw } from 'lucide-react';
+import { LayoutList, Loader2, RefreshCw, Upload, CheckCircle2, Play, Pause } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -88,6 +88,8 @@ export default function App() {
     allTimeBestCurve,
     rolling90DayBestCurve,
     addToHistory,
+    addBatchToHistory,
+    flushHistoryBuffer,
     loadFromHistory,
     removeFromHistory: baseRemoveFromHistory,
     removeMultipleFromHistory: baseRemoveMultipleFromHistory,
@@ -162,6 +164,7 @@ export default function App() {
   const googleMapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const lastActivePointUpdate = useRef<number>(0);
+  const dragCounterRef = useRef<number>(0);
 
   // Custom Hooks for logic
   const smoothedData = useDataSmoothing(data, smoothingWindow);
@@ -177,13 +180,149 @@ export default function App() {
     handleFileUpload,
     uploadQueue,
     setUploadQueue,
-    isProcessingBatch
+    isProcessingBatch,
+    isBatchPaused,
+    pauseBatch,
+    resumeBatch,
+    togglePauseResume,
+    setUserLockedView
   } = useFileUploader(
     settings, setSummary, setData, setCpWPrime, setEstimatedCp,
     setCurrentActivityId, setOriginalFile, setIsEditingName, setEditedName,
     setShowUploadView, addToHistory, workers.calculatePowerCurve,
-    workers.estimateCPWPrime, workers.calculateWPrimeBalance
+    workers.estimateCPWPrime, workers.calculateWPrimeBalance,
+    addBatchToHistory,
+    {
+      batchCalculatePowerCurve: workers.batchCalculatePowerCurve,
+      batchEstimateCPWPrime: workers.batchEstimateCPWPrime,
+      batchCalculateWPrimeBalance: workers.batchCalculateWPrimeBalance
+    },
+    flushHistoryBuffer,
+    loadFromHistory
   );
+
+  const totalQueueCount = uploadQueue.length;
+  const completedQueueCount = uploadQueue.filter(q => q.status === 'completed').length;
+  const errorQueueCount = uploadQueue.filter(q => q.status === 'error').length;
+  const isQueueActive = isProcessingBatch || uploadQueue.some(q => q.status === 'processing' || q.status === 'pending');
+
+  // Global window drag-and-drop listener: prevents browser navigate-away crash and enables window-wide drop
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'copy';
+      }
+    };
+
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+        dragCounterRef.current++;
+        setIsDragging(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current--;
+      if (dragCounterRef.current <= 0) {
+        dragCounterRef.current = 0;
+        setIsDragging(false);
+      }
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const valid = Array.from(e.dataTransfer.files).some(f => {
+          const n = f.name.toLowerCase();
+          return n.endsWith('.fit') || n.endsWith('.csv');
+        });
+        if (valid) {
+          setShowUploadView(true);
+          handleFileUpload(e.dataTransfer.files);
+        }
+      }
+    };
+
+    window.addEventListener('dragover', handleDragOver, false);
+    window.addEventListener('dragenter', handleDragEnter, false);
+    window.addEventListener('dragleave', handleDragLeave, false);
+    window.addEventListener('drop', handleDrop, false);
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
+    };
+  }, [handleFileUpload, setShowUploadView]);
+
+  // Native Tauri v2 Window Drop Listener (app-wide)
+  useEffect(() => {
+    let isMounted = true;
+    let unlistenFn: (() => void) | undefined;
+
+    const setupTauriDropListener = async () => {
+      if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+        try {
+          const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+          const { readFile } = await import('@tauri-apps/plugin-fs');
+
+          const unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
+            if (event.payload.type === 'enter' || event.payload.type === 'over') {
+              setIsDragging(true);
+            } else if (event.payload.type === 'leave') {
+              setIsDragging(false);
+            } else if (event.payload.type === 'drop') {
+              setIsDragging(false);
+              const paths = event.payload.paths;
+              if (!paths || paths.length === 0) return;
+
+              const droppedFiles: File[] = [];
+              for (const filePath of paths) {
+                const fileName = filePath.split(/[/\\]/).pop() || 'activity.fit';
+                const lowerName = fileName.toLowerCase();
+                if (!lowerName.endsWith('.fit') && !lowerName.endsWith('.csv')) continue;
+
+                try {
+                  const bytes = await readFile(filePath);
+                  const mime = lowerName.endsWith('.csv') ? 'text/csv' : 'application/octet-stream';
+                  droppedFiles.push(new File([bytes], fileName, { type: mime }));
+                } catch (readErr) {
+                  console.error('Failed to read dropped file in Tauri:', filePath, readErr);
+                }
+              }
+
+              if (droppedFiles.length > 0) {
+                setShowUploadView(true);
+                handleFileUpload(droppedFiles);
+              }
+            }
+          });
+
+          if (!isMounted) {
+            unlisten();
+          } else {
+            unlistenFn = unlisten;
+          }
+        } catch (err) {
+          console.warn('Tauri native drag-drop listener initialization skipped:', err);
+        }
+      }
+    };
+
+    setupTauriDropListener();
+
+    return () => {
+      isMounted = false;
+      if (unlistenFn) unlistenFn();
+    };
+  }, [handleFileUpload, setShowUploadView]);
 
   useDataRecalculator(data, setData, summary, setSummary, settings, cpWPrime, workers.calculateWPrimeBalance);
 
@@ -209,15 +348,17 @@ export default function App() {
     }
   };
 
-  const handleLoadFromHistory = useCallback((id: string) => {
-    loadFromHistory(id);
+  const handleLoadFromHistory = useCallback(async (id: string) => {
+    pauseBatch(0); // Indefinite pause: prioritize active UI rendering over background tasks
+    setUserLockedView(true);
+    await loadFromHistory(id);
     setIsHistorySidebarOpen(false);
     setTimeout(() => {
       const overviewElement = overviewRef.current;
       if (overviewElement) overviewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       else window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 150);
-  }, [loadFromHistory]);
+  }, [loadFromHistory, pauseBatch, setUserLockedView]);
 
   const throttledSetActivePoint = useCallback((index: number | null) => {
     const now = Date.now();
@@ -643,13 +784,17 @@ export default function App() {
       });
     } else if (lapMode.endsWith('min')) {
       const time = parseInt(lapMode) * 60;
-      let lastTime = data[0].timestamp.getTime();
+      const getMs = (p?: CyclingDataPoint) => p?.timestamp instanceof Date && !isNaN(p.timestamp.getTime()) 
+        ? p.timestamp.getTime() 
+        : new Date(p?.timestamp || 0).getTime() || 0;
+      let lastTime = getMs(data[0]);
       data.forEach((p, idx) => {
         currentLapPoints.push(p);
-        if ((p.timestamp.getTime() - lastTime) / 1000 >= time || idx === data.length - 1) {
+        const pTime = getMs(p);
+        if ((pTime - lastTime) / 1000 >= time || idx === data.length - 1) {
           laps.push(calculateLapSummary(currentLapPoints, lapId++));
           currentLapPoints = [];
-          lastTime = p.timestamp.getTime();
+          lastTime = pTime;
         }
       });
     }
@@ -685,6 +830,29 @@ export default function App() {
 
   return (
     <div className={cn("min-h-screen transition-colors duration-300", theme === 'dark' ? "dark bg-[#0a0a0a] text-white" : "bg-[#f8f9fa] text-[#1a1a1a]")}>
+      {/* Classic Faded Orange Drop Indicator */}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.99 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-3 sm:inset-5 z-[100] pointer-events-none border-2 border-dashed border-orange-500/80 bg-orange-500/5 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(249,115,22,0.15)]"
+          >
+            <div className="bg-app-card/90 backdrop-blur-md border border-orange-500/30 px-6 py-4 rounded-2xl flex items-center gap-3 shadow-xl shadow-orange-500/10">
+              <div className="w-9 h-9 rounded-full bg-orange-500 flex items-center justify-center text-black shadow-md shadow-orange-500/30">
+                <Upload className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-app-text tracking-tight">Drop files to import</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400">Garmin .FIT &amp; .CSV • Batch processing</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Header 
         estimatedCp={estimatedCp}
         cp={cp}
@@ -727,9 +895,19 @@ export default function App() {
           setIsPointLocked={setIsPointLocked}
           history={history}
           summary={summary}
+          loadFromHistory={handleLoadFromHistory}
+          onUserSelectRide={() => {
+            setUserLockedView(true);
+            pauseBatch(0);
+          }}
+          pauseBatch={pauseBatch}
+          resumeBatch={resumeBatch}
+          togglePauseResume={togglePauseResume}
+          isBatchPaused={isBatchPaused}
+          isProcessingBatch={isProcessingBatch}
         />
 
-        {(!showUploadView && (summary || history.length > 0)) && (
+        {(summary || history.length > 0) && (
           <div className="space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <EmptyHistoryView 
               summary={summary}
@@ -971,6 +1149,73 @@ export default function App() {
         type={exportStatus.type} 
         progress={exportStatus.progress} 
       />
+
+      {/* Floating Background Processing Notification Pill */}
+      <AnimatePresence>
+        {(isQueueActive || (totalQueueCount > 0 && !showUploadView && Boolean(summary || history.length > 0))) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-3 bg-app-card/95 backdrop-blur-md border border-app-border p-2 pr-4 rounded-full shadow-2xl hover:border-orange-500/40 transition-all cursor-pointer group"
+            onClick={() => setShowUploadView(true)}
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center border shrink-0",
+              isBatchPaused
+                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                : isQueueActive 
+                  ? "bg-orange-500/10 text-orange-500 border-orange-500/20" 
+                  : "bg-green-500/10 text-green-500 border-green-500/20"
+            )}>
+              {isBatchPaused ? (
+                <Pause className="w-3.5 h-3.5 text-amber-500" />
+              ) : isQueueActive ? (
+                <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">
+                {isBatchPaused ? 'Paused for Active View' : isQueueActive ? 'Processing in Background' : 'Batch Complete'}
+              </span>
+              <span className="text-xs font-mono font-bold text-app-text">
+                {completedQueueCount + errorQueueCount}/{totalQueueCount} Files {isBatchPaused ? '• Paused' : isQueueActive ? '• Parsing...' : '• Ready'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 ml-2">
+              {isQueueActive && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePauseResume();
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center gap-1 cursor-pointer",
+                    isBatchPaused
+                      ? "bg-orange-500 text-black shadow-md shadow-orange-500/20 hover:bg-orange-400"
+                      : "bg-app-card border border-app-border text-app-text hover:bg-white/10"
+                  )}
+                  title={isBatchPaused ? "Resume background file processing" : "Pause background file processing"}
+                >
+                  {isBatchPaused ? <Play className="w-2.5 h-2.5 fill-current" /> : <Pause className="w-2.5 h-2.5 fill-current" />}
+                  {isBatchPaused ? 'Resume' : 'Pause'}
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowUploadView(true);
+                }}
+                className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-app-text text-[9px] font-bold uppercase tracking-widest rounded-full transition-colors cursor-pointer"
+              >
+                Queue
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

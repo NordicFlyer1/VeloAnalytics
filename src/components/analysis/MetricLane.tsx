@@ -319,7 +319,9 @@ export const MetricLane = React.memo(({
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => {
-                  const d = new Date(val);
+                  if (!val) return '';
+                  const d = val instanceof Date ? val : new Date(val);
+                  if (isNaN(d.getTime())) return '';
                   return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
                 }}
               />
@@ -330,18 +332,25 @@ export const MetricLane = React.memo(({
                 fontSize={9}
                 tickLine={false}
                 axisLine={false}
+                reversed={metric === 'rightPco'}
                 domain={
                   metric === 'slope' 
                     ? [
-                        (dataMin: number) => Math.floor(Math.min(dataMin, -5) / 5) * 5, 
-                        (dataMax: number) => Math.ceil(Math.max(dataMax, 5) / 5) * 5
+                        (dataMin: number) => {
+                          const safeMin = Number.isFinite(dataMin) ? dataMin : -5;
+                          return Math.floor(Math.min(safeMin, -5) / 5) * 5;
+                        }, 
+                        (dataMax: number) => {
+                          const safeMax = Number.isFinite(dataMax) ? dataMax : 5;
+                          return Math.ceil(Math.max(safeMax, 5) / 5) * 5;
+                        }
                       ]
                     : metric === 'leftRightBalance'
                     ? [0, 100] // Full 0-100% scale with 50/50 center matching Garmin
                     : metric === 'leftPco'
                     ? [-30, 30] // Top is +30, center 0, bottom -30
                     : metric === 'rightPco'
-                    ? [30, -30] // Inverted axis matching Garmin: Top is -30, center 0, bottom +30
+                    ? [-30, 30] // Inverted axis matching Garmin: Top is -30, center 0, bottom +30
                     : isPowerPhaseStart
                     ? [-90, 90] // TDC 0 centered matching Garmin
                     : isPowerPhaseEnd
@@ -356,7 +365,7 @@ export const MetricLane = React.memo(({
                     : metric === 'leftPco'
                     ? [-30, -15, 0, 15, 30]
                     : metric === 'rightPco'
-                    ? [30, 15, 0, -15, -30]
+                    ? [-30, -15, 0, 15, 30]
                     : isPowerPhaseStart
                     ? [-90, -45, 0, 45, 90]
                     : isPowerPhaseEnd
@@ -454,10 +463,10 @@ export const MetricLane = React.memo(({
               )}
 
               {/* Active Scrubber Needle */}
-              {activePoint !== null && data[activePoint] && (
+              {activePoint !== null && chartData && chartData[activePoint] && chartData[activePoint].timestamp && (
                 <ReferenceLineAny 
                   yAxisId={metric}
-                  x={data[activePoint].timestamp} 
+                  x={chartData[activePoint].timestamp} 
                   stroke="var(--app-muted)" 
                   strokeOpacity={0.8}
                   strokeWidth={1}
