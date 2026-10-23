@@ -282,13 +282,13 @@ export const ActivityMap = React.memo(({
                           setIsPointLocked(false);
                           setActivePoint(null);
                         }}
-                        className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md export-ignore"
+                        className="absolute top-24 left-4 z-20 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md export-ignore"
                         title="Clear Highlight"
                       >
                         <CheckCircle2 className="w-4 h-4 text-orange-500" />
                       </button>
                     )}
-                    <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2 export-ignore">
+                    <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 export-ignore">
                       <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                         {(['roadmap', 'terrain'] as const).map((t) => (
                           <button
@@ -304,7 +304,7 @@ export const ActivityMap = React.memo(({
                         ))}
                       </div>
                     </div>
-                    <MapContainer key={`${gpsPoints[0][0]}-${gpsPoints[0][1]}`} {...{center: gpsPoints[0], zoom: 13, scrollWheelZoom: true} as any}>
+                    <MapContainer key={`osm-${gpsPoints[0][0]}-${gpsPoints[0][1]}-${mapType}`} {...{center: gpsPoints[0], zoom: 13, scrollWheelZoom: true} as any}>
                       <TileLayer
                         {...{
                           url: mapType === 'terrain' 
@@ -420,13 +420,13 @@ export const ActivityMap = React.memo(({
                               setIsPointLocked(false);
                               setActivePoint(null);
                             }}
-                            className="absolute top-24 left-4 z-50 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
+                            className="absolute top-24 left-4 z-20 bg-app-bg/90 hover:bg-app-bg text-app-text p-2 rounded-full border border-app-border transition-all shadow-lg backdrop-blur-md"
                             title="Clear Highlight"
                           >
                             <CheckCircle2 className="w-4 h-4 text-orange-500" />
                           </button>
                         )}
-                        <div className="absolute bottom-4 left-4 z-50 flex flex-col gap-2 export-ignore">
+                        <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 export-ignore">
                           <div className="flex bg-app-bg/90 p-1 rounded-full border border-app-border backdrop-blur-md shadow-lg gap-1">
                             {(['roadmap', 'satellite', 'terrain'] as const).map((t) => (
                               <button

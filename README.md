@@ -19,6 +19,13 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.5.1
+
+- **Day Mode Theme & Contrast Resolution:** Synchronized Tailwind v4 dark variant selectors (`@custom-variant dark`) and standardized upload dialog tokens (`bg-app-card`, `border-app-border`, `text-app-text`), eliminating dark text-on-dark contrast anomalies.
+- **Mobile Activity History Full-Screen View:** Elevated the mobile Activity History drawer into an edge-to-edge full-screen slide-in interface matching Velo Coach, complete with a touch-friendly circular dismiss control (`✕`).
+- **Map Controls Header Scroll Pass-Through:** Recalibrated Activity Map overlay controls (Standard / Terrain capsule toggle and highlight point buttons) to `z-20` so all elements pass smoothly underneath the sticky top navigation bar (`z-50`) when scrolling.
+- **Leaflet Lifecycle Resilience:** Added unmount safeguards to Leaflet's `ResizeObserver` lifecycle within map bounds handling to prevent null container reference warnings.
+
 ---
 
 ## What's New in v1.5.0

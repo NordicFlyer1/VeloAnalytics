@@ -23,17 +23,28 @@ export const MapBounds = ({ points, data, activePoint, isPointLocked, isMapMaxim
   }, [points, map, activePoint]);
 
   React.useEffect(() => {
+    let isMounted = true;
     const container = map.getContainer();
+    if (!container) return;
+
     const observer = new ResizeObserver(() => {
-      map.invalidateSize();
-      if (points.length > 0 && activePoint === null) {
-        const bounds = L.latLngBounds(points);
-        const isMobile = window.innerWidth < 640;
-        map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
+      if (!isMounted) return;
+      try {
+        map.invalidateSize();
+        if (points.length > 0 && activePoint === null) {
+          const bounds = L.latLngBounds(points);
+          const isMobile = window.innerWidth < 640;
+          map.fitBounds(bounds, { padding: isMobile ? [50, 150] : [100, 100] });
+        }
+      } catch {
+        // Safe guard if map unmounted during resize
       }
     });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      isMounted = false;
+      observer.disconnect();
+    };
   }, [map, points, activePoint]);
 
   React.useEffect(() => {

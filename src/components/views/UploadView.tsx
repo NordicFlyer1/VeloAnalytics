@@ -68,13 +68,13 @@ export const UploadView: React.FC<UploadViewProps> = ({
   const mainBox = (
     <div 
       className={cn(
-        "border-2 border-dashed rounded-3xl p-8 sm:p-14 flex flex-col items-center justify-center transition-all duration-300 relative w-full",
+        "border-2 border-dashed rounded-3xl p-8 sm:p-14 flex flex-col items-center justify-center transition-all duration-300 relative w-full text-app-text",
         isModal 
-          ? "max-w-2xl bg-white dark:bg-[#121212] border-app-border shadow-2xl animate-in zoom-in-95 duration-200" 
-          : "mt-12",
+          ? "max-w-2xl bg-app-card border-app-border shadow-2xl animate-in zoom-in-95 duration-200" 
+          : "mt-12 bg-app-card",
         isDragging 
           ? "border-orange-500 bg-orange-500/15 dark:bg-orange-500/5 scale-[1.01]" 
-          : "border-app-border/40 bg-app-card hover:bg-app-card/80"
+          : "border-app-border/40"
       )}
       onDragOver={(e) => { 
         e.preventDefault(); 
@@ -103,18 +103,18 @@ export const UploadView: React.FC<UploadViewProps> = ({
       {isModal && (
         <button 
           onClick={() => setShowUploadView(false)}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/10 text-app-muted hover:text-app-text transition-colors"
+          className="absolute top-5 right-5 p-2 rounded-full hover:bg-app-bg text-app-muted hover:text-app-text transition-colors cursor-pointer"
           title="Close queue"
         >
           <X className="w-5 h-5" />
         </button>
       )}
-      <div className="w-20 h-20 bg-app-card rounded-full flex items-center justify-center mb-6">
-        <Upload className="w-10 h-10 text-app-muted" />
+      <div className="w-20 h-20 bg-app-bg border border-app-border rounded-full flex items-center justify-center mb-6 shadow-sm">
+        <Upload className="w-10 h-10 text-orange-500" />
       </div>
-      <h2 className="text-2xl font-semibold mb-2">Drop your activity files</h2>
-      <p className="text-app-muted mb-8 max-w-md text-center">
-        Support for Garmin <span className="text-app-text/60">.fit</span> and <span className="text-app-text/60">.csv</span> activity files.
+      <h2 className="text-2xl font-bold tracking-tight text-app-text mb-2">Drop your activity files</h2>
+      <p className="text-app-muted mb-8 max-w-md text-center text-sm">
+        Support for Garmin <span className="text-app-text font-semibold">.fit</span> and <span className="text-app-text font-semibold">.csv</span> activity files.
       </p>
       <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
         Select Files
@@ -255,7 +255,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
   if (isModal) {
     return (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-orange-500/10 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={(e) => {
           if (e.target === e.currentTarget) setShowUploadView(false);
         }}

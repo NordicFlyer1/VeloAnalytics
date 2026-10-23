@@ -128,7 +128,7 @@ export const HistorySidebar = React.memo(({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] md:hidden"
           />
         )}
       </AnimatePresence>
@@ -138,7 +138,7 @@ export const HistorySidebar = React.memo(({
         className={cn(
         "bg-app-card border border-app-border rounded-3xl p-6 sm:p-8 transition-all duration-300 relative",
         isMobileView ? cn(
-          "fixed top-0 right-0 h-full w-[85%] sm:w-[400px] z-[70] rounded-none border-l shadow-2xl overflow-y-auto md:relative md:w-auto md:h-auto md:rounded-3xl md:border md:shadow-none md:z-auto md:p-8",
+          "fixed inset-0 top-0 right-0 bottom-0 left-0 w-full h-full z-[120] rounded-none border-0 shadow-2xl overflow-y-auto md:relative md:inset-auto md:w-auto md:h-auto md:rounded-3xl md:border md:shadow-none md:z-auto md:p-8",
           isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         ) : ""
       )}>
@@ -151,8 +151,8 @@ export const HistorySidebar = React.memo(({
           renderRight={isMobileView && (
             <button 
               onClick={onClose}
-              className="p-1.5 hover:bg-app-bg rounded-lg text-app-muted md:hidden border border-transparent hover:border-app-border transition-all"
-              title="Close Panel"
+              className="p-2 hover:bg-app-bg rounded-full text-app-muted hover:text-app-text md:hidden border border-app-border transition-all cursor-pointer"
+              title="Close History"
             >
               <X className="w-5 h-5" />
             </button>
