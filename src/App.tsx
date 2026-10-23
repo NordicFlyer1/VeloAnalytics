@@ -506,15 +506,17 @@ export default function App() {
     } catch (e) { console.error(e); } finally { setIsWeatherLoading(false); }
   }, [settings.aiSettings.openWeatherMapApiKey]);
 
+  // Weather service integration - fetch once for activity start coordinate on activity load
   React.useEffect(() => {
     if (data.length > 0) {
-      const point = activePoint !== null ? data[activePoint] : data[0];
-      if (point.latitude && point.longitude) {
-        const timer = setTimeout(() => fetchWeather(point.latitude!, point.longitude!), 800);
-        return () => clearTimeout(timer);
+      const startPoint = data.find(p => p.latitude != null && p.longitude != null);
+      if (startPoint?.latitude && startPoint?.longitude) {
+        fetchWeather(startPoint.latitude, startPoint.longitude);
       }
+    } else {
+      setWeather(null);
     }
-  }, [activePoint, data, fetchWeather]);
+  }, [currentActivityId, data.length > 0, fetchWeather]);
 
   // Siri / Apple Intelligence Deep Link and Snapshot Synchronization
   React.useEffect(() => {

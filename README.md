@@ -19,6 +19,14 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.5.2
+
+- **Decoupled Weather Timer Churn:** Decoupled external weather fetching from timeline cursor hover (`activePoint`). Weather now queries once on activity load at the ride's start coordinates, eliminating continuous timer arming/canceling and redundant network scheduling during 60 FPS chart scrubbing.
+- **Deduplicated Summary Metric Recalculator:** Added an activity signature cache to `useDataRecalculator` that eliminates duplicate 15,000-point metric passes ($O(N)$ rolling fourth-power math, BikeScore, and zone distributions) when the background W' balance worker attaches anaerobic battery data.
+- **Repository Cleanliness Hardening:** Enforced `.gitignore` rules for temporary platform attachment paths (`public/`), ensuring clean Git histories and zero unwanted assets in local or remote repositories.
+
+---
+
 ## What's New in v1.5.1
 
 - **Day Mode Theme & Contrast Resolution:** Synchronized Tailwind v4 dark variant selectors (`@custom-variant dark`) and standardized upload dialog tokens (`bg-app-card`, `border-app-border`, `text-app-text`), eliminating dark text-on-dark contrast anomalies.

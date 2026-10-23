@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivitySummary, CyclingDataPoint, ZoneDefinition } from '../types';
 import { 
   calculateXPower, 
@@ -37,24 +37,63 @@ export const useDataRecalculator = (
       : new Date(p.timestamp).getTime() || 0;
   };
 
-  // Recalculate summary metrics when settings change
+  const lastProcessedRef = useRef<{
+    startTimeMs: number;
+    endTimeMs: number;
+    length: number;
+    cp: number;
+    maxHR: number;
+    powerZonesKey: string;
+    hrZonesKey: string;
+  } | null>(null);
+
+  // Recalculate summary metrics when settings change or new activity loads
   useEffect(() => {
     if (data.length === 0 || !summary) return;
 
-    const powers = data.map(p => p.power || 0);
-    const heartRates = data.map(p => p.heartRate || 0).filter(h => h > 0);
     const startTimeMs = getPointTimeMs(data[0]);
     const endTimeMs = getPointTimeMs(data[data.length - 1]);
+    const safeCP = (cp && cp > 0) ? cp : DEFAULT_FALLBACK_CP;
+    const safeMaxHR = (maxHR && maxHR > 0) ? maxHR : 190;
+    const powerZonesKey = JSON.stringify(powerZoneDefinitions || []);
+    const hrZonesKey = JSON.stringify(hrZoneDefinitions || []);
+
+    const last = lastProcessedRef.current;
+    if (
+      last &&
+      last.startTimeMs === startTimeMs &&
+      last.endTimeMs === endTimeMs &&
+      last.length === data.length &&
+      last.cp === safeCP &&
+      last.maxHR === safeMaxHR &&
+      last.powerZonesKey === powerZonesKey &&
+      last.hrZonesKey === hrZonesKey
+    ) {
+      // Activity data and settings have not changed (e.g. data reference was updated solely to attach W' balance)
+      return;
+    }
+
+    lastProcessedRef.current = {
+      startTimeMs,
+      endTimeMs,
+      length: data.length,
+      cp: safeCP,
+      maxHR: safeMaxHR,
+      powerZonesKey,
+      hrZonesKey
+    };
+
+    const powers = data.map(p => p.power || 0);
+    const heartRates = data.map(p => p.heartRate || 0).filter(h => h > 0);
     const durationCount = (endTimeMs - startTimeMs) / 1000;
     const safeDuration = Number.isFinite(durationCount) && durationCount >= 0 ? durationCount : 0;
     
     const xPower = calculateXPower(data);
-    const safeCP = (cp && cp > 0) ? cp : 250;
     const relativeIntensity = xPower !== undefined ? calculateRI(xPower, safeCP) : undefined;
     const bikeScore = (xPower !== undefined && relativeIntensity !== undefined) ? calculateBikeScore(safeDuration, xPower, relativeIntensity, safeCP) : undefined;
 
     const pZones = calculateZones(powers, getZonesFromDefinitions(powerZoneDefinitions, safeCP));
-    const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, maxHR)) : undefined;
+    const hZones = heartRates.length > 0 ? calculateZones(heartRates, getZonesFromDefinitions(hrZoneDefinitions, safeMaxHR)) : undefined;
 
     setSummary(prev => prev ? ({
       ...prev,
