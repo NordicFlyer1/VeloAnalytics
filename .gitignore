@@ -13,3 +13,6 @@ coverage/
 # Local safety snapshots & rollbacks (preserves them locally on disk)
 .backup-*/
 
+# AI Studio chat attachments and temporary drop folder
+public/
+
