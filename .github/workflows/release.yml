@@ -82,6 +82,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: npx @tauri-apps/cli
+          args: --ignore-version-mismatches
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-manual-{1}', steps.app_version.outputs.version, github.run_number) }}
           releaseName: ${{ github.ref_type == 'tag' && format('VeloAnalytics {0}', github.ref_name) || format('VeloAnalytics v{0} (Build {1})', steps.app_version.outputs.version, github.run_number) }}
           releaseBody: |
