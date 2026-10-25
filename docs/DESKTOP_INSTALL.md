@@ -4,7 +4,7 @@ This guide provides step-by-step instructions for installing and running **VeloA
 
 ---
 
-## 🍏 macOS Installation
+## macOS Installation
 
 ### Standard Installation
 1. Download the latest `VeloAnalytics_*.dmg` from the [GitHub Releases](https://github.com/NordicFlyer1/VeloAnalytics/releases) page.
@@ -27,7 +27,7 @@ Because VeloAnalytics is an open-source project without an Apple Developer ID si
 
 ---
 
-## 🪟 Windows Installation (Windows 10 & 11)
+## Windows Installation (Windows 10 & 11)
 
 ### Standard Installation
 1. Download either the Windows Installer (`.msi`) or the standalone setup executable (`-setup.exe`) from the [GitHub Releases](https://github.com/NordicFlyer1/VeloAnalytics/releases) page.
@@ -52,7 +52,7 @@ Because VeloAnalytics is newly released and open-source without an expensive Mic
 
 ---
 
-## 🐧 Linux Installation (Ubuntu, Debian, Fedora, Arch, Mint)
+## Linux Installation (Ubuntu, Debian, Fedora, Arch, Mint)
 
 VeloAnalytics provides two Linux release packages: an **AppImage** (universal portable binary) and a **.deb** package (for Debian, Ubuntu, and derivatives).
 
@@ -86,7 +86,7 @@ To install VeloAnalytics system-wide on Ubuntu, Debian, or Pop!_OS:
 
 ---
 
-## 🔒 Privacy & Local Storage Notice
+## Privacy & Local Storage Notice
 
 Regardless of whether you run VeloAnalytics on macOS, Windows, or Linux:
 - **100% Local & Offline**: All FIT file parsing, heart rate analysis, power curves, and W' balance calculations run locally on your device.

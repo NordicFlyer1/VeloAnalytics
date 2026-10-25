@@ -124,7 +124,7 @@ VeloAnalytics provides deep native integration with macOS Apple Intelligence, Si
 * **"Check my 28-day training load in Velo"** - Returns rolling 4-week total rides, mileage, and chronic BikeScore™ dose.
 * **"Check my Stress Balance in Velo"** - Returns current Stress Balance (SB / Form), Short Term Stress (STS / Fatigue), and Long Term Stress (LTS / Fitness).
 * **"Ask Velo Coach [query]"** - Automatically launches VeloAnalytics directly into the AI Coach assistant with context loaded.
-* **Spotlight Search (`⌘ Space`)** - Type `velo readiness` or `velo coach` into macOS Spotlight to view quick action cards.
+* **Spotlight Search (`Cmd + Space`)** - Type `velo readiness` or `velo coach` into macOS Spotlight to view quick action cards.
 
 ### Setup & Architecture
 * **Web App (Browser)**: Go to **Settings > Intelligence > Apple Intelligence & Siri** to export or copy ready-to-use Apple Shortcut JSON definitions.
@@ -135,10 +135,10 @@ VeloAnalytics provides deep native integration with macOS Apple Intelligence, Si
 ## 8. FAQs
 
 **Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**
-A: Use your voice or press `Command + Spacebar` (`⌘ Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".
+A: Use your voice or press `Command + Spacebar` (`Cmd + Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".
 
 **Q: Does Siri work if I type instead of using my voice?**
-A: Yes! Apple unifies typing and voice Siri under the same AppIntents framework. Simply press `⌘ Space` and type your query.
+A: Yes! Apple unifies typing and voice Siri under the same AppIntents framework. Simply press `Cmd + Space` and type your query.
 
 **Q: How do I set up External API Keys (Maps/Weather)?**
 A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in Settings. If empty, the app falls back to build-time environment variables in your `.env` or Vercel dashboard.

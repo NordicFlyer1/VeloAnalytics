@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -21,10 +21,12 @@
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-http": "^2.8.3",
     "@vis.gl/react-google-maps": "^1.8.0",
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "fflate": "^0.8.3",
     "fit-file-parser": "^2.3.3",
     "html-to-image": "^1.11.13",
     "leaflet": "^1.9.4",

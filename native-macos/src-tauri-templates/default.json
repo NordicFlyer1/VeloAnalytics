@@ -22,6 +22,12 @@
       "allow": [
         { "path": "**" }
       ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://personal.connectapi.garmin.com/**" }
+      ]
     }
   ]
 }

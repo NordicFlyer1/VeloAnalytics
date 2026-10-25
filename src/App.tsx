@@ -25,6 +25,10 @@ import { CyclingDynamicsSection } from './components/analysis/CyclingDynamicsSec
 import { CyclingDynamicsCharts } from './components/analysis/CyclingDynamicsCharts';
 import { AboutModal } from './components/modals/AboutModal';
 import { SettingsModal } from './components/modals/SettingsModal';
+import { GarminSyncModal } from './components/modals/GarminSyncModal';
+import { getGarminSettings, saveGarminSettings } from './services/garmin/garminAuth';
+import { syncGarminActivities } from './services/garmin/garminActivities';
+import { syncGarminHealth } from './services/garmin/garminHealth';
 import { UploadView } from './components/views/UploadView';
 import { EmptyHistoryView } from './components/views/EmptyHistoryView';
 import { SectionHeader } from './components/ui/SectionHeader';
@@ -139,6 +143,9 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<string[]>([]);
   const [historySortOrder, setHistorySortOrder] = useState<'newest' | 'oldest'>('newest');
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'zones' | 'equipment' | 'intelligence' | 'garmin' | 'maintenance' | 'experimental'>('general');
+  const [showGarminSyncModal, setShowGarminSyncModal] = useState(false);
+  const [isGarminSyncing, setIsGarminSyncing] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [mapProvider, setMapProvider] = useState<'osm' | 'google'>('osm');
   const [activePoint, setActivePoint] = useState<number | null>(null);
@@ -325,6 +332,72 @@ export default function App() {
   }, [handleFileUpload, setShowUploadView]);
 
   useDataRecalculator(data, setData, summary, setSummary, settings, cpWPrime, workers.calculateWPrimeBalance);
+
+  // Auto-sync Garmin Connect on application startup if configured in Settings
+  const autoSyncInitiatedRef = useRef(false);
+  useEffect(() => {
+    if (autoSyncInitiatedRef.current) return;
+    autoSyncInitiatedRef.current = true;
+
+    const runAutoSyncOnLaunch = async () => {
+      try {
+        const garminSettings = getGarminSettings();
+        if (!garminSettings.autoSyncOnLaunch || !garminSettings.apiKey) {
+          return;
+        }
+
+        // Throttle check: avoid re-running if already auto-synced within the last 5 minutes
+        const lastAutoSync = sessionStorage.getItem('veloanalytics_last_autosync_time');
+        const now = Date.now();
+        if (lastAutoSync && (now - parseInt(lastAutoSync, 10)) < 5 * 60 * 1000) {
+          return;
+        }
+        sessionStorage.setItem('veloanalytics_last_autosync_time', String(now));
+
+        setIsGarminSyncing(true);
+
+        // 1. Sync Activities
+        if (garminSettings.syncActivities !== false) {
+          await syncGarminActivities({
+            limit: garminSettings.activityLimit || 10,
+            existingHistory: history,
+            onFilesReady: async (files) => {
+              await handleFileUpload(files);
+            }
+          });
+        }
+
+        // 2. Sync Health (Sleep & HRV)
+        if (garminSettings.syncSleep !== false || garminSettings.syncHrv !== false) {
+          const healthRes = await syncGarminHealth({
+            daysBack: garminSettings.healthDaysBack || 7,
+            existingSleep: settings.sleepHistory,
+            existingHrv: settings.hrvHistory,
+            syncSleep: garminSettings.syncSleep !== false,
+            syncHrv: garminSettings.syncHrv !== false
+          });
+          settings.setSleepHistory(healthRes.mergedSleep);
+          settings.setHrvHistory(healthRes.mergedHrv);
+        }
+
+        saveGarminSettings({
+          ...garminSettings,
+          lastSyncTimestamp: Date.now()
+        });
+      } catch (err) {
+        console.warn('[Garmin] Auto-sync on startup encountered an issue:', err);
+      } finally {
+        setIsGarminSyncing(false);
+      }
+    };
+
+    // Polite startup delay: allow local IndexedDB storage and React DOM hydration to settle
+    const timer = setTimeout(() => {
+      runAutoSyncOnLaunch();
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [history, handleFileUpload, settings]);
 
   // Handlers
   const handleCompare = () => {
@@ -874,6 +947,8 @@ export default function App() {
         showIntelligence={showIntelligence}
         setShowIntelligence={setShowIntelligence}
         onSiriClick={() => setShowSiriModal(true)}
+        onSyncGarminClick={() => setShowGarminSyncModal(true)}
+        isGarminSyncing={isGarminSyncing}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -907,6 +982,7 @@ export default function App() {
           togglePauseResume={togglePauseResume}
           isBatchPaused={isBatchPaused}
           isProcessingBatch={isProcessingBatch}
+          onOpenGarminSync={() => setShowGarminSyncModal(true)}
         />
 
         {(summary || history.length > 0) && (
@@ -1120,6 +1196,28 @@ export default function App() {
         updateAiSettings={settings.updateAiSettings}
         exportSettings={settings.exportSettings}
         importSettings={settings.importSettings}
+        initialTab={settingsInitialTab}
+      />
+
+      <GarminSyncModal 
+        isOpen={showGarminSyncModal}
+        onClose={() => setShowGarminSyncModal(false)}
+        onOpenSettings={(tab) => {
+          if (tab) setSettingsInitialTab(tab);
+          setShowSettings(true);
+        }}
+        existingHistory={history}
+        existingSleep={settings.sleepHistory}
+        existingHrv={settings.hrvHistory}
+        onActivitiesDownloaded={async (files) => {
+          await handleFileUpload(files);
+        }}
+        onHealthSynced={(mergedSleep, mergedHrv) => {
+          settings.setSleepHistory(mergedSleep);
+          settings.setHrvHistory(mergedHrv);
+        }}
+        isSyncing={isGarminSyncing}
+        setIsSyncing={setIsGarminSyncing}
       />
 
       <AboutModal showAboutModal={showAboutModal} setShowAboutModal={setShowAboutModal} />

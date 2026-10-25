@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
-  Target, Eye, Brain, Key, Cpu, Globe, MessageSquare, Sparkles,
-  Moon, RefreshCw, FlaskConical
+  Target, Eye, EyeOff, Brain, Key, Cpu, Globe, MessageSquare, Sparkles,
+  Moon, RefreshCw, FlaskConical, ExternalLink, AlertCircle, CheckCircle2,
+  Radio, Loader2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { 
@@ -11,6 +12,14 @@ import {
   HistoricalActivity, AISettings, SleepMetric, HRVMetric
 } from '../../types';
 import { parseSleepCSV, parseHRVCSV } from '../../services/wellnessService';
+import { 
+  getGarminApiKey, 
+  setGarminApiKey, 
+  getGarminSettings, 
+  saveGarminSettings, 
+  testGarminConnection 
+} from '../../services/garmin/garminAuth';
+import { GarminSettings } from '../../services/garmin/types';
 
 interface SettingsModalProps {
   showSettings: boolean;
@@ -60,9 +69,10 @@ interface SettingsModalProps {
   // Maintenance Props
   exportSettings: () => void;
   importSettings: (json: string) => boolean;
+  initialTab?: Tab;
 }
 
-type Tab = 'general' | 'zones' | 'equipment' | 'intelligence' | 'experimental' | 'maintenance';
+type Tab = 'general' | 'zones' | 'equipment' | 'intelligence' | 'garmin' | 'maintenance' | 'experimental';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   showSettings,
@@ -104,10 +114,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   aiSettings,
   updateAiSettings,
   exportSettings,
-  importSettings
+  importSettings,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'general');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  React.useEffect(() => {
+    if (showSettings && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [showSettings, initialTab]);
+
+  // Garmin Connect Settings State
+  const [garminApiKey, setGarminApiKeyState] = useState(() => getGarminApiKey());
+  const [showGarminKey, setShowGarminKey] = useState(false);
+  const [garminSettings, setGarminSettingsState] = useState<GarminSettings>(() => getGarminSettings());
+  const [testStatus, setTestStatus] = useState<{ isTesting: boolean; success?: boolean; message?: string }>({ isTesting: false });
+
+  const handleSaveGarminApiKey = (newKey: string) => {
+    setGarminApiKeyState(newKey);
+    setGarminApiKey(newKey);
+    const updated = saveGarminSettings({ apiKey: newKey });
+    setGarminSettingsState(updated);
+    setTestStatus({ isTesting: false });
+  };
+
+  const handleUpdateGarminSettings = (updates: Partial<GarminSettings>) => {
+    const updated = saveGarminSettings(updates);
+    setGarminSettingsState(updated);
+  };
+
+  const handleTestGarmin = async () => {
+    setTestStatus({ isTesting: true });
+    const result = await testGarminConnection(garminApiKey);
+    setTestStatus({
+      isTesting: false,
+      success: result.success,
+      message: result.message
+    });
+  };
 
   const getBikeMileage = (bike: Equipment) => {
     const historicalDist = history
@@ -143,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Tab Navigation - Aligned to About Modal Capsule style */}
         <div className="px-6 sm:px-8 py-5 border-b border-app-border bg-app-card/30">
           <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start w-fit max-w-full overflow-x-auto no-scrollbar">
-            {(['general', 'zones', 'equipment', 'intelligence', 'maintenance', 'experimental'] as const).map((tab) => (
+            {(['general', 'zones', 'equipment', 'intelligence', 'garmin', 'maintenance', 'experimental'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -154,7 +200,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     : "text-app-muted hover:text-app-text"
                 )}
               >
-                {tab}
+                {tab === 'garmin' ? 'Garmin Connect' : tab}
               </button>
             ))}
           </div>
@@ -896,6 +942,245 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'garmin' && (
+              <motion.div
+                key="garmin"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-8"
+              >
+                {/* Header Information Card */}
+                <div className="bg-app-card/50 border border-app-border rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Radio className="w-4 h-4 text-orange-500" />
+                        <h3 className="text-sm font-bold tracking-tight">Garmin Connect Personal API</h3>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">Self-Service</span>
+                      </div>
+                      <p className="text-xs text-app-muted leading-relaxed">
+                        Directly ingest cycling activities (.FIT) and wellness telemetry (Sleep &amp; overnight HRV) directly from your Garmin account.
+                      </p>
+                    </div>
+                    <a
+                      href="https://developer.garmin.com/gc-developer-program/personal/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-app-bg border border-app-border text-app-muted hover:text-orange-500 hover:border-orange-500/30 transition-all shrink-0"
+                    >
+                      <span>Garmin Portal</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  {/* Setup Instructions */}
+                  <div className="bg-app-bg/50 border border-app-border/60 rounded-xl p-4 text-[11px] text-app-muted space-y-2">
+                    <div className="font-bold uppercase tracking-wider text-[10px] text-app-text">How to get your Personal API Key:</div>
+                    <ol className="list-decimal list-inside space-y-1 text-app-muted leading-relaxed">
+                      <li>Log in to your account at <a href="https://connect.garmin.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 underline hover:text-orange-300">connect.garmin.com</a>.</li>
+                      <li>Navigate to the <span className="text-app-text font-medium">Personal API Key</span> settings page and select <span className="text-app-text font-medium">Create Key</span>.</li>
+                      <li>Copy the generated key (Garmin only shows it once) and paste it below.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* API Key Input */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Personal API Key</label>
+                    {garminApiKey && (
+                      <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Key Saved Locally
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type={showGarminKey ? 'text' : 'password'}
+                      value={garminApiKey}
+                      onChange={(e) => handleSaveGarminApiKey(e.target.value)}
+                      placeholder="Paste your Garmin Connect Personal API key here..."
+                      className="w-full bg-app-bg/50 border border-app-border rounded-2xl px-5 py-3 pr-24 text-sm font-mono focus:outline-none focus:border-orange-500/50 transition-colors placeholder:text-app-muted/50"
+                    />
+                    <div className="absolute right-3 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowGarminKey(!showGarminKey)}
+                        className="p-1.5 text-app-muted hover:text-app-text transition-colors"
+                        title={showGarminKey ? 'Hide Key' : 'Reveal Key'}
+                      >
+                        {showGarminKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                      {garminApiKey && (
+                        <button
+                          type="button"
+                          onClick={() => handleSaveGarminApiKey('')}
+                          className="p-1.5 text-app-muted hover:text-red-400 transition-colors"
+                          title="Remove Key"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Test Connection Button & Result */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-app-text">Connection Diagnostic</div>
+                    <div className="text-[11px] text-app-muted">Exchanges your key for a live JWT token to verify Garmin servers respond.</div>
+                  </div>
+                  <button
+                    onClick={handleTestGarmin}
+                    disabled={!garminApiKey || testStatus.isTesting}
+                    className={cn(
+                      "px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shrink-0",
+                      !garminApiKey
+                        ? "bg-app-bg border border-app-border text-app-muted opacity-50 cursor-not-allowed"
+                        : "bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20"
+                    )}
+                  >
+                    {testStatus.isTesting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Testing Connection...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Test Connection</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Test Result Feedback */}
+                {testStatus.message && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-4 rounded-2xl border text-xs flex items-start gap-3",
+                      testStatus.success
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                        : "bg-red-500/10 border-red-500/30 text-red-300"
+                    )}
+                  >
+                    {testStatus.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-0.5">
+                      <div className="font-bold">{testStatus.success ? 'Connected Successfully' : 'Authentication Error'}</div>
+                      <div className="text-[11px] opacity-90">{testStatus.message}</div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Sync Scope Preferences */}
+                <div className="space-y-4">
+                  <div className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Sync Preferences</div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Cycling Activities */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Cycling Activities (.FIT)</div>
+                        <div className="text-[10px] text-app-muted">Pull and parse raw .FIT ride files</div>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateGarminSettings({ syncActivities: !garminSettings.syncActivities })}
+                        className={cn(
+                          "w-10 h-5 rounded-full transition-all relative shrink-0",
+                          garminSettings.syncActivities ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm",
+                          garminSettings.syncActivities ? "left-5.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+
+                    {/* Sleep Telemetry */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Sleep Architecture</div>
+                        <div className="text-[10px] text-app-muted">Sync sleep score, stages &amp; recovery</div>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateGarminSettings({ syncSleep: !garminSettings.syncSleep })}
+                        className={cn(
+                          "w-10 h-5 rounded-full transition-all relative shrink-0",
+                          garminSettings.syncSleep ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm",
+                          garminSettings.syncSleep ? "left-5.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+
+                    {/* HRV Telemetry */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Overnight HRV</div>
+                        <div className="text-[10px] text-app-muted">Sync rMSSD and 7-day HRV baseline</div>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateGarminSettings({ syncHrv: !garminSettings.syncHrv })}
+                        className={cn(
+                          "w-10 h-5 rounded-full transition-all relative shrink-0",
+                          garminSettings.syncHrv ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm",
+                          garminSettings.syncHrv ? "left-5.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+
+                    {/* Auto Sync on Launch */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Auto-Sync on Launch</div>
+                        <div className="text-[10px] text-app-muted">Silently check for new rides on startup</div>
+                      </div>
+                      <button
+                        onClick={() => handleUpdateGarminSettings({ autoSyncOnLaunch: !garminSettings.autoSyncOnLaunch })}
+                        className={cn(
+                          "w-10 h-5 rounded-full transition-all relative shrink-0",
+                          garminSettings.autoSyncOnLaunch ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm",
+                          garminSettings.autoSyncOnLaunch ? "left-5.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Privacy Guarantee Note */}
+                <div className="p-4 bg-app-bg/50 border border-app-border/80 rounded-2xl text-[11px] text-app-muted space-y-1">
+                  <div className="font-bold text-app-text flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-orange-500" />
+                    <span>Privacy &amp; Data Sovereignty</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    VeloAnalytics stores your Garmin API key and downloaded files strictly inside your local browser or desktop database. Nothing is proxied through external servers or third-party cloud services.
+                  </p>
                 </div>
               </motion.div>
             )}

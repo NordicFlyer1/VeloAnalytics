@@ -322,6 +322,47 @@ const FAQ_DATA: FAQCategory[] = [
     ]
   },
   {
+    name: "Garmin Connect Sync",
+    items: [
+      {
+        question: "How does Garmin Connect direct sync work?",
+        beginnerAnswer: "Instead of manually downloading and dragging .FIT files onto your screen, VeloAnalytics can connect directly to Garmin. With one click on 'Sync Garmin' in the top bar, it discovers your recent bike rides, downloads the full workout data, and pulls in your overnight sleep and HRV automatically.",
+        technicalAnswer: "VeloAnalytics connects directly to the Garmin Connect Personal API. On desktop (Tauri), requests execute through native Rust HTTP clients bypassing browser CORS restrictions. In the web application, requests proxy transparently via our secure local dev route. Activities are pulled in native binary .FIT format and processed directly by our local WebAssembly/JS parser.",
+        keywords: ["garmin", "sync", "connect", "direct", "automatic", "activities", "fit", "sleep", "hrv"]
+      },
+      {
+        question: "How do I get a Garmin Personal API Key?",
+        beginnerAnswer: "Go to developer.garmin.com and sign up for the Garmin Connect Developer Program (Personal API Key). Once approved, create an application key and paste your Consumer Key and Consumer Secret into Settings > Garmin Connect in VeloAnalytics.",
+        technicalAnswer: "Garmin Connect Personal API keys are issued via the Garmin Developer Portal (developer.garmin.com). You configure an application with OAuth 1.0a / Personal Key credentials with read permissions for 'Activities' and 'Health/Wellness'. In Settings > Garmin Connect, enter your Consumer Key and Secret. For detailed step-by-step instructions with screenshots, refer to 'docs/GARMIN_CONNECT_SETUP.md' in the project repository.",
+        keywords: ["garmin", "api", "key", "consumer key", "secret", "setup", "developer", "credentials", "oauth"]
+      },
+      {
+        question: "Will syncing Garmin activities duplicate rides I already uploaded?",
+        beginnerAnswer: "No! VeloAnalytics checks every ride's unique Garmin ID and file fingerprint before importing. If you already dragged in that ride file earlier, it will be skipped safely without creating doubles.",
+        technicalAnswer: "Duplicate prevention uses a two-tier strategy: 1) External ID checking: The activity's Garmin activityId is cross-referenced against previously synced records in IndexedDB. 2) Content Fingerprinting: The raw binary payload hash and timestamp match existing local activity records, ensuring idempotent synchronizations without duplicate database entries.",
+        keywords: ["duplicate", "deduplication", "garmin", "import", "skip", "idempotent", "clean"]
+      },
+      {
+        question: "How do Garmin Sleep and HRV metrics sync and integrate with my Readiness Score?",
+        beginnerAnswer: "When you sync, VeloAnalytics requests your latest sleep and overnight HRV data alongside your rides. Your deep, light, and REM sleep hours, sleep score, and HRV balance flow straight into your daily Recovery and Experimental Velo Readiness calculations.",
+        technicalAnswer: "During synchronization, the app calls the Garmin Health Daily Sleep and HRV endpoints (/wellness-api/rest/dailySleepData and /wellness-api/rest/dailyHrvData). Timestamps are normalized into local ISO calendar dates and merged non-destructively into the wellness store. The Readiness engine immediately computes rolling 7-day HRV baselines and adjusts the 4-pillar readiness index.",
+        keywords: ["sleep", "hrv", "wellness", "readiness", "stages", "rem", "deep", "recovery", "garmin", "baseline"]
+      },
+      {
+        question: "Is my Garmin Connect data private and secure?",
+        beginnerAnswer: "Yes, 100%. Your Garmin API credentials and ride files stay strictly on your device. We do not operate external tracking servers or store your passwords. Your tokens are saved only in your own device's private storage.",
+        technicalAnswer: "All Garmin tokens, Consumer Keys, and secrets are stored exclusively in client-side localStorage or Tauri's native secure app storage. In desktop Tauri builds, requests talk directly from your machine to connectapi.garmin.com over TLS. No telemetry, third-party relays, or intermediary data harvesting occurs.",
+        keywords: ["privacy", "security", "credentials", "local", "secret", "token", "encryption", "safe"]
+      },
+      {
+        question: "What should I do if Garmin sync fails or hits a rate limit?",
+        beginnerAnswer: "Garmin limits how many requests you can make each minute. If you see a warning about rate limits, wait a few minutes before trying again. You can also test your connection anytime in Settings > Garmin Connect using the 'Test Connection' button.",
+        technicalAnswer: "Garmin Connect Personal API imposes standard per-minute and daily rate limits (HTTP 429 Too Many Requests). The VeloAnalytics sync client implements exponential backoff and inspects HTTP response status codes. The 'Test Connection' button in Settings validates your OAuth signature against Garmin's ping endpoint to verify credentials before running bulk downloads.",
+        keywords: ["rate limit", "429", "error", "failed", "test connection", "troubleshoot", "garmin"]
+      }
+    ]
+  },
+  {
     name: "Wellness & Recovery",
     items: [
       {
@@ -362,9 +403,9 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I import my Garmin health data?",
-        beginnerAnswer: "Export your Sleep and HRV Status as CSV files from Garmin, and then upload them in VeloAnalytics Settings > Maintenance under 'Wellness Data'.",
-        technicalAnswer: "VeloAnalytics supports standard Garmin CSV exports for Sleep and HRV. Data is parsed locally in your browser and correlated by date with your activities to provide physiological recovery context for your coaching analysis.",
-        keywords: ["import", "garmin", "csv", "wellness", "health", "data", "upload"]
+        beginnerAnswer: "You can sync it automatically in one click with the new 'Sync Garmin' button in the top bar! Alternatively, you can still manually export your Sleep and HRV Status as CSV files from Garmin and upload them in Settings > Maintenance under 'Wellness Data'.",
+        technicalAnswer: "VeloAnalytics supports both automated retrieval via the Garmin Connect Personal API (syncing activities, sleep stages, and overnight HRV) and manual offline CSV exports. Data is stored locally in IndexedDB and correlated by date with your activities to provide physiological recovery context for your coaching analysis.",
+        keywords: ["import", "garmin", "csv", "wellness", "health", "data", "upload", "sync"]
       },
       {
         question: "Which Garmin CSV export formats are supported?",
@@ -430,7 +471,7 @@ const FAQ_DATA: FAQCategory[] = [
 
 export const FAQSection: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>("General");
+  const [activeCategory, setActiveCategory] = useState<string>(FAQ_DATA[0].name);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleItem = (question: string) => {

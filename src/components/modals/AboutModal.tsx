@@ -42,7 +42,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                   <span>Performance Insights</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.5.2</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.6.0</span>
                 </h2>
                 <button 
                   onClick={() => setShowAboutModal(false)}
@@ -181,8 +181,19 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                     </section>
                     
                     <section className="space-y-4 sm:space-y-6">
-                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 text-center sm:text-left">Portability & Deployment</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <h3 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 text-center sm:text-left">Portability & Integrations</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
+                          <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                            ⚡ Garmin Connect Sync
+                          </h4>
+                          <p className="text-[10px] sm:text-[11px] text-app-muted leading-relaxed mb-3">
+                            Direct 1-click sync for FIT activities, sleep stages, and overnight HRV via Personal API.
+                          </p>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-orange-500">
+                            See docs/GARMIN_CONNECT_SETUP.md
+                          </p>
+                        </div>
                         <div className="bg-app-bg/50 p-4 sm:p-5 rounded-2xl border border-app-border/50">
                           <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
                             🚀 Vercel Deployment

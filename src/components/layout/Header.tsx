@@ -12,7 +12,9 @@ import {
   ChevronRight,
   History as HistoryIcon,
   Sparkles,
-  Mic
+  Mic,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -35,6 +37,8 @@ interface HeaderProps {
   showIntelligence: boolean;
   setShowIntelligence: (show: boolean) => void;
   onSiriClick?: () => void;
+  onSyncGarminClick?: () => void;
+  isGarminSyncing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -55,7 +59,9 @@ export const Header: React.FC<HeaderProps> = ({
   isHistorySidebarOpen,
   showIntelligence,
   setShowIntelligence,
-  onSiriClick
+  onSiriClick,
+  onSyncGarminClick,
+  isGarminSyncing
 }) => {
   return (
     <header className="border-b border-app-border bg-app-bg/50 backdrop-blur-md sticky top-0 z-50">
@@ -103,6 +109,28 @@ export const Header: React.FC<HeaderProps> = ({
                 <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-widest">{showUploadView ? 'Cancel' : 'Upload'}</span>
               </button>
+
+              {onSyncGarminClick && (
+                <button 
+                  onClick={onSyncGarminClick}
+                  className={cn(
+                    "p-1.5 sm:p-2 sm:px-3 rounded-full transition-all flex items-center gap-1.5 cursor-pointer",
+                    isGarminSyncing 
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" 
+                      : "text-app-muted hover:text-orange-500 hover:bg-orange-500/5"
+                  )}
+                  title="Sync Garmin Connect"
+                >
+                  {isGarminSyncing ? (
+                    <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-orange-500" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  )}
+                  <span className="hidden lg:inline text-[10px] uppercase font-bold tracking-widest">
+                    Garmin
+                  </span>
+                </button>
+              )}
 
               <button 
                 onClick={() => onActivityHistoryClick()}

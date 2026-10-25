@@ -60,6 +60,7 @@ export const useFileUploader = (
   const [uploadQueue, setUploadQueue] = useState<FileStatus[]>([]);
   
   const workerRef = useRef<Worker | null>(null);
+  const workerFailedRef = useRef<boolean>(false);
   const userLockedViewRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
   const pauseTimeoutRef = useRef<any>(null);
@@ -132,6 +133,9 @@ export const useFileUploader = (
     buffer: ArrayBuffer,
     fileName: string
   ): Promise<{ points: CyclingDataPoint[]; laps: any[] }> => {
+    // Yield frame so the browser can paint progress bars and keep window responsive
+    await new Promise(r => setTimeout(r, 0));
+
     return new Promise((resolve, reject) => {
       try {
         const fitParser = new FitParser({
@@ -171,10 +175,17 @@ export const useFileUploader = (
     // the worker's copy, the fallback copy remains 100% valid for main-thread parsing.
     const fallbackBuffer = buffer.slice(0);
 
+    // If worker previously failed or timed out in this environment (e.g. Tauri desktop webview),
+    // bypass worker immediately to avoid delaying each file.
+    if (workerFailedRef.current) {
+      return await parseFitFileMainThread(fallbackBuffer, fileName);
+    }
+
     const runWorkerParse = (): Promise<{ points: CyclingDataPoint[]; laps: any[] }> => {
       return new Promise((resolve, reject) => {
         const worker = getWorker();
         if (!worker) {
+          workerFailedRef.current = true;
           return reject(new Error('Web Worker not available in environment.'));
         }
 
@@ -187,18 +198,19 @@ export const useFileUploader = (
           worker.removeEventListener('error', handleError);
         };
 
-        // 20-second timeout per file
+        // 5-second timeout per file
         timeoutId = setTimeout(() => {
           if (!isSettled) {
             isSettled = true;
             cleanup();
+            workerFailedRef.current = true;
             try {
               workerRef.current?.terminate();
             } catch (_) {}
             workerRef.current = null;
             reject(new Error(`Worker timeout parsing ${fileName}.`));
           }
-        }, 20000);
+        }, 5000);
 
         const handleMessage = (e: MessageEvent) => {
           const data = e.data;
@@ -227,6 +239,7 @@ export const useFileUploader = (
           if (isSettled) return;
           isSettled = true;
           cleanup();
+          workerFailedRef.current = true;
           console.warn('[FitParserWorker] Error event:', e);
           try {
             workerRef.current?.terminate();
@@ -250,6 +263,7 @@ export const useFileUploader = (
     try {
       return await runWorkerParse();
     } catch (workerError) {
+      workerFailedRef.current = true;
       console.warn(`[FitParser] Worker failed for ${fileName}, seamlessly falling back to main-thread parser:`, workerError);
       return await parseFitFileMainThread(fallbackBuffer, fileName);
     }

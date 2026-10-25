@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.5.2"
+version = "1.6.0"
 description = "A Tauri App"
 authors = ["Bruce Kraus"]
 license = ""
@@ -23,4 +23,5 @@ tauri = { version = "2.11.1", features = ["devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-http = "2"
 dirs-next = "2.0"

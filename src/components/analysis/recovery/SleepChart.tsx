@@ -54,7 +54,8 @@ export const SleepChart: React.FC<SleepChartProps> = ({
       displayDate: safeFormatDate(d.date),
       hours: (d.duration / 60).toFixed(1),
       calculatedReadiness: displayReadiness,
-      veloCalculation: veloCalc
+      veloCalculation: veloCalc,
+      restingHeartRate: d.restingHeartRate > 0 ? d.restingHeartRate : null
     };
   });
 
@@ -186,6 +187,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({
             name="RESTING HR" 
             stroke="#ef4444" 
             strokeWidth={2}
+            connectNulls
             dot={{ r: 3, fill: '#ef4444', strokeWidth: 0 }}
             activeDot={{ r: 5, strokeWidth: 0 }}
           />

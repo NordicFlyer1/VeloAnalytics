@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Loader2, CheckCircle2, XCircle, Activity, X, Pause, Play } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, XCircle, Activity, X, Pause, Play, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { FileStatus, ActivitySummary, CyclingDataPoint } from '../../types';
 import { estimateCPWPrime } from '../../services/metrics';
@@ -31,6 +31,7 @@ interface UploadViewProps {
   togglePauseResume?: () => void;
   isBatchPaused?: boolean;
   isProcessingBatch?: boolean;
+  onOpenGarminSync?: () => void;
 }
 
 export const UploadView: React.FC<UploadViewProps> = ({
@@ -59,7 +60,8 @@ export const UploadView: React.FC<UploadViewProps> = ({
   resumeBatch,
   togglePauseResume,
   isBatchPaused,
-  isProcessingBatch
+  isProcessingBatch,
+  onOpenGarminSync
 }) => {
   if (!showUploadView && (summary || history.length > 0)) return null;
 
@@ -116,22 +118,34 @@ export const UploadView: React.FC<UploadViewProps> = ({
       <p className="text-app-muted mb-8 max-w-md text-center text-sm">
         Support for Garmin <span className="text-app-text font-semibold">.fit</span> and <span className="text-app-text font-semibold">.csv</span> activity files.
       </p>
-      <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95">
-        Select Files
-        <input 
-          type="file" 
-          className="hidden" 
-          accept=".fit,.csv" 
-          multiple 
-          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              handleFileUpload(e.target.files);
-            }
-            e.target.value = '';
-          }} 
-        />
-      </label>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95 text-xs uppercase tracking-wider">
+          Select Files
+          <input 
+            type="file" 
+            className="hidden" 
+            accept=".fit,.csv" 
+            multiple 
+            onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                handleFileUpload(e.target.files);
+              }
+              e.target.value = '';
+            }} 
+          />
+        </label>
+        {onOpenGarminSync && (
+          <button
+            type="button"
+            onClick={onOpenGarminSync}
+            className="px-6 py-3 rounded-full border border-app-border bg-app-card hover:bg-white/5 text-app-text text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-orange-500" />
+            <span>Sync Garmin</span>
+          </button>
+        )}
+      </div>
       
       {uploadQueue.length > 0 && (
         <div className="mt-12 w-full max-w-2xl bg-app-card border border-app-border rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">

@@ -38,9 +38,10 @@ Real-time tracking of your remaining anaerobic work capacity battery above Criti
 ## 2. Wellness & Autonomic Recovery
 
 ### Sleep, HRV, and Garmin Connect Integration
+* **Direct Garmin Connect Personal API Sync**: Direct 1-click synchronization via the Garmin Connect Personal API automatically imports recent cycling workouts in native `.FIT` format along with granular sleep architecture (Deep, Light, REM, Awake) and overnight HRV data directly into local browser storage.
 * **Overnight HRV (RMSSD)**: Evaluated continuously against your personal rolling **7-day baseline** to identify autonomic balance and systemic readiness.
-* **Automated Garmin Connect Ingestion**: The engine automatically detects and ingests 1-day, 7-day, 4-week, and 1-year Garmin Connect CSV exports without manual formatting.
-* **Continuous History Merging**: Overlapping daily files and weekly macro-aggregates merge non-destructively, safely preserving long-term baseline history while enriching single days with sleep stages, SpO₂, and respiration rates.
+* **Automated Garmin Connect Ingestion & CSV Fallback**: In addition to direct API synchronization, the engine automatically detects and ingests 1-day, 7-day, 4-week, and 1-year Garmin Connect CSV exports without manual formatting.
+* **Continuous History Merging & Deduplication**: Overlapping daily syncs, direct API payload downloads, and weekly macro-aggregates merge non-destructively using activity ID and binary hash deduplication, safely preserving long-term baseline history while enriching single days with sleep stages, SpO₂, and respiration rates.
 
 ### Experimental Velo Readiness (Opt-in)
 Approximates physiological recovery using a weighted base $(Sleep \times 0.35 + Recovery \times 0.25 + HRV \times 0.20 + Load \times 0.20)$ combined with **Non-Linear Multiplicative Inhibitors**. Deficits in critical pillars (e.g., severe sleep debt, acute HRV depression, or high ACWR injury risk) automatically suppress the overall score to prevent high fitness from masking acute fatigue.

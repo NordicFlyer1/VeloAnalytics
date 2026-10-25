@@ -173,6 +173,7 @@ export interface HistoricalActivity {
   originalFile?: File | Blob;
   originalFileName?: string;
   bikeId?: string; // Reference to equipment used
+  garminActivityId?: number;
 }
 
 export interface FileStatus {

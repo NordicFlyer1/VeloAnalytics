@@ -45,6 +45,17 @@ export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({
 
   const latestHRV = hrvData.length > 0 ? [...hrvData].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
   const latestSleep = sleepData.length > 0 ? [...sleepData].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  const matchingSleep = latestHRV ? sleepData.find(s => s.date === latestHRV.date) : null;
+  const effectiveSleep = matchingSleep || latestSleep;
+
+  // Fallback to latest record with a valid RHR if the newest record's RHR is not yet finalized
+  const sleepWithRhr = [...sleepData].sort((a, b) => b.date.localeCompare(a.date)).find(s => s.restingHeartRate > 0);
+  const displayRhr = (effectiveSleep?.restingHeartRate && effectiveSleep.restingHeartRate > 0)
+    ? effectiveSleep.restingHeartRate
+    : (sleepWithRhr?.restingHeartRate || null);
+  const rhrDateLabel = (effectiveSleep?.restingHeartRate && effectiveSleep.restingHeartRate > 0)
+    ? (matchingSleep ? 'Today' : effectiveSleep.date.slice(5))
+    : (sleepWithRhr?.date ? sleepWithRhr.date.slice(5) : '');
 
   return (
     <div ref={containerRef} className="bg-app-card border border-app-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
@@ -109,9 +120,18 @@ export const RecoveryAnalysis: React.FC<RecoveryAnalysisProps> = ({
                     </div>
                   </div>
                   <div className="bg-app-bg/30 border border-app-border/50 p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Resting HR</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Resting HR</span>
+                      {rhrDateLabel && (
+                        <span className="text-[9px] font-bold text-app-muted uppercase">
+                          {rhrDateLabel}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-app-text text-red-500">{latestSleep?.restingHeartRate || '--'}</span>
+                      <span className="text-xl font-black text-app-text text-red-500">
+                        {displayRhr || '--'}
+                      </span>
                       <span className="text-[9px] font-bold text-app-muted uppercase">BPM</span>
                     </div>
                   </div>

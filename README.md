@@ -19,6 +19,15 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.6.0
+
+- **Garmin Connect Daily Health & Sleep Sync:** Direct synchronization with Garmin Connect API for sleep telemetry, HRV trends, and daily biometric health tracking.
+- **Resting Heart Rate (RHR) Extraction & Charting:** Fully integrated daily resting heart rate extraction into both the Sleep Trends and Recovery Status panels, featuring multi-source fallback (`daily_heart_rate.restingHeartRateInBeatsPerMinute` and sleep record `restingHeartRate`) with smart linear interpolation across missing gap days.
+- **Multi-Platform Desktop & Web Parity:** Synchronized version parity across desktop native configurations (Tauri v2 / Rust for macOS, Windows, Linux) and the web client.
+- **Zero-Drop Rate Limiter:** Enhanced Garmin Connect HTTP client retry logic with exponential backoff and rate-limit preservation for robust batch telemetry ingestion.
+
+---
+
 ## What's New in v1.5.2
 
 - **Decoupled Weather Timer Churn:** Decoupled external weather fetching from timeline cursor hover (`activePoint`). Weather now queries once on activity load at the ride's start coordinates, eliminating continuous timer arming/canceling and redundant network scheduling during 60 FPS chart scrubbing.
@@ -30,7 +39,7 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 ## What's New in v1.5.1
 
 - **Day Mode Theme & Contrast Resolution:** Synchronized Tailwind v4 dark variant selectors (`@custom-variant dark`) and standardized upload dialog tokens (`bg-app-card`, `border-app-border`, `text-app-text`), eliminating dark text-on-dark contrast anomalies.
-- **Mobile Activity History Full-Screen View:** Elevated the mobile Activity History drawer into an edge-to-edge full-screen slide-in interface matching Velo Coach, complete with a touch-friendly circular dismiss control (`✕`).
+- **Mobile Activity History Full-Screen View:** Elevated the mobile Activity History drawer into an edge-to-edge full-screen slide-in interface matching Velo Coach, complete with a touch-friendly circular dismiss control.
 - **Map Controls Header Scroll Pass-Through:** Recalibrated Activity Map overlay controls (Standard / Terrain capsule toggle and highlight point buttons) to `z-20` so all elements pass smoothly underneath the sticky top navigation bar (`z-50`) when scrolling.
 - **Leaflet Lifecycle Resilience:** Added unmount safeguards to Leaflet's `ResizeObserver` lifecycle within map bounds handling to prevent null container reference warnings.
 
@@ -40,7 +49,7 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 
 - **Dual-Worker Threading Pipeline:** Isolated UI and Batch Web Worker channels ensure active ride charts, power curves, and W' balance compute in $<50\text{ms}$ with zero queue starvation during batch ingestion.
 - **Foreground Priority Scheduling:** Selecting an activity to view instantly pauses background file processing, yielding 100% of CPU and worker threads to the active ride.
-- **Interactive Queue Controls:** Tactile capsule controls (`⏸ Pause` / `▶ Resume`) in the upload queue header and floating status pill allow effortless manual or automatic queue pacing.
+- **Interactive Queue Controls:** Tactile capsule controls (Pause / Resume) in the upload queue header and floating status pill allow effortless manual or automatic queue pacing.
 - **$\le$ 8GB RAM Optimization:** Raw telemetry points stream directly to IndexedDB disk storage while JavaScript heap memory is immediately freed (`item.data = undefined`), eliminating WebKit/Chromium out-of-memory ("Sad Mac") crashes.
 - **Throttled Batch State Loop:** Reduced React progress re-render cycles by 75% during batch file processing, preventing UI freezes when switching between the upload queue and the dashboard.
 - **Theme-Aware Backdrop:** Light View features an airy faded orange drag indicator and modal backdrop (`bg-orange-500/10`), paired with deep glassmorphism in Dark View.

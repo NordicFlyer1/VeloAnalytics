@@ -28,6 +28,13 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   
   const latest = data.length > 0 ? [...data].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  const latestWithRhr = [...data].sort((a, b) => b.date.localeCompare(a.date)).find(d => d.restingHeartRate > 0);
+  const displayRhr = (latest?.restingHeartRate && latest.restingHeartRate > 0) 
+    ? latest.restingHeartRate 
+    : (latestWithRhr?.restingHeartRate || null);
+  const rhrDateLabel = (latest?.restingHeartRate && latest.restingHeartRate > 0)
+    ? ''
+    : (latestWithRhr?.date ? latestWithRhr.date.slice(5) : '');
 
   const standardReadiness = React.useMemo(() => {
     if (!latest) return null;
@@ -129,9 +136,16 @@ export const SleepAnalysis: React.FC<SleepAnalysisProps> = ({
                     </div>
                   </div>
                   <div className="bg-app-bg/30 border border-app-border/50 p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Resting HR</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">Resting HR</span>
+                      {rhrDateLabel && (
+                        <span className="text-[9px] font-bold text-app-muted uppercase">
+                          {rhrDateLabel}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-app-text text-red-500">{latest?.restingHeartRate || '--'}</span>
+                      <span className="text-xl font-black text-app-text text-red-500">{displayRhr || '--'}</span>
                       <span className="text-[9px] font-bold text-app-muted uppercase">BPM</span>
                     </div>
                   </div>

@@ -366,7 +366,8 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       // Keep in-memory history state lightweight (IndexedDB holds fullData & originalFile)
       fullData: undefined,
       originalFile: undefined,
-      originalFileName: targetFile?.name || undefined
+      originalFileName: targetFile?.name || undefined,
+      garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
     };
 
     try {
@@ -440,7 +441,8 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         fullSummary: target,
         fullData: undefined,
         originalFile: undefined,
-        originalFileName: targetFile?.name || undefined
+        originalFileName: targetFile?.name || undefined,
+        garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
       };
 
       try {
