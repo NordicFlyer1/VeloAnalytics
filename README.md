@@ -19,6 +19,13 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.6.1
+
+- **Dedicated Dual macOS Desktop Releases:** Release workflow now targets both Apple Silicon (`macos-14` / ARM64) and Intel (`macos-13` / x86_64) runners, publishing dedicated native `.dmg` bundles alongside Windows and Linux.
+- **Vercel Web Garmin Connect Proxy:** Production-ready API proxy rewrite in `vercel.json` routing `/api/garmin/:path*` directly to Garmin Connect, resolving browser CORS restrictions and delivering full sync capability across both web and desktop.
+
+---
+
 ## What's New in v1.6.0
 
 - **Garmin Connect Daily Health & Sleep Sync:** Direct synchronization with Garmin Connect API for sleep telemetry, HRV trends, and daily biometric health tracking.

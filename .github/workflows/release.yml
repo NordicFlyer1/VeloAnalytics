@@ -14,8 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            os-name: 'macOS'
+          - platform: 'macos-14'
+            os-name: 'macOS (Apple Silicon)'
+          - platform: 'macos-13'
+            os-name: 'macOS (Intel)'
           - platform: 'ubuntu-22.04'
             os-name: 'Linux'
           - platform: 'windows-latest'
