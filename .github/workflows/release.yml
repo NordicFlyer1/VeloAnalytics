@@ -16,7 +16,7 @@ jobs:
         include:
           - platform: 'macos-14'
             os-name: 'macOS (Apple Silicon)'
-          - platform: 'macos-13'
+          - platform: 'macos-15-intel'
             os-name: 'macOS (Intel)'
           - platform: 'ubuntu-22.04'
             os-name: 'Linux'
