@@ -19,6 +19,15 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.6.2
+
+- **Help System & Documentation Audit:** Line-by-line harmonization across the in-app FAQ, setup guides, and repository documentation. Aligned Garmin Connect instructions with the single Personal API Key token exchange and current health endpoints.
+- **KPI Modal Refinement:** Replaced out-of-place licensing card in the Key Performance Indicators overview with a dedicated **W' (W Prime) & W' Bal** metric card styled in `#a855f7` purple.
+- **Dev Configuration Accuracy:** Corrected local Tauri build instructions to port 3000 and streamlined desktop setup with pre-configured templates.
+- **License Consistency:** Standardized source-available, non-commercial licensing attribution across all installation guides.
+
+---
+
 ## What's New in v1.6.1
 
 - **Dedicated Dual macOS Desktop Releases:** Release workflow now targets both Apple Silicon (`macos-14` / ARM64) and Intel (`macos-15` / x86_64) runners, publishing dedicated native `.dmg` bundles alongside Windows and Linux.
@@ -76,8 +85,13 @@ Native desktop packages and installers are available directly from the repositor
 
 - [Landing Page](https://NordicFlyer1.github.io/VeloAnalytics/)
 - [Physiological Methodology & Formulae](docs/METHODOLOGY.md)
-- [macOS Desktop Installation Guide](docs/MACOS_INSTALL.md)
-- [Local Build Guide](docs/LOCAL_BUILD.md)
+- [Garmin Connect Setup Guide](docs/GARMIN_CONNECT_SETUP.md)
+- [Vercel Deployment Guide](docs/DEPLOY_VERCEL.md)
+- [Desktop Installation Guide (macOS, Windows, Linux)](docs/DESKTOP_INSTALL.md)
+- [macOS Desktop & Gatekeeper Guide](docs/MACOS_INSTALL.md)
+- [Local Build Guide (Tauri & Rust)](docs/LOCAL_BUILD.md)
+- [Intelligence & Siri Setup Guide](docs/INTELLIGENCE.md)
+- [macOS Native Siri & AppIntents Relay](native-macos/STEP-BY-STEP-GUIDE.md)
 
 ---
 

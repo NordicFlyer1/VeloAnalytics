@@ -24,7 +24,7 @@ When you first launch VeloAnalytics on macOS, you may encounter this message:
 
 This message is macOS Gatekeeper's default security behavior. Whenever an application is downloaded via a web browser without an expensive, proprietary Apple Developer ID certificate and notarization ($99/year), macOS attaches a temporary browser quarantine flag (`com.apple.quarantine`) to the bundle.
 
-VeloAnalytics is an independent, 100% open-source privacy-first cycling analytics application. All ride data and telemetry remain strictly on your local machine.
+VeloAnalytics is an independent, source-available, non-commercial, privacy-first cycling analytics application. All ride data and telemetry remain strictly on your local machine.
 
 ---
 

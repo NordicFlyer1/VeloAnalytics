@@ -16,12 +16,16 @@ Before Vercel can host your app, the code needs to live in a GitHub account.
 2. You should see your GitHub repository listed. Click **Import**.
 3. Vercel will automatically detect that this is a **Vite** project. You don't need to change the "Build Settings."
 
-## Step 4: Adding Your API Keys (Critical)
-VeloAnalytics needs your specific keys to fetch data. Before clicking "Deploy":
-1. Look for the **Environment Variables** section.
-2. Open the `.env.example` file in your project code to see what you need.
-3. For every key (e.g., `VITE_GARMIN_API_KEY` or `VITE_STRAVA_CLIENT_ID`), type the **Name** into the Vercel box and paste your **Value** next to it.
-4. Click **Add** for each one.
+## Step 4: Optional Fallback API Keys & Garmin Proxy
+VeloAnalytics is a local-first application. You can enter your API keys directly inside the app's **Settings** panel (stored privately in your browser's local storage). However, if you want default keys available for your deployment:
+
+1. Look for the **Environment Variables** section in the Vercel project settings.
+2. Refer to `.env.example` in your repository for available variables:
+   - AI Providers: `VITE_GEMINI_API_KEY`, `VITE_OPENAI_API_KEY`, `VITE_ANTHROPIC_API_KEY`, `VITE_GROQ_API_KEY`
+   - Mapping & Weather: `VITE_GOOGLE_MAPS_API_KEY`, `VITE_OPENWEATHERMAP_API_KEY`
+   - Optional Basic Auth: `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`
+3. Enter the variable **Name** and **Value**, then click **Add**.
+4. **Garmin Connect Sync Note:** Your Garmin Personal API Key is entered privately into the app via **Settings > Garmin Connect** on your device. The included `vercel.json` in your repository automatically proxies requests from `/api/garmin/:path*` to `https://personal.connectapi.garmin.com/:path*`, bypassing browser CORS without requiring server secrets.
 
 ## Step 5: Deploy!
 1. Click **Deploy**. Vercel will spend about 1-2 minutes "building" your app.

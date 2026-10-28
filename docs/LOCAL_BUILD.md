@@ -33,22 +33,30 @@ Depending on your OS, you need specific build tools:
 
 ---
 
-## 3. Initialize Desktop Configuration
-1. Run the following command:
-   ```bash
-   npx tauri init
-   ```
+## 3. Desktop Configuration (Tauri v2)
 
-2. Answer the prompts as follows:
-   - **Window title**: VeloAnalytics
-   - **Assets path**: `../dist`
-   - **Dev server**: `http://localhost:5173`
-   - **Build command**: `npm run build`
-   - **Dev command**: `npm run dev`
+### Recommended: Use Pre-Configured Templates
+This repository includes ready-to-use Tauri v2 configuration templates under `native-macos/src-tauri-templates/`. Simply copy them into your `src-tauri` directory:
 
-3. **REQUIRED STEP**:
-   Open the newly created `src-tauri/tauri.conf.json`. 
-   Change `"identifier": "com.tauri.dev"` to `"com.bruce.veloanalytics"`.
+```bash
+mkdir -p src-tauri/src src-tauri/capabilities
+cp native-macos/src-tauri-templates/Cargo.toml src-tauri/Cargo.toml
+cp native-macos/src-tauri-templates/default.json src-tauri/capabilities/default.json
+cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
+cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
+cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json
+```
+
+*(For a full walkthrough including native macOS Siri AppIntents, see `native-macos/STEP-BY-STEP-GUIDE.md`.)*
+
+### Alternative: Manual Initialization
+If initializing from scratch with `npx tauri init`:
+- **Window title**: VeloAnalytics
+- **Frontend distribution (Assets)**: `../dist`
+- **Dev server URL**: `http://localhost:3000` *(Vite runs on port 3000)*
+- **Build command**: `npm run build`
+- **Dev command**: `npm run dev`
+- **Identifier**: `com.bruce.veloanalytics` in `tauri.conf.json`
 
 ---
 

@@ -69,7 +69,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "What is xPower?",
         beginnerAnswer: "A way of measuring how hard the ride 'felt'. It gives more credit for hard sprints than for coasting, which captures the physical cost better than a simple average.",
-        technicalAnswer: "xPower (developed by Dr. Philip Skiba) accounts for the metabolic cost of highly variable efforts. It uses a 30-second rolling average raised to the 4th power to emphasize the exponentially higher cost of high-intensity efforts.",
+        technicalAnswer: "xPower (developed by Dr. Philip Skiba) accounts for the metabolic cost of highly variable efforts. It applies a 25-second Exponentially Weighted Moving Average (EWMA) raised to the 4th power to reflect the non-linear metabolic cost of high-intensity efforts.",
         keywords: ["normalized", "actual cost", "effort", "physiological cost"]
       },
       {
@@ -215,7 +215,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?",
         beginnerAnswer: "You can ask Siri with your voice or type directly using Command + Spacebar (⌘ Space) by saying or typing: 'What is my Velo Readiness?', 'What was my last ride?', 'How much did I ride this week?', 'Check my 28-day training load', or 'Ask Velo Coach'. You can also search 'velo readiness' directly in Spotlight!",
-        technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents containing your Readiness score, latest ride metrics, and rolling 7-day and 28-day historical aggregates. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.veloanalytics.app/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
+        technicalAnswer: "VeloAnalytics synchronizes an AppleSiriSnapshot payload into macOS AppIntents containing your Readiness score, latest ride metrics, and rolling 7-day and 28-day historical aggregates. In the desktop Tauri build, this writes to the local Application Support cache (~/Library/Application Support/com.bruce.veloanalytics/) where native Swift AppIntents read the state with zero cloud latency. In browser mode, you can copy or download the JSON schema into the Apple Shortcuts.app.",
         keywords: ["siri", "apple", "mac", "voice", "type to siri", "spotlight", "shortcuts", "readiness", "coach", "hotkey", "last ride", "week", "28 days", "command space"]
       },
       {
@@ -327,14 +327,14 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "How does Garmin Connect direct sync work?",
         beginnerAnswer: "Instead of manually downloading and dragging .FIT files onto your screen, VeloAnalytics can connect directly to Garmin. With one click on 'Sync Garmin' in the top bar, it discovers your recent bike rides, downloads the full workout data, and pulls in your overnight sleep and HRV automatically.",
-        technicalAnswer: "VeloAnalytics connects directly to the Garmin Connect Personal API. On desktop (Tauri), requests execute through native Rust HTTP clients bypassing browser CORS restrictions. In the web application, requests proxy transparently via our secure local dev route. Activities are pulled in native binary .FIT format and processed directly by our local WebAssembly/JS parser.",
+        technicalAnswer: "VeloAnalytics connects directly to the Garmin Connect Personal API. On desktop (Tauri), requests execute through native Rust HTTP clients bypassing browser CORS restrictions. In the web application (both on Vercel via vercel.json rewrites and in local dev), requests proxy transparently to personal.connectapi.garmin.com. Activities are pulled in native binary .FIT format and processed directly by our local WebAssembly/JS parser.",
         keywords: ["garmin", "sync", "connect", "direct", "automatic", "activities", "fit", "sleep", "hrv"]
       },
       {
         question: "How do I get a Garmin Personal API Key?",
-        beginnerAnswer: "Go to developer.garmin.com and sign up for the Garmin Connect Developer Program (Personal API Key). Once approved, create an application key and paste your Consumer Key and Consumer Secret into Settings > Garmin Connect in VeloAnalytics.",
-        technicalAnswer: "Garmin Connect Personal API keys are issued via the Garmin Developer Portal (developer.garmin.com). You configure an application with OAuth 1.0a / Personal Key credentials with read permissions for 'Activities' and 'Health/Wellness'. In Settings > Garmin Connect, enter your Consumer Key and Secret. For detailed step-by-step instructions with screenshots, refer to 'docs/GARMIN_CONNECT_SETUP.md' in the project repository.",
-        keywords: ["garmin", "api", "key", "consumer key", "secret", "setup", "developer", "credentials", "oauth"]
+        beginnerAnswer: "Go to developer.garmin.com and sign up for the Garmin Connect Developer Program (Personal API Key). Once approved, copy your generated Personal API Key and paste it into Settings > Garmin Connect in VeloAnalytics.",
+        technicalAnswer: "Garmin Connect Personal API keys are issued via the Garmin Developer Portal (developer.garmin.com/gc-developer-program/personal/). In Settings > Garmin Connect, paste your Personal API Key into the single input field and click 'Test Connection'. The app directly exchanges your key for a short-lived bearer token via Garmin's token service. For detailed instructions, refer to 'docs/GARMIN_CONNECT_SETUP.md'.",
+        keywords: ["garmin", "api", "key", "token", "setup", "developer", "credentials"]
       },
       {
         question: "Will syncing Garmin activities duplicate rides I already uploaded?",
@@ -344,20 +344,20 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do Garmin Sleep and HRV metrics sync and integrate with my Readiness Score?",
-        beginnerAnswer: "When you sync, VeloAnalytics requests your latest sleep and overnight HRV data alongside your rides. Your deep, light, and REM sleep hours, sleep score, and HRV balance flow straight into your daily Recovery and Experimental Velo Readiness calculations.",
-        technicalAnswer: "During synchronization, the app calls the Garmin Health Daily Sleep and HRV endpoints (/wellness-api/rest/dailySleepData and /wellness-api/rest/dailyHrvData). Timestamps are normalized into local ISO calendar dates and merged non-destructively into the wellness store. The Readiness engine immediately computes rolling 7-day HRV baselines and adjusts the 4-pillar readiness index.",
+        beginnerAnswer: "When you sync, VeloAnalytics requests your latest sleep and overnight HRV data alongside your rides. Your deep, light, and REM sleep hours, sleep score, resting heart rate, and HRV balance flow straight into your daily Recovery and Experimental Velo Readiness calculations.",
+        technicalAnswer: "During synchronization, the app calls the Garmin Personal Health endpoints (/wellness-service/wellness/dailySleepData, /hrv-service/hrv/dailyHrvData, and dailyHeartRate for resting HR). Timestamps are normalized into local ISO calendar dates and merged non-destructively into the wellness store. The Readiness engine immediately computes rolling 7-day HRV baselines and adjusts the 4-pillar readiness index.",
         keywords: ["sleep", "hrv", "wellness", "readiness", "stages", "rem", "deep", "recovery", "garmin", "baseline"]
       },
       {
         question: "Is my Garmin Connect data private and secure?",
         beginnerAnswer: "Yes, 100%. Your Garmin API credentials and ride files stay strictly on your device. We do not operate external tracking servers or store your passwords. Your tokens are saved only in your own device's private storage.",
-        technicalAnswer: "All Garmin tokens, Consumer Keys, and secrets are stored exclusively in client-side localStorage or Tauri's native secure app storage. In desktop Tauri builds, requests talk directly from your machine to connectapi.garmin.com over TLS. No telemetry, third-party relays, or intermediary data harvesting occurs.",
+        technicalAnswer: "All Garmin Personal API keys and session tokens are stored exclusively in client-side localStorage or Tauri's native secure app storage. In desktop Tauri builds, requests talk directly from your machine to connectapi.garmin.com over TLS. No telemetry, third-party relays, or intermediary data harvesting occurs.",
         keywords: ["privacy", "security", "credentials", "local", "secret", "token", "encryption", "safe"]
       },
       {
         question: "What should I do if Garmin sync fails or hits a rate limit?",
         beginnerAnswer: "Garmin limits how many requests you can make each minute. If you see a warning about rate limits, wait a few minutes before trying again. You can also test your connection anytime in Settings > Garmin Connect using the 'Test Connection' button.",
-        technicalAnswer: "Garmin Connect Personal API imposes standard per-minute and daily rate limits (HTTP 429 Too Many Requests). The VeloAnalytics sync client implements exponential backoff and inspects HTTP response status codes. The 'Test Connection' button in Settings validates your OAuth signature against Garmin's ping endpoint to verify credentials before running bulk downloads.",
+        technicalAnswer: "Garmin Connect Personal API imposes standard per-minute and daily rate limits (HTTP 429 Too Many Requests). The VeloAnalytics sync client implements exponential backoff and inspects HTTP response status codes. The 'Test Connection' button in Settings verifies your API key by exchanging it for a token and testing activity discovery before running bulk downloads.",
         keywords: ["rate limit", "429", "error", "failed", "test connection", "troubleshoot", "garmin"]
       }
     ]
