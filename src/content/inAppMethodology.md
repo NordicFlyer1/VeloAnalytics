@@ -29,6 +29,7 @@ Based on the **Banister Impulse-Response Model**:
 * **Fitness (LTS)**: 42-day rolling exponential average of daily training load.
 * **Fatigue (STS)**: 7-day rolling exponential average of recent training load.
 * **Form (SB)**: Difference between yesterday's fitness and fatigue ($SB = LTS - STS$). Positive numbers indicate race freshness; negative numbers indicate productive overload.
+* **Daily Impulse & Continuous Load Tracking**: Discrete daily sessions are quantified by **BikeScore** (volume and total physiological stress) and **Relative Intensity** (intensity density relative to Critical Power). Tracking these daily inputs on an independent scale alongside multi-week continuous curves (LTS, STS, SB) allows athletes to inspect how single high-stress sessions or recovery days directly drive adaptation and fatigue without scale compression.
 
 ### Fatigue-Adjusted W' Balance (W'bal)
 Real-time tracking of your remaining anaerobic work capacity battery above Critical Power. Uses the **Skiba Differential Model** augmented with fatigue non-stationarity adjustments: dynamic recovery slowing ($\tau$ increases with accumulated work) and capacity ceiling decay.

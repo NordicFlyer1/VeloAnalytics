@@ -344,7 +344,7 @@ export function calculateBikeScore(durationSec: number, xPower: number, ri: numb
  * Calculates the Performance Management Chart (PMC) metrics: LTS, STS, and SB.
  * Includes a predictive component that projects fitness decay into the future.
  */
-export function calculatePMC(history: { date: string, bikeScore: number }[], futureDays: number = 14): PMCDataPoint[] {
+export function calculatePMC(history: { date: string, bikeScore: number, relativeIntensity?: number }[], futureDays: number = 14): PMCDataPoint[] {
   if (history.length === 0) return [];
 
   // Sort history by date
@@ -378,11 +378,23 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
   const endDate = new Date(Math.max(lastActivityDate.getTime(), today.getTime()));
   endDate.setDate(endDate.getDate() + futureDays);
 
-  // Map scores to dates for quick lookup
+  // Map scores and relative intensity to dates for quick lookup
   const dailyScores: Record<string, number> = {};
+  const dailyWeightedRI: Record<string, { totalWeightedRI: number; totalWeight: number }> = {};
+
   sortedHistory.forEach(h => {
     const score = Number.isFinite(h.bikeScore) ? h.bikeScore : 0;
     dailyScores[h.date] = (dailyScores[h.date] || 0) + score;
+
+    const ri = h.relativeIntensity;
+    if (ri !== undefined && Number.isFinite(ri) && ri > 0) {
+      const weight = score > 0 ? score : 1;
+      if (!dailyWeightedRI[h.date]) {
+        dailyWeightedRI[h.date] = { totalWeightedRI: 0, totalWeight: 0 };
+      }
+      dailyWeightedRI[h.date].totalWeightedRI += ri * weight;
+      dailyWeightedRI[h.date].totalWeight += weight;
+    }
   });
 
   // Iterate day by day from first activity to endDate
@@ -393,6 +405,11 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
     const todaysScore = dailyScores[dateStr] || 0;
     const safeTodaysScore = Number.isFinite(todaysScore) ? todaysScore : 0;
 
+    const dayRIEntry = dailyWeightedRI[dateStr];
+    const dayRI = dayRIEntry && dayRIEntry.totalWeight > 0
+      ? Number((dayRIEntry.totalWeightedRI / dayRIEntry.totalWeight).toFixed(2))
+      : undefined;
+
     // LTS(today) = LTS(yesterday) + (Score(today) - LTS(yesterday)) * lambda
     currentLTS = currentLTS + (safeTodaysScore - currentLTS) * ltsLambda;
     currentSTS = currentSTS + (safeTodaysScore - currentSTS) * stsLambda;
@@ -400,6 +417,7 @@ export function calculatePMC(history: { date: string, bikeScore: number }[], fut
     pmc.push({
       date: dateStr,
       bikeScore: safeTodaysScore,
+      relativeIntensity: dayRI,
       lts: Number.isFinite(currentLTS) ? currentLTS : 0,
       sts: Number.isFinite(currentSTS) ? currentSTS : 0,
       sb: (Number.isFinite(currentLTS) && Number.isFinite(currentSTS)) ? currentLTS - currentSTS : 0,

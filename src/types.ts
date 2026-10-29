@@ -141,6 +141,7 @@ export interface WeatherData {
 export interface PMCDataPoint {
   date: string; // YYYY-MM-DD
   bikeScore: number;
+  relativeIntensity?: number;
   lts: number;
   sts: number;
   sb: number;

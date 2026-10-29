@@ -19,6 +19,13 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
 
+## What's New in v1.6.3
+
+- **PMC Architecture Decoupling:** Separated discrete daily training impulse from continuous Banister curves. The primary PMC chart now tracks **Fitness (LTS)**, **Fatigue (STS)**, and **Form (SB)** without scale distortion, while a synchronized sub-lane charts daily **BikeScore** and **Relative Intensity** alongside a 1.00 threshold benchmark.
+- **5-Pillar Performance Summary Grid:** Scaled the PMC summary metrics into a 5-pillar overview reporting BikeScore, Relative Intensity, LTS, STS, and Form (SB) with interactive highlight syncing.
+
+---
+
 ## What's New in v1.6.2
 
 - **Help System & Documentation Audit:** Line-by-line harmonization across the in-app FAQ, setup guides, and repository documentation. Aligned Garmin Connect instructions with the single Personal API Key token exchange and current health endpoints.

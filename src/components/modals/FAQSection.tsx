@@ -112,6 +112,12 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "Your 'freshness'. If it's a positive number, you're rested and ready to race. If it's deeply negative, you're very tired and need a break.",
         technicalAnswer: "Stress Balance (SB) is the difference between Fitness (LTS) and Fatigue (STS). A negative balance indicates a state of overload, while a positive balance indicates 'tapering', freshness, and recovery.",
         keywords: ["sb", "form", "freshness", "rested", "ready"]
+      },
+      {
+        question: "How does the Performance Management Chart (PMC) display training load alongside fitness?",
+        beginnerAnswer: "The chart separates your daily workouts from your long-term fitness trends. The main chart tracks your Fitness (LTS), Fatigue (STS), and Form (SB) over weeks and months. The lower chart displays your daily workout volume (BikeScore) and intensity (Relative Intensity), letting you see exactly how individual hard rides or rest days impact your overall fatigue and form.",
+        technicalAnswer: "The PMC decouples continuous physiological state variables from discrete daily training impulses. Fitness (LTS), Fatigue (STS), and Form (SB) model the athlete's cumulative impulse-response using Banister exponentially weighted moving averages. Below, daily training dose (BikeScore) and session Relative Intensity (RI = xPower / CP) are charted chronologically on their own scale with a 1.00 threshold guideline, preventing single high-stress sessions from distorting the vertical scale of the multi-week fitness curves.",
+        keywords: ["pmc", "performance management chart", "bikescore", "relative intensity", "ri", "impulse", "lts", "sts", "sb"]
       }
     ]
   },

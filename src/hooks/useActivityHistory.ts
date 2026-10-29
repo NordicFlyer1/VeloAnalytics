@@ -67,7 +67,10 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         const sortedHistory = [...history].sort((a, b) => a.date.localeCompare(b.date));
         const historyData = sortedHistory.map(h => ({ 
           date: h.date, 
-          bikeScore: Number.isFinite(h.bikeScore) ? h.bikeScore : 0 
+          bikeScore: Number.isFinite(h.bikeScore) ? h.bikeScore : 0,
+          relativeIntensity: Number.isFinite(h.relativeIntensity) 
+            ? h.relativeIntensity 
+            : (h.xPower && h.cp && h.cp > 0 ? Number((h.xPower / h.cp).toFixed(2)) : undefined)
         }));
         
         let allData = await workers.calculatePMC(historyData);
