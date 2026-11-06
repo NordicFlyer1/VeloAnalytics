@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "VeloAnalytics",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "identifier": "com.bruce.veloanalytics",
   "build": {
     "frontendDist": "../dist",
@@ -43,7 +43,8 @@
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "13.0",
-      "entitlements": null,
+      "entitlements": "Entitlements.plist",
+      "infoPlist": "Info.plist",
       "exceptionDomain": "",
       "signingIdentity": null,
       "providerShortName": null

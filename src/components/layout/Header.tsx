@@ -12,7 +12,7 @@ import {
   ChevronRight,
   History as HistoryIcon,
   Sparkles,
-  Mic,
+  Command,
   RefreshCw,
   Loader2
 } from 'lucide-react';
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="p-1.5 sm:p-2 hover:bg-app-card rounded-full transition-colors text-app-muted hover:text-orange-500"
                   title="Apple Siri & Intelligence"
                 >
-                  <Mic className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                  <Command className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                 </button>
               )}
 

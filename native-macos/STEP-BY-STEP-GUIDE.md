@@ -23,7 +23,7 @@ VeloAnalytics connects with macOS and Siri using an ultra-low-latency 3-step loc
 
 ## Ready-to-Use Configuration Templates
 
-All 5 pre-configured desktop template files are provided in:
+All 7 pre-configured desktop template files are provided in:
 `native-macos/src-tauri-templates/`
 
 | Target Path on Your Mac | Source in Repository | Purpose |
@@ -33,6 +33,8 @@ All 5 pre-configured desktop template files are provided in:
 | `src-tauri/src/lib.rs` | `native-macos/src-tauri-templates/lib.rs` | Rust command writing `siri_snapshot.json` & HTTP plugin init |
 | `src-tauri/src/main.rs` | `native-macos/src-tauri-templates/main.rs` | Standard entry point delegating to `app_lib::run()` |
 | `src-tauri/tauri.conf.json` | `native-macos/src-tauri-templates/tauri.conf.json` | Window dimensions, bundle identifier, and macOS config |
+| `src-tauri/Info.plist` | `native-macos/src-tauri-templates/Info.plist` | Microphone and speech recognition usage descriptions |
+| `src-tauri/Entitlements.plist` | `native-macos/src-tauri-templates/Entitlements.plist` | Hardware audio input and networking sandbox entitlements |
 | Xcode Project File | `native-macos/VeloAppIntents.swift` | Native Swift App Intents & Siri phrases |
 
 ---
@@ -57,6 +59,8 @@ cp native-macos/src-tauri-templates/default.json src-tauri/capabilities/default.
 cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
 cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
 cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json
+cp native-macos/src-tauri-templates/Info.plist src-tauri/Info.plist
+cp native-macos/src-tauri-templates/Entitlements.plist src-tauri/Entitlements.plist
 ```
 
 ### Step 3: Test in Local Development Mode

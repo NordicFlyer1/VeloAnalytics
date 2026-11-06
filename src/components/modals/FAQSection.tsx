@@ -70,18 +70,18 @@ const FAQ_DATA: FAQCategory[] = [
         question: "What is xPower?",
         beginnerAnswer: "A way of measuring how hard the ride 'felt'. It gives more credit for hard sprints than for coasting, which captures the physical cost better than a simple average.",
         technicalAnswer: "xPower (developed by Dr. Philip Skiba) accounts for the metabolic cost of highly variable efforts. It applies a 25-second Exponentially Weighted Moving Average (EWMA) raised to the 4th power to reflect the non-linear metabolic cost of high-intensity efforts.",
-        keywords: ["normalized", "actual cost", "effort", "physiological cost"]
+        keywords: ["xpower", "actual cost", "effort", "physiological cost"]
       },
       {
         question: "What is Relative Intensity (RI)?",
         beginnerAnswer: "RI is a scale of 0 to 1.0 (or higher) that tells you how hard your ride was compared to your absolute speed limit. 1.0 means you were riding at your limit (Critical Power).",
-        technicalAnswer: "Relative Intensity (RI) is the ratio of normalized power (xPower) to Critical Power (CP). Formula: RI = xPower / CP. It is a dimensionless number representing the intensity of an effort relative to the athlete's physiological steady-state threshold.",
+        technicalAnswer: "Relative Intensity (RI) is the ratio of xPower to Critical Power (CP). Formula: RI = xPower / CP. It is a dimensionless number representing the intensity of an effort relative to the athlete's physiological steady-state threshold.",
         keywords: ["ri", "intensity", "relative", "hard", "threshold"]
       },
       {
         question: "What is Efficiency Factor (EF)?",
         beginnerAnswer: "EF is a measure of your 'aerobic engine' efficiency. It tells you how much power you produce for every heartbeat. As you get fitter, your EF will go up because you can produce more power with less effort from your heart.",
-        technicalAnswer: "Efficiency Factor (EF) is the ratio of normalized output (xPower) to physiological input (Average Heart Rate). EF = xPower ÷ Avg HR. It quantifies aerobic efficiency; mitochondrial improvements and increased stroke volume lead to higher EF values over time on standardized efforts.",
+        technicalAnswer: "Efficiency Factor (EF) is the ratio of xPower to physiological input (Average Heart Rate). EF = xPower ÷ Avg HR. It quantifies aerobic efficiency; mitochondrial improvements and increased stroke volume lead to higher EF values over time on standardized efforts.",
         keywords: ["ef", "efficiency", "aerobic", "engine", "heart rate", "power"]
       },
       {
@@ -253,6 +253,12 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your recent sleep, HRV trends, and 6-week fitness base.",
         technicalAnswer: "The coach context is a structured JSON schema containing: 1) System thresholds (CP/W'); 2) Calculated activity metrics (xPower, RI, BikeScore, EF, Aerobic Decoupling); 3) Sensor aggregates (Avg/Max Power, HR, Cadence, Speed); 4) Wellness timelines (Sleep durations, Quality, HRV Baselines); and 5) Performance indices (CTL, ATL, TSB) with 14-day projections.",
         keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent", "json"]
+      },
+      {
+        question: "How do I ask questions with my voice and hear verbal responses?",
+        beginnerAnswer: "Click the microphone icon in the Velo Coach input bar to speak your question directly. Your words appear live on screen. To hear responses read aloud, click the speaker icon on any message, or turn on the 'Voice: On' toggle in the drawer header for automatic hands-free reading.",
+        technicalAnswer: "Voice interaction is powered natively by the browser Web Speech API (SpeechRecognition and SpeechSynthesis). It is 100% private, free, and runs entirely on your device with zero cloud audio API costs. It works universally across all online providers (Gemini, OpenAI, Claude, Groq) and local offline models (Ollama, LM Studio).",
+        keywords: ["voice", "speech", "microphone", "speak", "read aloud", "audio", "verbal", "hands free", "coach"]
       },
       {
         question: "Is my performance data sent to AI companies?",
@@ -438,15 +444,15 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I backup my data and settings?",
-        beginnerAnswer: "Go to the Maintenance tab in Settings and click 'Download Config'. This saves your secret keys, fitness thresholds, and bike profiles into a simple file on your computer.",
-        technicalAnswer: "The 'Export Settings' function serializes your application configuration—including AI API keys, CP/W' thresholds, and Equipment profiles—into a veloanalytics_config_backup.json file. Note: Activity history (FIT file metadata) is not included in this export to keep the configuration portable and focused on secrets.",
-        keywords: ["backup", "export", "download", "save", "config", "json"]
+        beginnerAnswer: "Go to Settings > Maintenance. You have two options: click 'Download Config' to backup all your preferences, secret API keys (AI, Garmin, Maps), and bike profiles, or click 'Export Full Archive' to create a complete backup that includes your entire historical ride archive.",
+        technicalAnswer: "VeloAnalytics provides a two-tier data portability architecture: 'Download Config' serializes all localStorage configuration, Garmin Connect secrets/sync rules, thresholds, and equipment profiles into a veloanalytics_config_backup.json file. 'Export Full Archive' packages the configuration bundle alongside your entire parsed activity history (veloanalytics_history), providing a complete, self-contained migration archive.",
+        keywords: ["backup", "export", "download", "save", "config", "vault", "archive", "json"]
       },
       {
         question: "How do I restore a backup from another device?",
-        beginnerAnswer: "In the Maintenance tab, click 'Select Backup File' and choose your previously saved JSON file. The app will reload and all your rides and settings will be restored instantly.",
-        technicalAnswer: "The 'Import Settings' function parses the provided JSON blob, validates core fields, and atomic-writes the entire configuration back into localStorage. A window reload is triggered to ensure all React hooks and state Managers across the application context sync with the newly restored data.",
-        keywords: ["restore", "import", "upload", "recovery", "migration"]
+        beginnerAnswer: "In Settings > Maintenance, click 'Select Backup File' under 'Restore State' and choose either your Config Bundle or Full Vault Archive JSON file. The app reloads instantly with all your settings and data fully restored.",
+        technicalAnswer: "The Universal Restore engine (`importSettings()`) parses the uploaded JSON payload, identifies whether it is a Config Bundle or Full Vault Archive, validates schema integrity, and atomically writes the configuration, Garmin credentials, wellness history, and activity records back into localStorage before triggering a synchronized application reload.",
+        keywords: ["restore", "import", "upload", "recovery", "migration", "universal"]
       }
     ]
   },
@@ -467,9 +473,38 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "Where are the Tauri and Xcode files to build this on my Mac?",
-        beginnerAnswer: "In your project root under `native-macos/src-tauri-templates/`. You can copy them straight into your `src-tauri` folder to get full file permissions and Siri synchronization working immediately.",
-        technicalAnswer: "The `native-macos` directory contains `src-tauri-templates/` with drop-in `Cargo.toml`, `default.json` capability permissions, `lib.rs`, `main.rs`, and `tauri.conf.json`, as well as `VeloAppIntents.swift` for Xcode.",
-        keywords: ["tauri", "xcode", "swift", "build", "rust", "desktop", "native"]
+        beginnerAnswer: "In your project root under `native-macos/src-tauri-templates/`. You can copy them straight into your `src-tauri` folder to get full file permissions, microphone access, and Siri synchronization working immediately.",
+        technicalAnswer: "The `native-macos` directory contains `src-tauri-templates/` with 7 pre-configured template files: `Cargo.toml`, `default.json` capability permissions, `lib.rs`, `main.rs`, `tauri.conf.json`, `Info.plist`, and `Entitlements.plist`, as well as `VeloAppIntents.swift` for Xcode.",
+        keywords: ["tauri", "xcode", "swift", "build", "rust", "desktop", "native", "plist", "entitlements"]
+      }
+    ]
+  },
+  {
+    name: "Velo Coach & Voice Intelligence",
+    items: [
+      {
+        question: "How do I ask questions using my voice in Velo Coach?",
+        beginnerAnswer: "Click the microphone button in the Velo Coach input box and speak your question naturally. Once you finish speaking, Velo Coach transcribes your question and automatically submits it to your coach.",
+        technicalAnswer: "Voice input is powered by the browser-native Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) operating in single-utterance discrete mode (`continuous: false`). The speech recognition engine handles endpoint detection and streams interim and final transcription tokens into the prompt input with zero server latency.",
+        keywords: ["voice", "microphone", "mic", "speak", "speech", "coach", "audio", "talk"]
+      },
+      {
+        question: "Can Velo Coach speak its answers back to me?",
+        beginnerAnswer: "Yes! You can click the speaker icon next to any coach message to hear it read aloud. You can also toggle the 'VOICE' capsule button to 'AUTO' in the coach header so every response is automatically spoken out loud.",
+        technicalAnswer: "Speech synthesis utilizes the browser-native `window.speechSynthesis` engine. The audio output stream runs client-side, respecting user audio volume and pitch controls, and can be stopped instantly at any time by clicking the active speaker button or closing the drawer.",
+        keywords: ["read aloud", "audio", "spoken", "speech synthesis", "tts", "auto speak", "listen", "speaker"]
+      },
+      {
+        question: "How does the voice engine pronounce complex cycling terms and formulas?",
+        beginnerAnswer: "Velo Coach includes an intelligent cycling dictionary. It automatically pronounces scientific terms naturally—saying 'X-Power' for xPower, 'W prime balance' for W'bal, 'Critical Power' for CP, and pronouncing units like Watts, Kilojoules, and Beats Per Minute.",
+        technicalAnswer: "Before passing markdown to the SpeechSynthesisUtterance queue, text is processed through `sanitizeMarkdownForSpeech()`. This strips code fences, equations, and markdown artifacts, and expands sports science terminology and Option A Unicode symbols (e.g. `xPower` -> X-Power, `W'bal` -> W prime balance, `BikeScore™` -> BikeScore, `Pw:HR` -> aerobic decoupling, `VRS` -> Velo Readiness Score, and SI unit symbols like `KJ`, `W`, `BPM`, `RPM`).",
+        keywords: ["pronounce", "pronunciation", "dictionary", "wbal", "xpower", "cp", "kilojoules", "watts", "bpm", "terms"]
+      },
+      {
+        question: "Is my voice data sent to external cloud speech servers?",
+        beginnerAnswer: "No. VeloAnalytics uses the native speech engine already built into your browser and operating system (such as Apple Speech on macOS or Chrome Speech). Your voice audio is not recorded or stored on any VeloAnalytics server.",
+        technicalAnswer: "Speech transcription and synthesis are executed locally via standard W3C Web Speech API interfaces. In native macOS Tauri builds, audio is piped through macOS CoreAudio and Apple's native Speech framework with explicit `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` privacy protections.",
+        keywords: ["privacy", "offline", "security", "cloud", "recording", "data", "mic permission"]
       }
     ]
   }

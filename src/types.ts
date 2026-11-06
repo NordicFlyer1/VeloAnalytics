@@ -213,6 +213,8 @@ export interface AISettings {
   useExperimentalReadiness?: boolean;
   googleMapsApiKey?: string;
   openWeatherMapApiKey?: string;
+  autoSpeakResponses?: boolean;
+  voiceRate?: number;
 }
 
 export interface ChatMessage {

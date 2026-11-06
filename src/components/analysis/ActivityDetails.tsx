@@ -100,7 +100,7 @@ export const ActivityDetails: React.FC<ActivityDetailsProps> = ({
         exportActions={exportActions}
         infoContent={{
           title: "Activity Details",
-          description: "High-level summary of your session, including duration, distance, total work (KJ), and normalized metrics like xPower and BikeScore™."
+          description: "High-level summary of your session, including duration, distance, total work (KJ), and physiological power and load metrics like xPower and BikeScore™."
         }}
       />
       

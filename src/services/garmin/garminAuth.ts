@@ -8,6 +8,9 @@ export const DEFAULT_GARMIN_SETTINGS: GarminSettings = {
   syncActivities: true,
   syncSleep: true,
   syncHrv: true,
+  syncHealth: true,
+  activityLimit: 20,
+  healthDaysBack: 14,
   lastSyncTimestamp: undefined,
   autoSyncOnLaunch: false
 };
@@ -68,6 +71,9 @@ export const saveGarminSettings = (updates: Partial<GarminSettings>): GarminSett
     apiKey: updates.apiKey !== undefined ? updates.apiKey.trim() : current.apiKey
   };
   localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(merged));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('veloanalytics_garmin_settings_updated', { detail: merged }));
+  }
   return merged;
 };
 

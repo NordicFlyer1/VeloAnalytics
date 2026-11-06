@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, Zap, Activity, Info, Bike, Plus, Trash2, Check, User, 
   Target, Eye, EyeOff, Brain, Key, Cpu, Globe, MessageSquare, Sparkles,
   Moon, RefreshCw, FlaskConical, ExternalLink, AlertCircle, CheckCircle2,
-  Radio, Loader2
+  Radio, Loader2, Volume2, Mic, Database
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { 
@@ -68,6 +68,7 @@ interface SettingsModalProps {
 
   // Maintenance Props
   exportSettings: () => void;
+  exportFullArchive: () => void;
   importSettings: (json: string) => boolean;
   initialTab?: Tab;
 }
@@ -114,6 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   aiSettings,
   updateAiSettings,
   exportSettings,
+  exportFullArchive,
   importSettings,
   initialTab
 }) => {
@@ -131,6 +133,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showGarminKey, setShowGarminKey] = useState(false);
   const [garminSettings, setGarminSettingsState] = useState<GarminSettings>(() => getGarminSettings());
   const [testStatus, setTestStatus] = useState<{ isTesting: boolean; success?: boolean; message?: string }>({ isTesting: false });
+
+  // Sync state whenever SettingsModal opens or when updated from GarminSyncModal
+  useEffect(() => {
+    if (showSettings) {
+      setGarminSettingsState(getGarminSettings());
+      setGarminApiKeyState(getGarminApiKey());
+    }
+  }, [showSettings]);
+
+  useEffect(() => {
+    const handleSettingsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<GarminSettings>;
+      if (customEvent.detail) {
+        setGarminSettingsState(customEvent.detail);
+        if (customEvent.detail.apiKey !== undefined) {
+          setGarminApiKeyState(customEvent.detail.apiKey);
+        }
+      } else {
+        setGarminSettingsState(getGarminSettings());
+        setGarminApiKeyState(getGarminApiKey());
+      }
+    };
+    window.addEventListener('veloanalytics_garmin_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('veloanalytics_garmin_settings_updated', handleSettingsUpdated);
+  }, []);
 
   const handleSaveGarminApiKey = (newKey: string) => {
     setGarminApiKeyState(newKey);
@@ -720,7 +747,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <input 
                             type="text" 
                             placeholder={
-                              aiSettings.provider === 'gemini' ? "gemini-3-flash-preview" :
+                              aiSettings.provider === 'gemini' ? "gemini-3.8-flash" :
                               aiSettings.provider === 'openai' ? "gpt-4o" : 
                               aiSettings.provider === 'anthropic' ? "claude-3-5-sonnet-20240620" :
                               "llama-3.3-70b-versatile"
@@ -908,6 +935,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p className="text-[10px] text-app-muted font-medium ml-1">
                       These keys prioritize the Settings Panel (Local Storage). If empty, the app falls back to build-time environment variables defined in your .env or the Vercel dashboard.
                     </p>
+                  </div>
+
+                  {/* Voice & Verbal Interaction Section */}
+                  <div className="space-y-4 pt-4 border-t border-app-border/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Volume2 className="w-4 h-4 text-orange-500" />
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-app-text">Voice & Verbal Interaction</h3>
+                      </div>
+                      <span className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                        Speech-to-Text • Text-to-Speech
+                      </span>
+                    </div>
+
+                    <div className="p-5 rounded-3xl bg-app-bg/30 border border-app-border space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold text-app-text">Auto-Speak Verbal Insights</p>
+                          <p className="text-[11px] text-app-muted leading-relaxed">
+                            Automatically read coach clinical responses aloud using synthesized voice when received.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateAiSettings({ autoSpeakResponses: !aiSettings.autoSpeakResponses })}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-colors relative border border-app-border shrink-0 ml-4",
+                            aiSettings.autoSpeakResponses ? "bg-orange-500 border-orange-500" : "bg-app-bg/50"
+                          )}
+                          title={aiSettings.autoSpeakResponses ? "Disable Auto-Speak" : "Enable Auto-Speak"}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 rounded-full bg-white transition-transform absolute top-0.5",
+                            aiSettings.autoSpeakResponses ? "right-1" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-app-muted font-medium">
+                        Powered by Web Speech API. Completely local, free, zero cloud API costs, and works across both online and local offline models (Ollama / LM Studio).
+                      </p>
+                    </div>
                   </div>
 
                   {/* Apple Intelligence & Siri Section */}
@@ -1110,6 +1178,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     </div>
 
+                    {/* Activity Limit */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Activity Batch Limit</div>
+                        <div className="text-[10px] text-app-muted">Max recent rides to inspect per sync</div>
+                      </div>
+                      <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                        {[10, 20, 50].map((count) => (
+                          <button
+                            key={count}
+                            onClick={() => handleUpdateGarminSettings({ activityLimit: count })}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                              (garminSettings.activityLimit || 20) === count
+                                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+                                : "text-app-muted hover:text-app-text"
+                            )}
+                          >
+                            {count}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Sleep Telemetry */}
                     <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
                       <div className="space-y-0.5">
@@ -1148,6 +1240,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           garminSettings.syncHrv ? "left-5.5" : "left-0.5"
                         )} />
                       </button>
+                    </div>
+
+                    {/* Health Lookback Range */}
+                    <div className="flex items-center justify-between p-4 bg-app-card/30 border border-app-border rounded-2xl">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-app-text">Health Lookback Window</div>
+                        <div className="text-[10px] text-app-muted">Days of sleep &amp; HRV to download</div>
+                      </div>
+                      <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border">
+                        {[7, 14, 30].map((days) => (
+                          <button
+                            key={days}
+                            onClick={() => handleUpdateGarminSettings({ healthDaysBack: days })}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                              (garminSettings.healthDaysBack || 14) === days
+                                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+                                : "text-app-muted hover:text-app-text"
+                            )}
+                          >
+                            {days}D
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Auto Sync on Launch */}
@@ -1370,15 +1486,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>
                     <p className="text-[11px] text-app-muted leading-relaxed">
-                      Export your application configuration, including secret API keys, physiological thresholds, and equipment profiles into a single JSON file. Note: Activity history is excluded to keep backups portable.
+                      Export your application configuration, secrets, and bike profiles, or generate a complete vault archive including all parsed historical rides and PMC records. Universal restore seamlessly imports either format.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {/* Export Card */}
-                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Config Bundle Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center shrink-0">
                           <Check className="w-5 h-5 text-orange-500" />
                         </div>
                         <div className="flex flex-col">
@@ -1386,25 +1502,53 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Settings & Secrets</span>
                         </div>
                       </div>
+                      <p className="text-[10px] text-app-muted leading-relaxed">
+                        Lightweight JSON containing API keys (AI, Garmin, Maps), Garmin sync rules, thresholds, and bike profiles.
+                      </p>
                       <button 
                         onClick={exportSettings}
-                        className="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500/20"
+                        className="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-orange-500/20 cursor-pointer"
                       >
                         Download Config
                       </button>
                     </div>
 
-                    {/* Import Card */}
-                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col gap-6">
+                    {/* Full Vault Archive Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <Database className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Full Vault Archive</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Config + Ride History</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-app-muted leading-relaxed">
+                        Comprehensive snapshot combining all settings and secrets with your entire historical activity archive.
+                      </p>
+                      <button 
+                        onClick={exportFullArchive}
+                        className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-emerald-500/20 cursor-pointer"
+                      >
+                        Export Full Archive
+                      </button>
+                    </div>
+
+                    {/* Import Card */}
+                    <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0">
                           <Activity className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Restore State</span>
-                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Import backup file</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Universal Restore</span>
                         </div>
                       </div>
+                      <p className="text-[10px] text-app-muted leading-relaxed">
+                        Seamlessly restores either a Config Bundle or a Full Vault Archive, refreshing your workspace atomically.
+                      </p>
                       <div className="relative">
                         <input 
                           type="file" 

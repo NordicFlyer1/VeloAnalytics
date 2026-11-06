@@ -56,6 +56,8 @@ cp native-macos/src-tauri-templates/default.json src-tauri/capabilities/default.
 cp native-macos/src-tauri-templates/lib.rs src-tauri/src/lib.rs
 cp native-macos/src-tauri-templates/main.rs src-tauri/src/main.rs
 cp native-macos/src-tauri-templates/tauri.conf.json src-tauri/tauri.conf.json
+cp native-macos/src-tauri-templates/Info.plist src-tauri/Info.plist
+cp native-macos/src-tauri-templates/Entitlements.plist src-tauri/Entitlements.plist
 ```
 
 *(For a complete walkthrough including native macOS Siri AppIntents, see `native-macos/STEP-BY-STEP-GUIDE.md`.)*

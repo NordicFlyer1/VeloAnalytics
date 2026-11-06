@@ -28,6 +28,7 @@ import {
   syncGarminHealth 
 } from '../../services/garmin/garminHealth';
 import { 
+  GarminSettings,
   GarminSyncProgress, 
   GarminSyncResult 
 } from '../../services/garmin/types';
@@ -57,12 +58,8 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
   isSyncing,
   setIsSyncing
 }) => {
-  const [apiKey, setApiKey] = useState<string>('');
-  const [syncActivitiesEnabled, setSyncActivitiesEnabled] = useState(true);
-  const [syncHealthEnabled, setSyncHealthEnabled] = useState(true);
-  const [activityLimit, setActivityLimit] = useState<number>(20);
-  const [healthDays, setHealthDays] = useState<number>(14);
-  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<number | undefined>(undefined);
+  const [apiKey, setApiKey] = useState<string>(() => getGarminApiKey());
+  const [garminSettings, setGarminSettingsState] = useState<GarminSettings>(() => getGarminSettings());
 
   // Sync execution states
   const [progress, setProgress] = useState<GarminSyncProgress | null>(null);
@@ -72,19 +69,36 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
   // Refresh settings when modal opens
   useEffect(() => {
     if (isOpen) {
-      const key = getGarminApiKey();
-      setApiKey(key);
-      const settings = getGarminSettings();
-      setSyncActivitiesEnabled(settings.syncActivities !== false);
-      setSyncHealthEnabled(settings.syncHealth !== false);
-      setActivityLimit(settings.activityLimit || 20);
-      setHealthDays(settings.healthDaysBack || 14);
-      setLastSyncTimestamp(settings.lastSyncTimestamp);
+      setApiKey(getGarminApiKey());
+      setGarminSettingsState(getGarminSettings());
       setSyncError(null);
     }
   }, [isOpen]);
 
+  // Listen for sync preference updates from SettingsModal or elsewhere
+  useEffect(() => {
+    const handleSettingsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<GarminSettings>;
+      if (customEvent.detail) {
+        setGarminSettingsState(customEvent.detail);
+        if (customEvent.detail.apiKey !== undefined) {
+          setApiKey(customEvent.detail.apiKey);
+        }
+      } else {
+        setGarminSettingsState(getGarminSettings());
+        setApiKey(getGarminApiKey());
+      }
+    };
+    window.addEventListener('veloanalytics_garmin_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('veloanalytics_garmin_settings_updated', handleSettingsUpdated);
+  }, []);
+
   if (!isOpen) return null;
+
+  const updateGarminSetting = (updates: Partial<GarminSettings>) => {
+    const updated = saveGarminSettings(updates);
+    setGarminSettingsState(updated);
+  };
 
   const handleStartSync = async () => {
     if (isSyncing) return;
@@ -106,14 +120,14 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
 
     try {
       // 1. Sync Activities if enabled
-      if (syncActivitiesEnabled) {
+      if (garminSettings.syncActivities !== false) {
         setProgress({
           phase: 'discovering',
           message: 'Connecting to Garmin Connect for cycling activities...'
         });
 
         const actResult = await syncGarminActivities({
-          limit: activityLimit,
+          limit: garminSettings.activityLimit || 20,
           existingHistory,
           onProgress: (p) => setProgress(p),
           onFilesReady: async (files) => {
@@ -128,19 +142,23 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
         }
       }
 
-      // 2. Sync Health (Sleep & HRV) if enabled
-      if (syncHealthEnabled) {
+      // 2. Sync Health (Sleep & HRV) respecting individual preferences
+      const shouldSyncSleep = garminSettings.syncSleep !== false;
+      const shouldSyncHrv = garminSettings.syncHrv !== false;
+
+      if (shouldSyncSleep || shouldSyncHrv) {
+        const streamLabel = shouldSyncSleep && shouldSyncHrv ? 'sleep & HRV' : shouldSyncSleep ? 'sleep' : 'HRV';
         setProgress({
           phase: 'downloading',
-          message: 'Fetching Garmin sleep & HRV recovery metrics...'
+          message: `Fetching Garmin ${streamLabel} recovery metrics...`
         });
 
         const healthRes = await syncGarminHealth({
-          daysBack: healthDays,
+          daysBack: garminSettings.healthDaysBack || 14,
           existingSleep,
           existingHrv,
-          syncSleep: true,
-          syncHrv: true,
+          syncSleep: shouldSyncSleep,
+          syncHrv: shouldSyncHrv,
           onProgress: (p) => setProgress(p)
         });
 
@@ -148,17 +166,11 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
         onHealthSynced(healthRes.mergedSleep, healthRes.mergedHrv);
       }
 
-      // Update last sync timestamp
+      // Update last sync timestamp and persist
       const updatedTimestamp = Date.now();
-      saveGarminSettings({
-        ...getGarminSettings(),
-        lastSyncTimestamp: updatedTimestamp,
-        activityLimit,
-        healthDaysBack: healthDays,
-        syncActivities: syncActivitiesEnabled,
-        syncHealth: syncHealthEnabled
+      updateGarminSetting({
+        lastSyncTimestamp: updatedTimestamp
       });
-      setLastSyncTimestamp(updatedTimestamp);
 
       setProgress({
         phase: 'done',
@@ -210,7 +222,7 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-app-muted uppercase tracking-widest font-bold mt-0.5">
-                Last synced: {formatLastSync(lastSyncTimestamp)}
+                Last synced: {formatLastSync(garminSettings.lastSyncTimestamp)}
               </p>
             </div>
           </div>
@@ -285,21 +297,21 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                       </div>
                     </div>
                     <button
-                      onClick={() => setSyncActivitiesEnabled(!syncActivitiesEnabled)}
+                      onClick={() => updateGarminSetting({ syncActivities: garminSettings.syncActivities === false ? true : false })}
                       disabled={isSyncing}
                       className={cn(
                         "w-8 h-4 rounded-full transition-all relative cursor-pointer",
-                        syncActivitiesEnabled ? "bg-orange-500" : "bg-app-border"
+                        garminSettings.syncActivities !== false ? "bg-orange-500" : "bg-app-border"
                       )}
                     >
                       <div className={cn(
                         "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
-                        syncActivitiesEnabled ? "left-4.5" : "left-0.5"
+                        garminSettings.syncActivities !== false ? "left-4.5" : "left-0.5"
                       )} />
                     </button>
                   </div>
 
-                  {syncActivitiesEnabled && (
+                  {garminSettings.syncActivities !== false && (
                     <div className="pt-2 border-t border-app-border/40 flex items-center justify-between gap-2">
                       <span className="text-[10px] uppercase tracking-wider text-app-muted font-bold">
                         Fetch Recent:
@@ -308,11 +320,11 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                         {[10, 20, 50].map(count => (
                           <button
                             key={count}
-                            onClick={() => setActivityLimit(count)}
+                            onClick={() => updateGarminSetting({ activityLimit: count })}
                             disabled={isSyncing}
                             className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                              activityLimit === count 
+                              (garminSettings.activityLimit || 20) === count 
                                 ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                                 : "text-app-muted hover:text-app-text"
                             )}
@@ -325,36 +337,59 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                   )}
                 </div>
 
-                {/* Stream 2: Health & Sleep */}
+                {/* Stream 2: Health & Recovery */}
                 <div className="p-4 rounded-2xl border border-app-border bg-app-card/40 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        <Moon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-app-text">Health &amp; Recovery</div>
-                        <div className="text-[10px] text-app-muted uppercase tracking-widest">
-                          Sleep Stages, Scores &amp; Overnight HRV
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Moon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-app-text">Health &amp; Recovery</div>
+                      <div className="text-[10px] text-app-muted uppercase tracking-widest">
+                        Sleep Stages, Scores &amp; Overnight HRV
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSyncHealthEnabled(!syncHealthEnabled)}
-                      disabled={isSyncing}
-                      className={cn(
-                        "w-8 h-4 rounded-full transition-all relative cursor-pointer",
-                        syncHealthEnabled ? "bg-orange-500" : "bg-app-border"
-                      )}
-                    >
-                      <div className={cn(
-                        "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
-                        syncHealthEnabled ? "left-4.5" : "left-0.5"
-                      )} />
-                    </button>
                   </div>
 
-                  {syncHealthEnabled && (
+                  <div className="pt-2 border-t border-app-border/40 space-y-2.5">
+                    {/* Sleep Sub-Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-app-text font-medium">Sleep Architecture</span>
+                      <button
+                        onClick={() => updateGarminSetting({ syncSleep: garminSettings.syncSleep === false ? true : false })}
+                        disabled={isSyncing}
+                        className={cn(
+                          "w-8 h-4 rounded-full transition-all relative cursor-pointer",
+                          garminSettings.syncSleep !== false ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                          garminSettings.syncSleep !== false ? "left-4.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+
+                    {/* HRV Sub-Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-app-text font-medium">Overnight HRV</span>
+                      <button
+                        onClick={() => updateGarminSetting({ syncHrv: garminSettings.syncHrv === false ? true : false })}
+                        disabled={isSyncing}
+                        className={cn(
+                          "w-8 h-4 rounded-full transition-all relative cursor-pointer",
+                          garminSettings.syncHrv !== false ? "bg-orange-500" : "bg-app-border"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                          garminSettings.syncHrv !== false ? "left-4.5" : "left-0.5"
+                        )} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {(garminSettings.syncSleep !== false || garminSettings.syncHrv !== false) && (
                     <div className="pt-2 border-t border-app-border/40 flex items-center justify-between gap-2">
                       <span className="text-[10px] uppercase tracking-wider text-app-muted font-bold">
                         Lookback Range:
@@ -363,11 +398,11 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                         {[7, 14, 30].map(days => (
                           <button
                             key={days}
-                            onClick={() => setHealthDays(days)}
+                            onClick={() => updateGarminSetting({ healthDaysBack: days })}
                             disabled={isSyncing}
                             className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                              healthDays === days 
+                              (garminSettings.healthDaysBack || 14) === days 
                                 ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
                                 : "text-app-muted hover:text-app-text"
                             )}
@@ -378,6 +413,27 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Stream 3: Auto-Sync on Launch */}
+                <div className="p-3.5 rounded-2xl border border-app-border/60 bg-app-card/20 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-app-text">Auto-Sync on Launch</div>
+                    <div className="text-[10px] text-app-muted">Silently check for new rides on startup</div>
+                  </div>
+                  <button
+                    onClick={() => updateGarminSetting({ autoSyncOnLaunch: !garminSettings.autoSyncOnLaunch })}
+                    disabled={isSyncing}
+                    className={cn(
+                      "w-8 h-4 rounded-full transition-all relative cursor-pointer",
+                      garminSettings.autoSyncOnLaunch ? "bg-orange-500" : "bg-app-border"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                      garminSettings.autoSyncOnLaunch ? "left-4.5" : "left-0.5"
+                    )} />
+                  </button>
                 </div>
               </div>
 
@@ -479,7 +535,7 @@ export const GarminSyncModal: React.FC<GarminSyncModalProps> = ({
             {apiKey && (
               <button
                 onClick={handleStartSync}
-                disabled={isSyncing || (!syncActivitiesEnabled && !syncHealthEnabled)}
+                disabled={isSyncing || (!garminSettings.syncActivities && !garminSettings.syncHealth)}
                 className="flex-1 sm:flex-none px-6 py-2.5 rounded-full bg-orange-500 hover:bg-orange-400 text-black text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSyncing ? (

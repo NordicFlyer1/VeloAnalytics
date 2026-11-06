@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutList, Loader2, RefreshCw, Upload, CheckCircle2, Play, Pause } from 'lucide-react';
+import { LayoutList, Loader2, RefreshCw, Upload, CheckCircle2, Play, Pause, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -165,6 +165,10 @@ export default function App() {
   const [isMapMaximized, setIsMapMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [garminAutoSyncToast, setGarminAutoSyncToast] = useState<{
+    status: 'syncing' | 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const mmpCurveRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
@@ -346,46 +350,72 @@ export default function App() {
           return;
         }
 
-        // Throttle check: avoid re-running if already auto-synced within the last 5 minutes
-        const lastAutoSync = sessionStorage.getItem('veloanalytics_last_autosync_time');
-        const now = Date.now();
-        if (lastAutoSync && (now - parseInt(lastAutoSync, 10)) < 5 * 60 * 1000) {
-          return;
-        }
-        sessionStorage.setItem('veloanalytics_last_autosync_time', String(now));
-
         setIsGarminSyncing(true);
+        setGarminAutoSyncToast({
+          status: 'syncing',
+          message: 'Connecting to Garmin Connect for new activities & health...'
+        });
 
+        let activitiesImported = 0;
         // 1. Sync Activities
         if (garminSettings.syncActivities !== false) {
-          await syncGarminActivities({
-            limit: garminSettings.activityLimit || 10,
+          const actResult = await syncGarminActivities({
+            limit: garminSettings.activityLimit || 20,
             existingHistory: history,
             onFilesReady: async (files) => {
+              activitiesImported = files.length;
               await handleFileUpload(files);
             }
           });
+          if (actResult.activitiesSynced) {
+            activitiesImported = actResult.activitiesSynced;
+          }
         }
 
         // 2. Sync Health (Sleep & HRV)
-        if (garminSettings.syncSleep !== false || garminSettings.syncHrv !== false) {
+        let healthSynced = 0;
+        const shouldSyncSleep = garminSettings.syncSleep !== false;
+        const shouldSyncHrv = garminSettings.syncHrv !== false;
+
+        if (shouldSyncSleep || shouldSyncHrv) {
           const healthRes = await syncGarminHealth({
-            daysBack: garminSettings.healthDaysBack || 7,
+            daysBack: garminSettings.healthDaysBack || 14,
             existingSleep: settings.sleepHistory,
             existingHrv: settings.hrvHistory,
-            syncSleep: garminSettings.syncSleep !== false,
-            syncHrv: garminSettings.syncHrv !== false
+            syncSleep: shouldSyncSleep,
+            syncHrv: shouldSyncHrv
           });
           settings.setSleepHistory(healthRes.mergedSleep);
           settings.setHrvHistory(healthRes.mergedHrv);
+          healthSynced = Math.max(healthRes.sleepRecordsSynced, healthRes.hrvRecordsSynced);
         }
 
         saveGarminSettings({
           ...garminSettings,
           lastSyncTimestamp: Date.now()
         });
-      } catch (err) {
+
+        const summaryMsg = activitiesImported > 0 || healthSynced > 0
+          ? `${activitiesImported > 0 ? `${activitiesImported} ride${activitiesImported > 1 ? 's' : ''}` : ''}${activitiesImported > 0 && healthSynced > 0 ? ' & ' : ''}${healthSynced > 0 ? `${healthSynced} health records` : ''} imported.`
+          : 'All activities and recovery metrics are up to date.';
+
+        setGarminAutoSyncToast({
+          status: 'success',
+          message: summaryMsg
+        });
+
+        setTimeout(() => {
+          setGarminAutoSyncToast(null);
+        }, 5000);
+      } catch (err: any) {
         console.warn('[Garmin] Auto-sync on startup encountered an issue:', err);
+        setGarminAutoSyncToast({
+          status: 'error',
+          message: err?.message || 'Garmin auto-sync could not connect.'
+        });
+        setTimeout(() => {
+          setGarminAutoSyncToast(null);
+        }, 5000);
       } finally {
         setIsGarminSyncing(false);
       }
@@ -1195,6 +1225,7 @@ export default function App() {
         aiSettings={settings.aiSettings}
         updateAiSettings={settings.updateAiSettings}
         exportSettings={settings.exportSettings}
+        exportFullArchive={() => settings.exportFullArchive(history)}
         importSettings={settings.importSettings}
         initialTab={settingsInitialTab}
       />
@@ -1249,6 +1280,53 @@ export default function App() {
         type={exportStatus.type} 
         progress={exportStatus.progress} 
       />
+
+      {/* Floating Garmin Auto-Sync Notification Pill */}
+      <AnimatePresence>
+        {garminAutoSyncToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 left-6 z-40 flex items-center gap-3 bg-app-card/95 backdrop-blur-md border border-app-border p-2 pr-4 rounded-full shadow-2xl hover:border-orange-500/40 transition-all cursor-pointer"
+            onClick={() => setGarminAutoSyncToast(null)}
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center border shrink-0",
+              garminAutoSyncToast.status === 'syncing'
+                ? "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                : garminAutoSyncToast.status === 'success'
+                  ? "bg-green-500/10 text-green-500 border-green-500/20"
+                  : "bg-red-500/10 text-red-500 border-red-500/20"
+            )}>
+              {garminAutoSyncToast.status === 'syncing' ? (
+                <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+              ) : garminAutoSyncToast.status === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-500" />
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-app-muted">
+                {garminAutoSyncToast.status === 'syncing' ? 'Garmin Auto-Sync' : 'Garmin Connect'}
+              </span>
+              <span className="text-xs font-bold text-app-text">
+                {garminAutoSyncToast.message}
+              </span>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setGarminAutoSyncToast(null);
+              }}
+              className="text-app-muted hover:text-app-text ml-2 text-xs font-bold"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Background Processing Notification Pill */}
       <AnimatePresence>

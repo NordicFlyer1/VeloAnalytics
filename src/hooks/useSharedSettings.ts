@@ -3,11 +3,17 @@ import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings, Sle
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
 import { formatLocalDate } from '../lib/utils';
 import { saveAs } from '../lib/fileSystem';
+import { 
+  getGarminApiKey, 
+  setGarminApiKey, 
+  getGarminSettings, 
+  saveGarminSettings 
+} from '../services/garmin/garminAuth';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
   geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
-  geminiModel: 'gemini-3-flash-preview',
+  geminiModel: 'gemini-3.8-flash',
   openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   openaiModel: 'gpt-4o',
   anthropicApiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
@@ -18,11 +24,13 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
-  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. You will receive context in a structured JSON format containing profile data, detailed activity metrics (xPower, RI, BikeScore, EF), and wellness trends (HRV, Sleep, Velo-Readiness). Always use the term "xPower" instead of "NP" (Normalized Power) and "BikeScore" instead of "TSS" (Training Stress Score) to align with VeloAnalytics standards. CRITICAL: Historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first).',
+  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. You will receive context in a structured JSON format containing profile data, detailed activity metrics (xPower, RI, BikeScore, EF), and wellness trends (HRV, Sleep, Velo-Readiness). Always use VeloAnalytics native metrics: xPower, BikeScore™, Relative Intensity (RI), and Efficiency Factor (EF). Do not reference third-party proprietary metrics. CRITICAL: Historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first).',
   wellnessContextDays: 7,
   useExperimentalReadiness: false,
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-  openWeatherMapApiKey: import.meta.env.VITE_OPENWEATHERMAP_API_KEY || ''
+  openWeatherMapApiKey: import.meta.env.VITE_OPENWEATHERMAP_API_KEY || '',
+  autoSpeakResponses: false,
+  voiceRate: 1.05
 };
 
 export function useSharedSettings() {
@@ -168,9 +176,9 @@ export function useSharedSettings() {
       // Merge with defaults to ensure environment waterfall works if field is empty string
       const merged = { ...DEFAULT_AI_SETTINGS, ...parsed };
       
-      // Force migration back to Flash Preview if it was stuck on Pro during the transition
-      if (parsed.geminiModel === 'gemini-1.5-pro') {
-        merged.geminiModel = 'gemini-3-flash-preview';
+      // Migrate to modern gemini-3.8-flash if model was unset or set to older previews
+      if (parsed.geminiModel === 'gemini-1.5-pro' || parsed.geminiModel === 'gemini-3-flash-preview' || !parsed.geminiModel) {
+        merged.geminiModel = 'gemini-3.8-flash';
       }
       
       // Secondary fallback check: if saved value is an empty string but env has a value, use env
@@ -188,29 +196,44 @@ export function useSharedSettings() {
   });
 
   /**
-   * Export Settings
-   * Serializes user settings and API keys into a JSON file for backup.
+   * Builds the core configuration payload containing all settings, thresholds,
+   * equipment profiles, AI keys, and Garmin Connect secrets.
+   */
+  const buildConfigPayload = () => ({
+    application: 'VeloAnalytics',
+    version: '1.7.0',
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    cp,
+    autoUpdateCP,
+    manualCP,
+    manualWPrime,
+    userWeight,
+    weightUnit,
+    enableVirtualPower,
+    equipment,
+    activeBikeId,
+    maxHR,
+    theme,
+    smoothingWindow,
+    cpMode,
+    powerZoneDefinitions,
+    hrZoneDefinitions,
+    aiSettings,
+    sleepHistory,
+    hrvHistory,
+    garminApiKey: getGarminApiKey(),
+    garminSettings: getGarminSettings()
+  });
+
+  /**
+   * Export Settings (Config Bundle)
+   * Serializes user settings, API keys, and Garmin secrets into a lightweight JSON file.
    */
   const exportSettings = async () => {
     const config = {
-      cp,
-      autoUpdateCP,
-      manualCP,
-      manualWPrime,
-      userWeight,
-      weightUnit,
-      enableVirtualPower,
-      equipment,
-      activeBikeId,
-      maxHR,
-      theme,
-      smoothingWindow,
-      cpMode,
-      powerZoneDefinitions,
-      hrZoneDefinitions,
-      aiSettings,
-      sleepHistory,
-      hrvHistory
+      ...buildConfigPayload(),
+      backupType: 'config_bundle'
     };
 
     const content = JSON.stringify(config, null, 2);
@@ -223,9 +246,39 @@ export function useSharedSettings() {
   };
 
   /**
-   * Import Settings
-   * Parses a JSON backup and restores the application state to localStorage.
-   * Triggers a window reload to ensure all application contexts are synchronized.
+   * Export Full Archive (Full Vault Archive)
+   * Serializes the entire configuration bundle PLUS complete historical activity records.
+   */
+  const exportFullArchive = async (historyData?: any[]) => {
+    let resolvedHistory = historyData;
+    if (!resolvedHistory) {
+      try {
+        const raw = localStorage.getItem('veloanalytics_history');
+        if (raw) resolvedHistory = JSON.parse(raw);
+      } catch {
+        resolvedHistory = [];
+      }
+    }
+
+    const archive = {
+      ...buildConfigPayload(),
+      backupType: 'full_vault_archive',
+      history: resolvedHistory || []
+    };
+
+    const content = JSON.stringify(archive, null, 2);
+    const filename = `veloanalytics_vault_archive_${formatLocalDate(new Date())}.json`;
+
+    await saveAs(content, filename, {
+      description: 'VeloAnalytics Full Archive',
+      accept: { 'application/json': ['.json'] }
+    });
+  };
+
+  /**
+   * Import Settings (Universal Restore)
+   * Parses either a Config Bundle or a Full Vault Archive, restores application state,
+   * Garmin secrets, and activity history to localStorage, then triggers a clean reload.
    */
   const importSettings = (json: string) => {
     try {
@@ -250,7 +303,15 @@ export function useSharedSettings() {
       if (config.sleepHistory !== undefined) setSleepHistory(config.sleepHistory);
       if (config.hrvHistory !== undefined) setHrvHistory(config.hrvHistory);
       
-      // Full data restoration
+      // Restore Garmin Connect API Key and sync preferences
+      if (config.garminApiKey !== undefined) {
+        setGarminApiKey(config.garminApiKey);
+      }
+      if (config.garminSettings !== undefined) {
+        saveGarminSettings(config.garminSettings);
+      }
+      
+      // Full data restoration (if provided in Full Vault Archive)
       if (config.history) localStorage.setItem('veloanalytics_history', JSON.stringify(config.history));
       if (config.metrics) localStorage.setItem('veloanalytics_metrics_snapshots', JSON.stringify(config.metrics));
       
@@ -350,6 +411,6 @@ export function useSharedSettings() {
     sleepHistory, setSleepHistory,
     hrvHistory, setHrvHistory,
     aiSettings, updateAiSettings,
-    exportSettings, importSettings
+    exportSettings, exportFullArchive, importSettings
   };
 }

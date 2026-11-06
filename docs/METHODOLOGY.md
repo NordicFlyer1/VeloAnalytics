@@ -30,7 +30,7 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 
 - **Concept**: A dimensionless number that quantifies the intensity of a ride relative to the athlete's current fitness level (CP).
 - **Formula**: `RI = xPower / CP`
-- **Calculation**: Ratio of normalized power (xPower) to steady-state threshold (Critical Power).
+- **Calculation**: Ratio of xPower to steady-state threshold (Critical Power).
 - **Interpretation**:
   - `RI < 0.70`: Active recovery or basic endurance.
   - `0.75 - 0.85`: Steady-state tempo or long-distance racing.
@@ -48,7 +48,7 @@ VeloAnalytics is built on the principle of **algorithmic transparency**. Unlike 
 
 - **Concept**: A measure of aerobic efficiency, representing the mechanical output produced per heartbeat.
 - **Formula**: `EF = xPower ÷ Average Heart Rate`
-- **Calculation**: Ratio of normalized mechanical output (xPower in Watts) to physiological cost (Average Heart Rate in bpm).
+- **Calculation**: Ratio of xPower (in Watts) to physiological cost (Average Heart Rate in bpm).
 - **Interpretation**: An upward trend in EF over time during standardized steady-state efforts signifies expanding cardiovascular efficiency and aerobic conditioning.
 
 ### 6. Performance Management (LTS, STS, SB)

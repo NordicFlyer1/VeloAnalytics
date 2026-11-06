@@ -96,9 +96,12 @@ The coach understands your naming conventions and historical data.
 ## 6. Maintenance & Portability
 
 ### Export / Import Settings
-- **Functionality:** Found in Settings > Maintenance.
-- **Export Settings:** Captures all `localStorage` configuration (Settings, API Keys, Physiological Thresholds, Equipment Profiles) into a single `.json` blob (`veloanalytics_config_backup.json`). Activity history is excluded to keep backups portable and focused on configuration and secrets.
-- **Import Settings:** Overwrites the current `localStorage` settings with the backup content and reloads the application to sync state.
+
+- **Functionality:** Found in Settings > Maintenance under "Data Portability".
+- **Two-Tier Portability Architecture:**
+  - **Config Bundle (`Download Config`):** Captures application configuration, secret API keys (AI, Garmin, Maps, Weather), Garmin sync rules, physiological thresholds, and equipment profiles into `veloanalytics_config_backup_YYYY-MM-DD.json`.
+  - **Full Vault Archive (`Export Full Archive`):** Captures the entire configuration bundle together with all parsed historical cycling sessions (`history`), enabling complete cross-machine or desktop migration.
+- **Universal Restore:** The restore engine accepts either a Config Bundle or a Full Vault Archive, verifies schema version metadata, writes records atomically back into `localStorage`, and triggers a clean application reload.
 
 ### Garmin Wellness Data Ingestion (Sleep & HRV)
 - **Functionality:** Found in Settings > Maintenance under "Wellness Data (Garmin Exports)".
@@ -132,7 +135,30 @@ VeloAnalytics provides deep native integration with macOS Apple Intelligence, Si
 
 ---
 
-## 8. FAQs
+## 8. Voice & Verbal Coaching Interaction
+
+VeloAnalytics features bidirectional voice interaction directly inside the Velo Coach sliding drawer, allowing athletes to ask questions hands-free and listen to synthesized verbal insights.
+
+### Architecture & Privacy
+- **Web Speech API:** Utilizes browser-native `SpeechRecognition` (for voice-to-text input) and `SpeechSynthesis` (for text-to-speech verbal playback).
+- **Universal Provider Parity:** The speech layer operates independently of the LLM inference engine. Spoken voice input and audio readout work identically across all cloud AI providers (Google Gemini, OpenAI, Anthropic, Groq) and local offline instances (Ollama, LM Studio).
+- **Zero Extra Cost & Zero Cloud Latency:** Operates entirely on the client device without requiring external speech API subscriptions (such as Whisper or ElevenLabs). Raw voice audio never leaves the browser.
+- **Cycling Science Pronunciation Engine:** Automatic text sanitization converts cycling metric notations (`xPower: 285W`, `RI: 0.95`, `BikeScore: 120`, `Pw:HR: 3.2%`, `W'bal: 14.5 kJ`) into natural, intelligible spoken sentences.
+
+### How to Use
+- **Voice Questioning:** Click the microphone icon in the chat input bar (or tap while on mobile). Speak your question. Your speech appears live in the input field. Click Send (or press Enter) to submit.
+- **On-Demand Read Aloud:** Click the speaker icon on any assistant message bubble to hear the coach's clinical analysis read aloud. Click the stop button at any time to pause or cancel speech.
+- **Auto-Speak Mode:** Toggle **Voice: On** in the drawer header or in **Settings > Intelligence** to have every coach response read aloud automatically as soon as it is generated.
+
+---
+
+## 9. FAQs
+
+**Q: How do I use voice input and verbal feedback with Velo Coach?**  
+A: Open Velo Coach and click the microphone icon in the input field to speak your question. Click the speaker icon on any response to hear it read aloud, or turn on the "Voice: On" toggle in the header for hands-free auto-speak.
+
+**Q: Does voice interaction work when using local models like Ollama or LM Studio?**  
+A: Yes! Because voice synthesis and recognition run natively in your browser via the Web Speech API, voice works with 100% parity across all models, online or offline.
 
 **Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**  
 A: Use your voice or press `Command + Spacebar` (`Cmd + Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".

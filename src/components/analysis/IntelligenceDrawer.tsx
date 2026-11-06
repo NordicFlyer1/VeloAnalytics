@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkle, Brain, X, Send, History, Trash2, 
   ArrowRight, Info, Activity, TrendingUp, Zap, AlertCircle,
-  Download, Command
+  Download, Command, Mic, MicOff, Volume2, VolumeX, Square
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn, formatLocalDate } from '../../lib/utils';
 import { saveAs } from '../../lib/fileSystem';
 import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity, SleepMetric, HRVMetric } from '../../types';
 import { getCoachResponse, buildCoachContext } from '../../services/intelligenceService';
+import { useVoiceCoach } from '../../hooks/useVoiceCoach';
 
 interface IntelligenceDrawerProps {
   isOpen: boolean;
@@ -48,6 +49,30 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const {
+    isListening,
+    speakingMessageId,
+    speechError,
+    clearSpeechError,
+    toggleListening,
+    stopListening,
+    toggleSpeak,
+    stopSpeaking,
+    speak,
+    isSpeechSynthesisSupported
+  } = useVoiceCoach({
+    autoSpeak: aiSettings.autoSpeakResponses,
+    onTranscript: (transcript) => {
+      setInputValue(transcript);
+    }
+  });
+
+  const handleClose = () => {
+    stopSpeaking();
+    stopListening();
+    onClose();
+  };
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -59,6 +84,8 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     const text = textOverride || inputValue;
     if (!text.trim() || isTyping) return;
 
+    // Stop listening when sending
+    stopListening();
     setError(null);
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -95,6 +122,11 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Automatically speak verbal response if autoSpeak is enabled
+      if (aiSettings.autoSpeakResponses) {
+        speak(response, assistantMessage.id);
+      }
     } catch (err) {
       console.error('Coach Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect to Velo Coach brain.');
@@ -104,6 +136,8 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   };
 
   const clearChat = () => {
+    stopSpeaking();
+    stopListening();
     setMessages([]);
     setError(null);
   };
@@ -157,7 +191,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
           />
 
@@ -192,13 +226,54 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex flex-col items-end mr-2">
+              <div className="flex items-center gap-3">
+                {/* Voice Audio Capsule */}
+                {isSpeechSynthesisSupported && (
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-[9px] text-app-muted font-bold uppercase tracking-widest mb-1.5">Voice Audio</span>
+                    <div className="flex bg-app-bg/50 p-0.5 rounded-full border border-app-border">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateAiSettings({ autoSpeakResponses: false });
+                          stopSpeaking();
+                        }}
+                        className={cn(
+                          "px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter transition-all",
+                          !aiSettings.autoSpeakResponses 
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                            : "text-app-muted hover:text-app-text"
+                        )}
+                        title="Mute voice auto-speak (Click speaker on message to listen on demand)"
+                      >
+                        Off
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateAiSettings({ autoSpeakResponses: true })}
+                        className={cn(
+                          "px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter transition-all flex items-center gap-1",
+                          aiSettings.autoSpeakResponses 
+                            ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20" 
+                            : "text-app-muted hover:text-app-text"
+                        )}
+                        title="Automatically speak coach responses aloud"
+                      >
+                        <Volume2 className="w-2.5 h-2.5" />
+                        Auto
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Context Window Capsule */}
+                <div className="hidden sm:flex flex-col items-end">
                   <span className="text-[9px] text-app-muted font-bold uppercase tracking-widest mb-1.5">Context Window</span>
                   <div className="flex bg-app-bg/50 p-0.5 rounded-full border border-app-border">
                     {[7, 14, 21, 28].map((days) => (
                       <button
                         key={days}
+                        type="button"
                         onClick={() => updateAiSettings({ wellnessContextDays: days })}
                         className={cn(
                           "px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter transition-all",
@@ -220,7 +295,7 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   <Download className="w-5 h-5" />
                 </button>
                 <button 
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="p-2 hover:bg-app-bg/50 rounded-full text-app-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -286,13 +361,35 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                       ) : (
                         <>
                           <Markdown>{m.content}</Markdown>
-                          <button
-                            onClick={() => downloadResponse(m.content, m.timestamp)}
-                            className="absolute -bottom-3 -right-3 p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 z-10"
-                            title="Download as Markdown"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="absolute -bottom-3 -right-3 flex items-center gap-1.5 z-10">
+                            {isSpeechSynthesisSupported && (
+                              <button
+                                type="button"
+                                onClick={() => toggleSpeak(m.content, m.id)}
+                                className={cn(
+                                  "p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all",
+                                  speakingMessageId === m.id
+                                    ? "text-orange-500 border-orange-500/60 bg-orange-500/15 opacity-100 scale-100 ring-2 ring-orange-500/30"
+                                    : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                                )}
+                                title={speakingMessageId === m.id ? "Stop reading aloud" : "Read insight aloud"}
+                              >
+                                {speakingMessageId === m.id ? (
+                                  <Square className="w-3.5 h-3.5 fill-orange-500 text-orange-500 animate-pulse" />
+                                ) : (
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => downloadResponse(m.content, m.timestamp)}
+                              className="p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                              title="Download as Markdown"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -321,20 +418,77 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-app-border bg-app-card/50 backdrop-blur-md">
-              <div className="flex items-center gap-3 bg-app-bg border border-app-border rounded-2xl p-1.5 focus-within:border-orange-500/50 transition-colors shadow-inner">
+            <div className="p-6 border-t border-app-border bg-app-card/50 backdrop-blur-md space-y-2">
+              {/* Active Listening Indicator */}
+              {isListening && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-500"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                    <span className="text-[11px] font-bold tracking-tight">Listening to your voice... Speak your question now</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={stopListening}
+                    className="text-[10px] font-bold uppercase tracking-wider hover:underline text-orange-400"
+                  >
+                    Done Speaking
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Speech Error Banner if permission denied */}
+              {speechError && (
+                <div className="px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] flex items-center justify-between animate-in fade-in duration-200">
+                  <span className="leading-tight pr-2">{speechError}</span>
+                  <button 
+                    type="button" 
+                    onClick={clearSpeechError} 
+                    className="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:underline shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 bg-app-bg border border-app-border rounded-2xl p-1.5 focus-within:border-orange-500/50 transition-colors shadow-inner">
+                {/* Voice Input Microphone Button */}
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={cn(
+                    "p-3 rounded-xl transition-all flex items-center justify-center shrink-0 active:scale-95",
+                    isListening
+                      ? "bg-orange-500 text-black shadow-lg shadow-orange-500/25 ring-2 ring-orange-500/40"
+                      : "text-app-muted hover:text-orange-500 hover:bg-app-card/80"
+                  )}
+                  title={isListening ? "Listening... Click to stop" : "Speak your question via microphone"}
+                >
+                  {isListening ? (
+                    <MicOff className="w-4 h-4 animate-bounce" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </button>
+
                 <input 
                   type="text" 
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask your coach..."
-                  className="bg-transparent flex-1 px-4 py-2 text-sm focus:outline-none placeholder:text-app-muted"
+                  placeholder={isListening ? "Listening to your voice..." : "Ask your coach (or click mic to speak)..."}
+                  className="bg-transparent flex-1 px-2 py-2 text-sm focus:outline-none placeholder:text-app-muted"
                 />
                 <button 
+                  type="button"
                   onClick={() => handleSend()}
                   disabled={!inputValue.trim() || isTyping}
-                  className="p-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-black rounded-xl transition-all active:scale-95"
+                  className="p-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-black rounded-xl transition-all active:scale-95 shrink-0"
+                  title="Send Question"
                 >
                   <Send className="w-4 h-4" />
                 </button>

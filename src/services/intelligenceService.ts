@@ -251,7 +251,7 @@ async function callGemini(settings: AISettings, messages: ChatMessage[]): Promis
   }));
 
   const result = await ai.models.generateContent({
-    model: settings.geminiModel || 'gemini-3-flash-preview',
+    model: settings.geminiModel || 'gemini-3.8-flash',
     contents: contents,
     config: {
       systemInstruction: settings.systemPrompt
