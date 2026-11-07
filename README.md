@@ -17,7 +17,7 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Cycling Dynamics & Biomechanical Modeling:** Dedicated multi-channel telemetry timelines and polar vector crank dials for Left/Right Balance, Platform Center Offset (PCO), Power Phase (PP), Peak Power Phase (PPP), seated vs. standing transitions, and torque effectiveness.
 - **Interactive Route Telemetry:** Synchronized cross-scrubbing between power output, altitude, cadence, and GPS tracks with full-screen expansion.
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
-- **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel) via Tauri, as well as a client-side web application.
+- **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel),Windows, and Linux via Tauri, as well as a client-side web application.
 
 ## What's New in v1.7.0
 
