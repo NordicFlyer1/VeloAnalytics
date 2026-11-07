@@ -23,7 +23,7 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 
 - **Velo Coach Voice Intelligence:** Bidirectional hands-free voice interaction in the Velo Coach sliding drawer. Ask complex physiological and workout questions via microphone input and receive immediate written and verbal coaching responses.
 - **Client-Side Speech-to-Text & Single-Utterance Finalization:** Powered by the browser and OS-native Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`), operating in discrete query mode with automatic endpoint detection and zero cloud audio transmission.
-- **Intelligent Cycling Phonetic Dictionary:** Audio speech synthesis converts cycling jargon and symbols into natural verbal pronunciation (expanding `W'bal` to "W prime balance", `xPower` to "normalized power", `BikeScore™` to "BikeScore", `Pw:HR` to "aerobic decoupling", `VRS` to "Velo Readiness Score", and units like `KJ`, `W`, and `BPM`).
+- **Intelligent Cycling Phonetic Dictionary:** Audio speech synthesis converts cycling jargon and symbols into natural verbal pronunciation (expanding `W'bal` to "W prime balance", `xPower` to "x-power", `BikeScore™` to "BikeScore", `Pw:HR` to "aerobic decoupling", `VRS` to "Velo Readiness Score", and units like `KJ`, `W`, and `BPM`).
 - **macOS TCC Privacy & Tauri Desktop Hardening:** Added native `Info.plist` and `Entitlements.plist` declarations (`NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`, and `com.apple.security.device.audio-input`) ensuring permission parity across web, desktop, and GitHub Actions release pipelines.
 
 ---
