@@ -64,3 +64,54 @@ export const formatHistoryDisplayDate = (date: Date | string | undefined | null)
     return 'Activity';
   }
 };
+
+/**
+ * Generates a fast, lightweight fingerprint for binary data / Uint8Array to detect identical files.
+ */
+export const getBufferFingerprint = (bytes: Uint8Array): string => {
+  const len = bytes.length;
+  if (len === 0) return 'empty_0';
+  let h = 0x811c9dc5;
+  const step = Math.max(1, Math.floor(len / 64));
+  for (let i = 0; i < len; i += step) {
+    h = (h ^ bytes[i]) * 0x01000193;
+  }
+  return `${len}_${(h >>> 0).toString(16)}`;
+};
+
+/**
+ * Computes a standardized physiological/session signature for an activity to prevent duplicate entries.
+ * Compares start timestamp (bucketed to 5s), duration (seconds), and distance (meters).
+ */
+export const getActivitySignature = (activity: {
+  startTime?: string | Date;
+  fullSummary?: any;
+  date?: string;
+  duration?: number;
+  distance?: number;
+  avgPower?: number;
+  garminActivityId?: number;
+  originalFileName?: string;
+}): string => {
+  if (activity.garminActivityId) {
+    return `garmin_${activity.garminActivityId}`;
+  }
+
+  const rawStart = activity.startTime || activity.fullSummary?.startTime;
+  const startTime = rawStart ? new Date(rawStart).getTime() : null;
+  const durationSec = Math.round((activity.duration || activity.fullSummary?.duration || 0) / 1000);
+  const distanceM = Math.round(activity.distance || activity.fullSummary?.distance || 0);
+  const powerW = Math.round(activity.avgPower || activity.fullSummary?.avgPower || 0);
+
+  if (startTime && !isNaN(startTime)) {
+    // 5-second bucket to account for potential 1-2s parser start time differences
+    const roundedTime = Math.round(startTime / 5000) * 5000;
+    return `st_${roundedTime}_${durationSec}_${distanceM}`;
+  }
+
+  if (activity.date) {
+    return `date_${activity.date}_${durationSec}_${distanceM}_${powerW}`;
+  }
+
+  return `name_${activity.originalFileName || ''}_${durationSec}_${distanceM}`;
+};

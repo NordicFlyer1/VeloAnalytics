@@ -69,6 +69,7 @@ interface SettingsModalProps {
   // Maintenance Props
   exportSettings: () => void;
   exportFullArchive: () => void;
+  exportFitArchiveZip?: () => Promise<{ count: number }>;
   importSettings: (json: string) => boolean;
   initialTab?: Tab;
 }
@@ -116,11 +117,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   updateAiSettings,
   exportSettings,
   exportFullArchive,
+  exportFitArchiveZip,
   importSettings,
   initialTab
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'general');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isExportingZip, setIsExportingZip] = useState(false);
+  const [zipExportNotice, setZipExportNotice] = useState<string | null>(null);
+
+  const handleExportZip = async () => {
+    if (isExportingZip || !exportFitArchiveZip) return;
+    setIsExportingZip(true);
+    setZipExportNotice(null);
+    try {
+      const res = await exportFitArchiveZip();
+      setZipExportNotice(`Exported ${res.count} .FIT files!`);
+      setTimeout(() => setZipExportNotice(null), 4000);
+    } catch (err: any) {
+      setZipExportNotice(err.message || 'No .FIT files found');
+      setTimeout(() => setZipExportNotice(null), 4000);
+    } finally {
+      setIsExportingZip(false);
+    }
+  };
 
   React.useEffect(() => {
     if (showSettings && initialTab) {
@@ -1486,7 +1506,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-muted">Data Portability</h3>
                     <p className="text-[11px] text-app-muted leading-relaxed">
-                      Export your application configuration, secrets, and bike profiles, or generate a complete vault archive including all parsed historical rides and PMC records. Universal restore seamlessly imports either format.
+                      Download your configuration and API secrets as a lightweight JSON file, and batch-export all raw .FIT activity files into a compressed ZIP folder. To migrate to a new device or browser: first import your Config JSON, then drag and drop your .FIT ZIP archive directly into the app.
                     </p>
                   </div>
 
@@ -1499,11 +1519,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Config Bundle</span>
-                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Settings & Secrets</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Settings & Secrets (.json)</span>
                         </div>
                       </div>
                       <p className="text-[10px] text-app-muted leading-relaxed">
-                        Lightweight JSON containing API keys (AI, Garmin, Maps), Garmin sync rules, thresholds, and bike profiles.
+                        Lightweight JSON containing all preferences, secret API keys (AI, Garmin, Maps), thresholds, and bike profiles.
                       </p>
                       <button 
                         onClick={exportSettings}
@@ -1513,25 +1533,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     </div>
 
-                    {/* Full Vault Archive Card */}
+                    {/* FIT Files Archive Card */}
                     <div className="p-6 rounded-3xl bg-app-bg/30 border border-app-border flex flex-col justify-between gap-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
                           <Database className="w-5 h-5 text-emerald-500" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Full Vault Archive</span>
-                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Config + Ride History</span>
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">FIT Files Archive</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Raw Ride Files (.zip)</span>
                         </div>
                       </div>
                       <p className="text-[10px] text-app-muted leading-relaxed">
-                        Comprehensive snapshot combining all settings and secrets with your entire historical activity archive.
+                        Batch exports all raw .FIT files stored in your browser database into a compressed ZIP archive.
                       </p>
                       <button 
-                        onClick={exportFullArchive}
-                        className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-emerald-500/20 cursor-pointer"
+                        onClick={handleExportZip}
+                        disabled={isExportingZip}
+                        className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-emerald-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        Export Full Archive
+                        {isExportingZip ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Zipping .FIT Files...</span>
+                          </>
+                        ) : zipExportNotice ? (
+                          <span>{zipExportNotice}</span>
+                        ) : (
+                          <span>Export .FIT Archive (ZIP)</span>
+                        )}
                       </button>
                     </div>
 
@@ -1543,11 +1573,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] font-bold uppercase tracking-widest text-app-text">Restore State</span>
-                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Universal Restore</span>
+                          <span className="text-[9px] text-app-muted uppercase font-bold tracking-tight mt-0.5">Import Config JSON</span>
                         </div>
                       </div>
                       <p className="text-[10px] text-app-muted leading-relaxed">
-                        Seamlessly restores either a Config Bundle or a Full Vault Archive, refreshing your workspace atomically.
+                        Select your saved config JSON to restore all settings and secrets. Drag & drop your .zip file to repopulate all rides!
                       </p>
                       <div className="relative">
                         <input 
@@ -1578,7 +1608,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         >
                           {importStatus === 'success' ? 'Settings Imported!' :
                            importStatus === 'error' ? 'Invalid File Format' :
-                           'Select Backup File'}
+                           'Select Config File'}
                         </button>
                       </div>
                     </div>

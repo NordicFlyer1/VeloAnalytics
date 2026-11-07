@@ -19,6 +19,17 @@ VeloAnalytics is a high-precision, local-first cycling analysis suite built for 
 - **Holistic Metric Integration:** Native correlation of power data with heart rate variability (HRV), respiration rate, blood oxygen (SpO₂), ambient temperature, and aerodynamic drag estimates.
 - **Native Desktop & Web:** Available as a standalone native desktop application for macOS (Apple Silicon & Intel), Windows, and Linux via Tauri, as well as a client-side web application.
 
+## What's New in v1.7.1
+
+- **Robust Two-Tier Data Portability:** Decoupled lightweight application configuration (`.json`) from heavy binary activity archives (`.zip`) for loss-less migrations across browsers and native desktop apps.
+- **Batch .FIT File ZIP Export:** Added in Settings > Maintenance to extract and compress all original `.fit` files directly from IndexedDB in memory using `fflate` into a single downloadable `veloanalytics_fit_archive.zip`.
+- **Deduplicated Export & Idempotent Ingestion:** Employs byte content fingerprinting and physiological session timestamps so that exports never contain duplicate files or `_2.fit` suffixes, and re-importing archive batches seamlessly skips or updates identical rides without database duplication.
+- **Drag-and-Drop ZIP Ingestion:** The universal file uploader now automatically detects and decompresses `.zip` archives in memory, batch-parsing all contained `.fit` files directly into IndexedDB and populating all detailed charts, maps, and intervals.
+- **Garmin Connect Settings & Secrets Sync:** Config Bundle JSON exports now preserve Garmin Connect Personal API keys and granular sync rules (activities, health, sleep architecture, overnight HRV, batch limits, and auto-sync on launch).
+- **Phonetic Engine Harmonization:** Refined speech pronunciation dictionary so `xPower` is strictly spoken as "x-power" with zero third-party terminology conflation.
+
+---
+
 ## What's New in v1.7.0
 
 - **Velo Coach Voice Intelligence:** Bidirectional voice interaction in the Velo Coach sliding drawer. Ask complex physiological and workout questions via microphone input and receive immediate written and verbal coaching responses.

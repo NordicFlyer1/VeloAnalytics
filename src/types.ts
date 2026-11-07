@@ -151,6 +151,7 @@ export interface PMCDataPoint {
 export interface HistoricalActivity {
   id: string;
   date: string;
+  startTime?: string;
   name: string;
   bikeScore: number;
   duration: number;

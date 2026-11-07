@@ -100,8 +100,11 @@ The coach understands your naming conventions and historical data.
 - **Functionality:** Found in Settings > Maintenance under "Data Portability".
 - **Two-Tier Portability Architecture:**
   - **Config Bundle (`Download Config`):** Captures application configuration, secret API keys (AI, Garmin, Maps, Weather), Garmin sync rules, physiological thresholds, and equipment profiles into `veloanalytics_config_backup_YYYY-MM-DD.json`.
-  - **Full Vault Archive (`Export Full Archive`):** Captures the entire configuration bundle together with all parsed historical cycling sessions (`history`), enabling complete cross-machine or desktop migration.
-- **Universal Restore:** The restore engine accepts either a Config Bundle or a Full Vault Archive, verifies schema version metadata, writes records atomically back into `localStorage`, and triggers a clean application reload.
+  - **FIT Files Archive (`Export .FIT Archive (ZIP)`):** Extracts all raw `.fit` files directly from IndexedDB, compresses them in memory via `fflate`, and downloads `veloanalytics_fit_archive_YYYY-MM-DD.zip`.
+  - **Content & Signature Deduplication:** Uses byte content fingerprinting and session timestamps (`startTime`, duration, distance) during export to eliminate duplicate files and prevent spurious `_2.fit` suffixes.
+- **Clean Migration Flow:**
+  - Step 1: Import the Config JSON in Settings > Maintenance to restore all settings, thresholds, and API keys atomically.
+  - Step 2: Drag and drop the `.fit` ZIP archive directly into the application dropzone. The background processor decompresses the archive in memory via `unzipSync()`, runs batch Web Worker parsing with idempotent deduplication, and populates IndexedDB with full second-by-second telemetry, maps, and intervals.
 
 ### Garmin Wellness Data Ingestion (Sleep & HRV)
 - **Functionality:** Found in Settings > Maintenance under "Wellness Data (Garmin Exports)".

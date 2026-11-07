@@ -10,7 +10,7 @@ import {
 import { saveActivityData, getActivityData, deleteActivityData } from '../services/storage';
 import { processActivityData, ProcessingContext } from '../services/activityProcessor';
 import { calculateAerobicDecoupling } from '../services/metrics';
-import { formatLocalDate } from '../lib/utils';
+import { formatLocalDate, getActivitySignature } from '../lib/utils';
 
 interface HistoryHookDeps {
   workers: any;
@@ -21,11 +21,21 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
   const [history, setHistory] = useState<HistoricalActivity[]>(() => {
     const saved = localStorage.getItem('veloanalytics_history');
     const parsed = saved ? JSON.parse(saved) : [];
-    // Migration: Ensure every activity has a bikeId, defaulting to 'default-bike' if missing
-    return parsed.map((h: any) => ({
-      ...h,
-      bikeId: h.bikeId || 'default-bike'
-    }));
+    // Migration & Deduplication: Ensure every activity has a bikeId and eliminate duplicate activities
+    const seenSigs = new Set<string>();
+    const deduplicated: HistoricalActivity[] = [];
+
+    for (const h of parsed) {
+      const sig = getActivitySignature(h);
+      if (!seenSigs.has(sig)) {
+        seenSigs.add(sig);
+        deduplicated.push({
+          ...h,
+          bikeId: h.bikeId || 'default-bike'
+        });
+      }
+    }
+    return deduplicated;
   });
 
   const [data, setData] = useState<CyclingDataPoint[]>([]);
@@ -311,10 +321,17 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
       const itemsToCommit = [...pendingActivitiesRef.current];
       pendingActivitiesRef.current = [];
       setHistory(prev => {
-        // Prevent duplicate IDs
-        const existingIds = new Set(prev.map(p => p.id));
-        const uniqueNew = itemsToCommit.filter(item => !existingIds.has(item.id));
-        return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
+        const updated = [...prev];
+        for (const item of itemsToCommit) {
+          const itemSig = getActivitySignature(item);
+          const existingIdx = updated.findIndex(p => p.id === item.id || getActivitySignature(p) === itemSig);
+          if (existingIdx >= 0) {
+            updated[existingIdx] = item;
+          } else {
+            updated.push(item);
+          }
+        }
+        return updated;
       });
     }
   }, []);
@@ -341,11 +358,27 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
     const startDate = target.startTime instanceof Date ? target.startTime : new Date(target.startTime);
     if (isNaN(startDate.getTime())) return null;
     const dateStr = formatLocalDate(startDate);
-    const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const targetSig = getActivitySignature({
+      startTime: startDate,
+      fullSummary: target,
+      duration: target.duration,
+      distance: target.distance,
+      avgPower: target.avgPower,
+      originalFileName: targetFile?.name,
+      garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
+    });
+
+    // Check if an activity for this ride already exists in history or pending buffer
+    const existingInHistory = history.find(h => getActivitySignature(h) === targetSig);
+    const existingInPendingIdx = pendingActivitiesRef.current.findIndex(h => getActivitySignature(h) === targetSig);
+
+    const id = existingInHistory?.id || (existingInPendingIdx >= 0 ? pendingActivitiesRef.current[existingInPendingIdx].id : `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
     
     const newActivity: HistoricalActivity = {
       id,
       date: dateStr,
+      startTime: startDate.toISOString(),
       name: target.name,
       bikeId: settings.activeBikeId,
       bikeScore: target.bikeScore || 0,
@@ -386,7 +419,11 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
 
     if (options?.debounceCommit) {
       // Buffer item and debounce commit to avoid 50x recalculation storms
-      pendingActivitiesRef.current.push(newActivity);
+      if (existingInPendingIdx >= 0) {
+        pendingActivitiesRef.current[existingInPendingIdx] = newActivity;
+      } else {
+        pendingActivitiesRef.current.push(newActivity);
+      }
       if (batchDebounceTimerRef.current) {
         clearTimeout(batchDebounceTimerRef.current);
       }
@@ -394,77 +431,99 @@ export function useActivityHistory({ workers, settings }: HistoryHookDeps) {
         flushHistoryBuffer();
       }, 2500);
     } else {
-      setHistory(prev => [...prev, newActivity]);
+      setHistory(prev => {
+        const idx = prev.findIndex(h => h.id === id || getActivitySignature(h) === targetSig);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = newActivity;
+          return updated;
+        }
+        return [...prev, newActivity];
+      });
     }
 
     return id;
-  }, [summary, data, originalFile, settings.cp, settings.activeBikeId, flushHistoryBuffer]);
+  }, [summary, data, originalFile, settings.cp, settings.activeBikeId, history, flushHistoryBuffer]);
 
   const addBatchToHistory = useCallback(async (
     items: Array<{ summary: ActivitySummary; data: CyclingDataPoint[]; file?: File }>
   ): Promise<string[]> => {
     if (!items || items.length === 0) return [];
-    const newActivities: HistoricalActivity[] = [];
     const ids: string[] = [];
 
-    for (const item of items) {
-      const target = item.summary;
-      const targetData = item.data;
-      const targetFile = item.file;
-      if (!target || !target.startTime) continue;
-      const startDate = target.startTime instanceof Date ? target.startTime : new Date(target.startTime);
-      if (isNaN(startDate.getTime())) continue;
+    setHistory(prev => {
+      const updated = [...prev];
 
-      const dateStr = formatLocalDate(startDate);
-      const id = `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      ids.push(id);
+      for (const item of items) {
+        const target = item.summary;
+        const targetData = item.data;
+        const targetFile = item.file;
+        if (!target || !target.startTime) continue;
+        const startDate = target.startTime instanceof Date ? target.startTime : new Date(target.startTime);
+        if (isNaN(startDate.getTime())) continue;
 
-      const newActivity: HistoricalActivity = {
-        id,
-        date: dateStr,
-        name: target.name,
-        bikeId: settings.activeBikeId,
-        bikeScore: target.bikeScore || 0,
-        duration: target.duration,
-        distance: target.distance,
-        avgPower: target.avgPower,
-        maxPower: target.maxPower,
-        xPower: target.xPower,
-        relativeIntensity: target.relativeIntensity,
-        avgHeartRate: target.avgHeartRate,
-        maxHeartRate: target.maxHeartRate,
-        avgCadence: target.avgCadence,
-        maxCadence: target.maxCadence,
-        avgSpeed: target.avgSpeed,
-        totalAscent: target.totalAscent,
-        work: target.work,
-        aerobicDecoupling: target.aerobicDecoupling,
-        cp: settings.cp,
-        powerCurve: target.powerCurve,
-        fullSummary: target,
-        fullData: undefined,
-        originalFile: undefined,
-        originalFileName: targetFile?.name || undefined,
-        garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
-      };
+        const dateStr = formatLocalDate(startDate);
+        const targetSig = getActivitySignature({
+          startTime: startDate,
+          fullSummary: target,
+          duration: target.duration,
+          distance: target.distance,
+          avgPower: target.avgPower,
+          originalFileName: targetFile?.name,
+          garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
+        });
 
-      try {
-        await saveActivityData(id, { 
+        const existingIdx = updated.findIndex(h => getActivitySignature(h) === targetSig);
+        const id = existingIdx >= 0 ? updated[existingIdx].id : `${dateStr}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        ids.push(id);
+
+        const newActivity: HistoricalActivity = {
+          id,
+          date: dateStr,
+          startTime: startDate.toISOString(),
+          name: target.name,
+          bikeId: settings.activeBikeId,
+          bikeScore: target.bikeScore || 0,
+          duration: target.duration,
+          distance: target.distance,
+          avgPower: target.avgPower,
+          maxPower: target.maxPower,
+          xPower: target.xPower,
+          relativeIntensity: target.relativeIntensity,
+          avgHeartRate: target.avgHeartRate,
+          maxHeartRate: target.maxHeartRate,
+          avgCadence: target.avgCadence,
+          maxCadence: target.maxCadence,
+          avgSpeed: target.avgSpeed,
+          totalAscent: target.totalAscent,
+          work: target.work,
+          aerobicDecoupling: target.aerobicDecoupling,
+          cp: settings.cp,
+          powerCurve: target.powerCurve,
+          fullSummary: target,
+          fullData: undefined,
+          originalFile: undefined,
+          originalFileName: targetFile?.name || undefined,
+          garminActivityId: (targetFile as any)?.garminActivityId || (targetFile?.name?.match(/_(\d{8,15})\.fit$/i) ? Number(targetFile.name.match(/_(\d{8,15})\.fit$/i)![1]) : undefined)
+        };
+
+        saveActivityData(id, { 
           fullSummary: target, 
           fullData: targetData,
           originalFile: targetFile || undefined,
           originalFileName: targetFile?.name || undefined
-        });
-      } catch (e) {
-        console.error('Failed to save batch activity data to IndexedDB:', e);
+        }).catch(e => console.error('Failed to save batch activity data to IndexedDB:', e));
+
+        if (existingIdx >= 0) {
+          updated[existingIdx] = newActivity;
+        } else {
+          updated.push(newActivity);
+        }
       }
 
-      newActivities.push(newActivity);
-    }
+      return updated;
+    });
 
-    if (newActivities.length > 0) {
-      setHistory(prev => [...prev, ...newActivities]);
-    }
     return ids;
   }, [settings.cp, settings.activeBikeId]);
 

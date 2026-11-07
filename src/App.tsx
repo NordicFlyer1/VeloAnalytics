@@ -251,7 +251,7 @@ export default function App() {
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const valid = Array.from(e.dataTransfer.files).some(f => {
           const n = f.name.toLowerCase();
-          return n.endsWith('.fit') || n.endsWith('.csv');
+          return n.endsWith('.fit') || n.endsWith('.csv') || n.endsWith('.zip');
         });
         if (valid) {
           setShowUploadView(true);
@@ -298,11 +298,11 @@ export default function App() {
               for (const filePath of paths) {
                 const fileName = filePath.split(/[/\\]/).pop() || 'activity.fit';
                 const lowerName = fileName.toLowerCase();
-                if (!lowerName.endsWith('.fit') && !lowerName.endsWith('.csv')) continue;
+                if (!lowerName.endsWith('.fit') && !lowerName.endsWith('.csv') && !lowerName.endsWith('.zip')) continue;
 
                 try {
                   const bytes = await readFile(filePath);
-                  const mime = lowerName.endsWith('.csv') ? 'text/csv' : 'application/octet-stream';
+                  const mime = lowerName.endsWith('.csv') ? 'text/csv' : lowerName.endsWith('.zip') ? 'application/zip' : 'application/octet-stream';
                   droppedFiles.push(new File([bytes], fileName, { type: mime }));
                 } catch (readErr) {
                   console.error('Failed to read dropped file in Tauri:', filePath, readErr);
@@ -1225,6 +1225,7 @@ export default function App() {
         aiSettings={settings.aiSettings}
         updateAiSettings={settings.updateAiSettings}
         exportSettings={settings.exportSettings}
+        exportFitArchiveZip={settings.exportFitArchiveZip}
         exportFullArchive={() => settings.exportFullArchive(history)}
         importSettings={settings.importSettings}
         initialTab={settingsInitialTab}

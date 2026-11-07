@@ -116,7 +116,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
       </div>
       <h2 className="text-2xl font-bold tracking-tight text-app-text mb-2">Drop your activity files</h2>
       <p className="text-app-muted mb-8 max-w-md text-center text-sm">
-        Support for Garmin <span className="text-app-text font-semibold">.fit</span> and <span className="text-app-text font-semibold">.csv</span> activity files.
+        Support for Garmin <span className="text-app-text font-semibold">.fit</span>, <span className="text-app-text font-semibold">.csv</span>, and <span className="text-app-text font-semibold">.zip</span> archives.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <label className="bg-orange-500 hover:bg-orange-600 text-black px-8 py-3 rounded-full font-bold transition-all cursor-pointer shadow-xl shadow-orange-500/20 active:scale-95 text-xs uppercase tracking-wider">
@@ -124,7 +124,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
           <input 
             type="file" 
             className="hidden" 
-            accept=".fit,.csv" 
+            accept=".fit,.csv,.zip" 
             multiple 
             onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
             onChange={(e) => {

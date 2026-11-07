@@ -444,15 +444,15 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I backup my data and settings?",
-        beginnerAnswer: "Go to Settings > Maintenance. You have two options: click 'Download Config' to backup all your preferences, secret API keys (AI, Garmin, Maps), and bike profiles, or click 'Export Full Archive' to create a complete backup that includes your entire historical ride archive.",
-        technicalAnswer: "VeloAnalytics provides a two-tier data portability architecture: 'Download Config' serializes all localStorage configuration, Garmin Connect secrets/sync rules, thresholds, and equipment profiles into a veloanalytics_config_backup.json file. 'Export Full Archive' packages the configuration bundle alongside your entire parsed activity history (veloanalytics_history), providing a complete, self-contained migration archive.",
-        keywords: ["backup", "export", "download", "save", "config", "vault", "archive", "json"]
+        beginnerAnswer: "Go to Settings > Maintenance. You have two dedicated export tools: click 'Download Config' to save all your preferences, secret API keys (AI, Garmin, Maps), and bike profiles as a JSON file. Click 'Export .FIT Archive (ZIP)' to batch-export all raw .FIT activity files stored in your browser database into a compressed ZIP folder.",
+        technicalAnswer: "VeloAnalytics separates configuration from binary ride data for maximal reliability: 'Download Config' serializes localStorage settings, Garmin Connect credentials/sync rules, thresholds, and equipment profiles into veloanalytics_config_backup.json. 'Export .FIT Archive (ZIP)' retrieves every original .fit file from IndexedDB, compresses them in memory with fflate, and downloads veloanalytics_fit_archive.zip.",
+        keywords: ["backup", "export", "download", "save", "config", "zip", "fit archive", "json"]
       },
       {
         question: "How do I restore a backup from another device?",
-        beginnerAnswer: "In Settings > Maintenance, click 'Select Backup File' under 'Restore State' and choose either your Config Bundle or Full Vault Archive JSON file. The app reloads instantly with all your settings and data fully restored.",
-        technicalAnswer: "The Universal Restore engine (`importSettings()`) parses the uploaded JSON payload, identifies whether it is a Config Bundle or Full Vault Archive, validates schema integrity, and atomically writes the configuration, Garmin credentials, wellness history, and activity records back into localStorage before triggering a synchronized application reload.",
-        keywords: ["restore", "import", "upload", "recovery", "migration", "universal"]
+        beginnerAnswer: "Migration is a simple 2-step process: First, go to Settings > Maintenance and select your Config JSON file to restore all your settings, API keys, and bike profiles in one second. Second, drag and drop your .zip archive (or original .fit files) directly onto the app. VeloAnalytics will automatically unpack and parse all rides, instantly repopulating your detailed charts and database!",
+        technicalAnswer: "First, import your veloanalytics_config_backup.json in Settings > Maintenance to restore application state, API secrets, and thresholds atomically. Second, drop the veloanalytics_fit_archive.zip file onto the application dropzone. The background uploader automatically decompresses the archive in memory via unzipSync(), runs batch Web Worker parsing across all .fit files, and repopulates IndexedDB with full second-by-second telemetry, maps, and intervals.",
+        keywords: ["restore", "import", "upload", "recovery", "migration", "zip", "unpack"]
       }
     ]
   },

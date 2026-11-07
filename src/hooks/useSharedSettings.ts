@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ZoneDefinition, RidingPosition, SurfaceType, Equipment, AISettings, SleepMetric, HRVMetric } from '../types';
 import { DEFAULT_POWER_ZONES, DEFAULT_HR_ZONES } from '../services/metrics';
-import { formatLocalDate } from '../lib/utils';
+import { formatLocalDate, getBufferFingerprint } from '../lib/utils';
 import { saveAs } from '../lib/fileSystem';
+import { zipSync } from 'fflate';
+import { getAllStoredFitFiles } from '../services/storage';
 import { 
   getGarminApiKey, 
   setGarminApiKey, 
@@ -201,7 +203,7 @@ export function useSharedSettings() {
    */
   const buildConfigPayload = () => ({
     application: 'VeloAnalytics',
-    version: '1.7.0',
+    version: '1.7.1',
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     cp,
@@ -246,8 +248,69 @@ export function useSharedSettings() {
   };
 
   /**
-   * Export Full Archive (Full Vault Archive)
-   * Serializes the entire configuration bundle PLUS complete historical activity records.
+   * Export All .FIT Files as a ZIP Archive
+   * Extracts every original .FIT file stored in IndexedDB, compresses them in memory with fflate,
+   * and triggers a download of veloanalytics_fit_archive_YYYY-MM-DD.zip.
+   */
+  const exportFitArchiveZip = async (): Promise<{ count: number }> => {
+    const storedFiles = await getAllStoredFitFiles();
+    if (!storedFiles || storedFiles.length === 0) {
+      throw new Error('No .FIT files found in storage to export.');
+    }
+
+    const zipFiles: Record<string, Uint8Array> = {};
+    const usedNames = new Set<string>();
+    const seenContentHashes = new Set<string>();
+
+    for (const item of storedFiles) {
+      const arrayBuffer = await item.blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+
+      // Verify content uniqueness via byte fingerprint
+      const hash = getBufferFingerprint(bytes);
+      if (seenContentHashes.has(hash)) {
+        // Skip duplicate binary content
+        continue;
+      }
+      seenContentHashes.add(hash);
+
+      let name = item.fileName;
+      // If two genuinely different rides share the same generic filename (e.g. activity.fit)
+      if (usedNames.has(name)) {
+        const extIndex = name.lastIndexOf('.');
+        const base = extIndex !== -1 ? name.substring(0, extIndex) : name;
+        const ext = extIndex !== -1 ? name.substring(extIndex) : '';
+        let counter = 2;
+        while (usedNames.has(`${base}_${counter}${ext}`)) {
+          counter++;
+        }
+        name = `${base}_${counter}${ext}`;
+      }
+      usedNames.add(name);
+
+      zipFiles[name] = bytes;
+    }
+
+    const uniqueCount = Object.keys(zipFiles).length;
+    if (uniqueCount === 0) {
+      throw new Error('No unique .FIT files found in storage to export.');
+    }
+
+    const zippedUint8 = zipSync(zipFiles, { level: 6 });
+    const blob = new Blob([zippedUint8], { type: 'application/zip' });
+    const filename = `veloanalytics_fit_archive_${formatLocalDate(new Date())}.zip`;
+
+    await saveAs(blob, filename, {
+      description: 'VeloAnalytics FIT Files Archive',
+      accept: { 'application/zip': ['.zip'] }
+    });
+
+    return { count: uniqueCount };
+  };
+
+  /**
+   * Export Full Archive (Legacy JSON Archive)
+   * Serializes configuration plus stripped summary records.
    */
   const exportFullArchive = async (historyData?: any[]) => {
     let resolvedHistory = historyData;
@@ -411,6 +474,6 @@ export function useSharedSettings() {
     sleepHistory, setSleepHistory,
     hrvHistory, setHrvHistory,
     aiSettings, updateAiSettings,
-    exportSettings, exportFullArchive, importSettings
+    exportSettings, exportFitArchiveZip, exportFullArchive, importSettings
   };
 }

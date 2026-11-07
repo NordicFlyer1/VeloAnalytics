@@ -6,6 +6,8 @@ import { ActivitySummary, CyclingDataPoint, FileStatus } from '../types';
 import { processActivityData, ProcessingContext } from '../services/activityProcessor';
 import { parseCyclingCsv } from '../lib/csvParser';
 import { normalizeFitData } from '../lib/fitParserUtils';
+import { unzipSync } from 'fflate';
+import { getBufferFingerprint } from '../lib/utils';
 
 const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
   if (typeof file.arrayBuffer === 'function') {
@@ -324,15 +326,54 @@ export const useFileUploader = (
   const handleFileUpload = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     
-    const validFiles = Array.from(files).filter(f => {
-      const name = f.name.toLowerCase();
-      return name.endsWith('.fit') || name.endsWith('.csv');
-    });
-    if (validFiles.length === 0) {
-      console.warn("Only .fit and .csv files are supported.");
+    // Process input files, unpacking any .zip archives into individual File objects
+    const expandedFiles: File[] = [];
+    const seenFingerprints = new Set<string>();
+
+    for (const f of Array.from(files)) {
+      const lower = f.name.toLowerCase();
+      if (lower.endsWith('.zip')) {
+        try {
+          const buffer = await readFileAsArrayBuffer(f);
+          const unzipped = unzipSync(new Uint8Array(buffer));
+          for (const [entryPath, fileBytes] of Object.entries(unzipped)) {
+            // Ignore directory markers or macOS metadata files (__MACOSX, .DS_Store)
+            if (entryPath.endsWith('/') || entryPath.includes('__MACOSX') || entryPath.split('/').pop()?.startsWith('.')) {
+              continue;
+            }
+            const cleanName = entryPath.split('/').pop() || entryPath;
+            const entryLower = cleanName.toLowerCase();
+            if (entryLower.endsWith('.fit') || entryLower.endsWith('.csv')) {
+              // Deduplicate identical file bytes in zip archive
+              const fingerprint = getBufferFingerprint(fileBytes);
+              if (seenFingerprints.has(fingerprint)) {
+                continue;
+              }
+              seenFingerprints.add(fingerprint);
+
+              const mimeType = entryLower.endsWith('.fit') ? 'application/octet-stream' : 'text/csv';
+              expandedFiles.push(new File([fileBytes], cleanName, { type: mimeType }));
+            }
+          }
+        } catch (zipErr) {
+          console.error('[FileUploader] Failed to extract .zip archive:', zipErr);
+        }
+      } else if (lower.endsWith('.fit') || lower.endsWith('.csv')) {
+        // Deduplicate direct files by name + size
+        const fileKey = `${f.name}_${f.size}_${f.lastModified}`;
+        if (!seenFingerprints.has(fileKey)) {
+          seenFingerprints.add(fileKey);
+          expandedFiles.push(f);
+        }
+      }
+    }
+
+    if (expandedFiles.length === 0) {
+      console.warn("Only .fit, .csv, and .zip files containing activities are supported.");
       return;
     }
 
+    const validFiles = expandedFiles;
     const isBatch = validFiles.length > 1;
 
     const newFiles: FileStatus[] = validFiles.map(f => ({
