@@ -48,6 +48,8 @@ Native desktop packages and installers are available directly from the repositor
 <details open>
 <summary><strong>v1.7.1</strong> — Two-Tier Data Portability, ZIP Deduplication &amp; Phonetic Alignment</summary>
 
+<br>
+
 - **Robust Two-Tier Data Portability:** Decoupled lightweight application configuration (`.json`) from heavy binary activity archives (`.zip`) for loss-less migrations across browsers and native desktop apps.
 - **Batch .FIT File ZIP Export:** Added in Settings > Maintenance to extract and compress all original `.fit` files directly from IndexedDB in memory using `fflate` into a single downloadable `veloanalytics_fit_archive.zip`.
 - **Deduplicated Export & Idempotent Ingestion:** Employs byte content fingerprinting and physiological session timestamps so that exports never contain duplicate files or `_2.fit` suffixes, and re-importing archive batches seamlessly skips or updates identical rides without database duplication.
@@ -60,6 +62,8 @@ Native desktop packages and installers are available directly from the repositor
 <details>
 <summary><strong>v1.7.0</strong> — Velo Coach Voice Intelligence &amp; macOS Privacy Hardening</summary>
 
+<br>
+
 - **Velo Coach Voice Intelligence:** Bidirectional voice interaction in the Velo Coach sliding drawer. Ask complex physiological and workout questions via microphone input and receive immediate written and verbal coaching responses.
 - **Client-Side Speech-to-Text & Single-Utterance Finalization:** Powered by the browser and OS-native Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`), operating in discrete query mode with automatic endpoint detection and zero cloud audio transmission.
 - **Intelligent Cycling Phonetic Dictionary:** Audio speech synthesis converts cycling jargon and symbols into natural verbal pronunciation (expanding `W'bal` to "W prime balance", `xPower` to "x-power", `BikeScore™` to "BikeScore", `Pw:HR` to "aerobic decoupling", `VRS` to "Velo Readiness Score", and units like `KJ`, `W`, and `BPM`).
@@ -70,6 +74,8 @@ Native desktop packages and installers are available directly from the repositor
 <details>
 <summary><strong>v1.6.3</strong> — PMC Architecture Decoupling &amp; Documentation Design Bible</summary>
 
+<br>
+
 - **PMC Architecture Decoupling:** Separated discrete daily training impulse from continuous Banister curves. The primary PMC chart now tracks **Fitness (LTS)**, **Fatigue (STS)**, and **Form (SB)** without scale distortion, while a synchronized sub-lane charts daily **BikeScore™** and **Relative Intensity (RI)** alongside a 1.00 threshold benchmark.
 - **5-Pillar Performance Summary Grid:** Scaled the PMC summary metrics into a 5-pillar overview reporting BikeScore, Relative Intensity, LTS, STS, and Form (SB) with interactive highlight syncing.
 - **Documentation Design Bible (AGENTS.md):** Unified repository documentation, mathematical notation (Option A Unicode), terminology standards, and layout consistency across all guides.
@@ -78,6 +84,8 @@ Native desktop packages and installers are available directly from the repositor
 
 <details>
 <summary><strong>v1.6.2</strong> — Help System Audit &amp; KPI Modal Refinement</summary>
+
+<br>
 
 - **Help System & Documentation Audit:** Line-by-line harmonization across the in-app FAQ, setup guides, and repository documentation. Aligned Garmin Connect instructions with the single Personal API Key token exchange and current health endpoints.
 - **KPI Modal Refinement:** Replaced out-of-place licensing card in the Key Performance Indicators overview with a dedicated **W' (W Prime) & W'bal** metric card styled in `#a855f7` purple.
@@ -89,6 +97,8 @@ Native desktop packages and installers are available directly from the repositor
 <details>
 <summary><strong>v1.6.1</strong> — Dual macOS Desktop Releases &amp; Vercel Garmin Proxy</summary>
 
+<br>
+
 - **Dedicated Dual macOS Desktop Releases:** Release workflow now targets both Apple Silicon (`macos-14` / ARM64) and Intel (`macos-15` / x86_64) runners, publishing dedicated native `.dmg` bundles alongside Windows and Linux.
 - **Vercel Web Garmin Connect Proxy:** Production-ready API proxy rewrite in `vercel.json` routing `/api/garmin/:path*` directly to Garmin Connect, resolving browser CORS restrictions and delivering full sync capability across both web and desktop.
 
@@ -96,6 +106,8 @@ Native desktop packages and installers are available directly from the repositor
 
 <details>
 <summary><strong>v1.6.0</strong> — Garmin Connect Daily Health &amp; Sleep Sync</summary>
+
+<br>
 
 - **Garmin Connect Daily Health & Sleep Sync:** Direct synchronization with Garmin Connect API for sleep telemetry, HRV trends, and daily biometric health tracking.
 - **Resting Heart Rate (RHR) Extraction & Charting:** Fully integrated daily resting heart rate extraction into both the Sleep Trends and Recovery Status panels, featuring multi-source fallback (`daily_heart_rate.restingHeartRateInBeatsPerMinute` and sleep record `restingHeartRate`) with smart linear interpolation across missing gap days.
@@ -107,6 +119,8 @@ Native desktop packages and installers are available directly from the repositor
 <details>
 <summary><strong>v1.5.2</strong> — Decoupled Weather Polling &amp; Deduplicated Metric Recalculation</summary>
 
+<br>
+
 - **Decoupled Weather Timer Churn:** Decoupled external weather fetching from timeline cursor hover (`activePoint`). Weather now queries once on activity load at the ride's start coordinates, eliminating continuous timer arming/canceling and redundant network scheduling during 60 FPS chart scrubbing.
 - **Deduplicated Summary Metric Recalculator:** Added an activity signature cache to `useDataRecalculator` that eliminates duplicate 15,000-point metric passes (O(N) rolling fourth-power math, BikeScore, and zone distributions) when the background W' balance worker attaches anaerobic battery data.
 - **Repository Cleanliness Hardening:** Enforced `.gitignore` rules for temporary platform attachment paths (`public/`), ensuring clean Git histories and zero unwanted assets in local or remote repositories.
@@ -115,6 +129,8 @@ Native desktop packages and installers are available directly from the repositor
 
 <details>
 <summary><strong>v1.5.1</strong> — Day Mode Contrast, Mobile History &amp; Map Scroll Polish</summary>
+
+<br>
 
 - **Day Mode Theme & Contrast Resolution:** Synchronized Tailwind v4 dark variant selectors (`@custom-variant dark`) and standardized upload dialog tokens (`bg-app-card`, `border-app-border`, `text-app-text`), eliminating dark text-on-dark contrast anomalies.
 - **Mobile Activity History Full-Screen View:** Elevated the mobile Activity History drawer into an edge-to-edge full-screen slide-in interface matching Velo Coach, complete with a touch-friendly circular dismiss control.
@@ -125,6 +141,8 @@ Native desktop packages and installers are available directly from the repositor
 
 <details>
 <summary><strong>v1.5.0</strong> — Dual-Worker Threading Pipeline &amp; &le; 8 GB RAM Optimization</summary>
+
+<br>
 
 - **Dual-Worker Threading Pipeline:** Isolated UI and Batch Web Worker channels ensure active ride charts, power curves, and W' balance compute in < 50 ms with zero queue starvation during batch ingestion.
 - **Foreground Priority Scheduling:** Selecting an activity to view instantly pauses background file processing, yielding 100% of CPU and worker threads to the active ride.
