@@ -709,7 +709,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="space-y-4">
                     <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
                     <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border max-w-full overflow-x-auto no-scrollbar gap-1">
-                      {(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'lm-studio'] as const).map(p => (
+                      {(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'lm-studio', 'omlx'] as const).map(p => (
                         <button
                            key={p}
                            onClick={() => updateAiSettings({ provider: p })}
@@ -724,7 +724,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                            {p === 'groq' && <Zap className="w-3.5 h-3.5" />}
                            {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
                            {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
-                           <span>{p.replace('-', ' ')}</span>
+                           {p === 'omlx' && <Cpu className="w-3.5 h-3.5" />}
+                           <span>{p === 'omlx' ? 'oMLX' : p.replace('-', ' ')}</span>
                          </button>
                       ))}
                     </div>
@@ -794,7 +795,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
 
                   {/* Local Server Settings */}
-                  {['ollama', 'lm-studio'].includes(aiSettings.provider) && (
+                  {['ollama', 'lm-studio', 'omlx'].includes(aiSettings.provider) && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between ml-1">
@@ -805,6 +806,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 updateAiSettings({ 
                                   ollamaUrl: 'http://127.0.0.1:11434',
                                   ollamaModel: 'gemma3:4b'
+                                });
+                              } else if (aiSettings.provider === 'omlx') {
+                                updateAiSettings({
+                                  omlxUrl: 'http://127.0.0.1:8000',
+                                  omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
+                                  omlxApiKey: ''
                                 });
                               } else {
                                 updateAiSettings({ 
@@ -822,16 +829,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <Globe className="w-4 h-4 text-orange-500" />
                           <input 
                             type="text" 
-                            placeholder={aiSettings.provider === 'ollama' ? "http://127.0.0.1:11434" : "http://127.0.0.1:1234"}
-                            value={aiSettings.provider === 'ollama' ? aiSettings.ollamaUrl : aiSettings.lmStudioUrl} 
+                            placeholder={
+                              aiSettings.provider === 'ollama' ? "http://127.0.0.1:11434" :
+                              aiSettings.provider === 'omlx' ? "http://127.0.0.1:8000" :
+                              "http://127.0.0.1:1234"
+                            }
+                            value={
+                              aiSettings.provider === 'ollama' ? aiSettings.ollamaUrl :
+                              aiSettings.provider === 'omlx' ? (aiSettings.omlxUrl ?? 'http://127.0.0.1:8000') :
+                              aiSettings.lmStudioUrl
+                            } 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: e.target.value });
+                              else if (aiSettings.provider === 'omlx') updateAiSettings({ omlxUrl: e.target.value });
                               else updateAiSettings({ lmStudioUrl: e.target.value });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />
                         </div>
-                        <p className="text-[10px] text-app-muted font-medium ml-1">Private connection to your local machine hardware.</p>
+                        <p className="text-[10px] text-app-muted font-medium ml-1">
+                          {aiSettings.provider === 'omlx'
+                            ? 'Apple Silicon MLX local inference server with continuous KV prefix caching and live token streaming.'
+                            : 'Private connection to your local machine hardware with live token streaming.'}
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -843,6 +863,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 updateAiSettings({ 
                                   ollamaUrl: 'http://127.0.0.1:11434',
                                   ollamaModel: 'gemma3:4b'
+                                });
+                              } else if (aiSettings.provider === 'omlx') {
+                                updateAiSettings({
+                                  omlxUrl: 'http://127.0.0.1:8000',
+                                  omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
+                                  omlxApiKey: ''
                                 });
                               } else {
                                 updateAiSettings({ 
@@ -860,16 +886,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <Cpu className="w-4 h-4 text-orange-500" />
                           <input 
                             type="text" 
-                            placeholder={aiSettings.provider === 'ollama' ? "gemma3:4b" : "phi-4-mini-instruct"}
-                            value={aiSettings.provider === 'ollama' ? aiSettings.ollamaModel : aiSettings.lmStudioModel} 
+                            placeholder={
+                              aiSettings.provider === 'ollama' ? "gemma3:4b" :
+                              aiSettings.provider === 'omlx' ? "mlx-community/gemma-3-4b-it-4bit" :
+                              "phi-4-mini-instruct"
+                            }
+                            value={
+                              aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
+                              aiSettings.provider === 'omlx' ? (aiSettings.omlxModel ?? 'mlx-community/gemma-3-4b-it-4bit') :
+                              aiSettings.lmStudioModel
+                            } 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaModel: e.target.value });
+                              else if (aiSettings.provider === 'omlx') updateAiSettings({ omlxModel: e.target.value });
                               else updateAiSettings({ lmStudioModel: e.target.value });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
                           />
                         </div>
                       </div>
+
+                      {aiSettings.provider === 'omlx' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">oMLX API Key (Optional)</label>
+                          <div className="flex items-center gap-3 bg-app-bg/50 border border-app-border rounded-full px-5 py-3 focus-within:border-orange-500/50 transition-colors">
+                            <Key className="w-4 h-4 text-orange-500" />
+                            <input
+                              type="password"
+                              placeholder="Leave blank if oMLX server auth is disabled..."
+                              value={aiSettings.omlxApiKey || ''}
+                              onChange={(e) => updateAiSettings({ omlxApiKey: e.target.value })}
+                              className="bg-transparent w-full text-sm font-bold focus:outline-none"
+                            />
+                          </div>
+                          <p className="text-[10px] text-app-muted font-medium ml-1">
+                            Works offline in Tauri desktop or local dev; if calling from an HTTPS browser deployment, ensure CORS is enabled in oMLX.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -993,7 +1047,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </button>
                       </div>
                       <p className="text-[10px] text-app-muted font-medium">
-                        Powered by Web Speech API. Completely local, free, zero cloud API costs, and works across both online and local offline models (Ollama / LM Studio).
+                        Powered by Web Speech API. Completely local, free, zero cloud API costs, and works across both online and local offline models (oMLX / Ollama / LM Studio).
                       </p>
                     </div>
                   </div>

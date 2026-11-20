@@ -26,6 +26,9 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   ollamaModel: 'gemma3:4b',
   lmStudioUrl: 'http://127.0.0.1:1234',
   lmStudioModel: 'phi-4-mini-instruct',
+  omlxUrl: 'http://127.0.0.1:8000',
+  omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
+  omlxApiKey: '',
   systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. You will receive context in a structured JSON format containing profile data, detailed activity metrics (xPower, RI, BikeScore, EF), and wellness trends (HRV, Sleep, Velo-Readiness). Always use VeloAnalytics native metrics: xPower, BikeScore™, Relative Intensity (RI), and Efficiency Factor (EF). Do not reference third-party proprietary metrics. CRITICAL: Historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first).',
   wellnessContextDays: 7,
   useExperimentalReadiness: false,
@@ -203,7 +206,7 @@ export function useSharedSettings() {
    */
   const buildConfigPayload = () => ({
     application: 'VeloAnalytics',
-    version: '1.7.1',
+    version: '1.8.0',
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     cp,

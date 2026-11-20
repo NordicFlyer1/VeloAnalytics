@@ -9,7 +9,7 @@ import Markdown from 'react-markdown';
 import { cn, formatLocalDate } from '../../lib/utils';
 import { saveAs } from '../../lib/fileSystem';
 import { AISettings, ChatMessage, ActivitySummary, PMCDataPoint, HistoricalActivity, SleepMetric, HRVMetric } from '../../types';
-import { getCoachResponse, buildCoachContext } from '../../services/intelligenceService';
+import { streamCoachResponse, buildCoachContext } from '../../services/intelligenceService';
 import { useVoiceCoach } from '../../hooks/useVoiceCoach';
 
 interface IntelligenceDrawerProps {
@@ -46,8 +46,10 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const {
     isListening,
@@ -67,13 +69,21 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     }
   });
 
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
+
   const handleClose = () => {
+    stopGeneration();
     stopSpeaking();
     stopListening();
     onClose();
   };
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom as messages or streamed tokens arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -95,47 +105,85 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
     };
 
     const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const assistantId = (Date.now() + 1).toString();
+    const placeholderAssistantMessage: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date()
+    };
+
+    setMessages([...newMessages, placeholderAssistantMessage]);
     setInputValue('');
     setIsTyping(true);
+    setStreamingMessageId(assistantId);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
       const context = buildCoachContext(
-        summary, 
-        currentPMC, 
+        summary,
+        currentPMC,
         predictedPMC,
         pmcData,
-        history, 
-        sleepHistory, 
-        hrvHistory, 
-        cp, 
+        history,
+        sleepHistory,
+        hrvHistory,
+        cp,
         wPrime,
         aiSettings,
         aiSettings.wellnessContextDays || 7
       );
-      const response = await getCoachResponse(aiSettings, newMessages, context);
 
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+      let latestFullText = '';
+      const finalResponse = await streamCoachResponse(aiSettings, newMessages, context, {
+        signal: controller.signal,
+        onToken: (_delta, fullText) => {
+          latestFullText = fullText;
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId ? { ...msg, content: fullText } : msg
+            )
+          );
+        }
+      });
 
-      // Automatically speak verbal response if autoSpeak is enabled
-      if (aiSettings.autoSpeakResponses) {
-        speak(response, assistantMessage.id);
+      const completedText = finalResponse || latestFullText;
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantId ? { ...msg, content: completedText, timestamp: new Date() } : msg
+        )
+      );
+
+      // Automatically speak verbal response once the full stream finishes
+      if (aiSettings.autoSpeakResponses && completedText.trim()) {
+        speak(completedText, assistantId);
       }
     } catch (err) {
-      console.error('Coach Error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect to Velo Coach brain.');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // Keep whatever partial tokens were streamed, or remove empty placeholder
+        setMessages(prev =>
+          prev.filter(msg => !(msg.id === assistantId && !msg.content.trim()))
+        );
+      } else {
+        console.error('Coach Error:', err);
+        setMessages(prev =>
+          prev.filter(msg => !(msg.id === assistantId && !msg.content.trim()))
+        );
+        setError(err instanceof Error ? err.message : 'Failed to connect to Velo Coach brain.');
+      }
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+      setStreamingMessageId(null);
       setIsTyping(false);
     }
   };
 
   const clearChat = () => {
+    stopGeneration();
     stopSpeaking();
     stopListening();
     setMessages([]);
@@ -214,12 +262,13 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     <span className="text-[10px] text-app-muted uppercase font-bold tracking-widest">
-                      {aiSettings.provider} • {
+                      {aiSettings.provider === 'omlx' ? 'oMLX' : aiSettings.provider} • {
                         aiSettings.provider === 'gemini' ? aiSettings.geminiModel : 
                         aiSettings.provider === 'openai' ? aiSettings.openaiModel :
                         aiSettings.provider === 'anthropic' ? aiSettings.anthropicModel :
                         aiSettings.provider === 'groq' ? aiSettings.groqModel :
                         aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
+                        aiSettings.provider === 'omlx' ? aiSettings.omlxModel :
                         aiSettings.lmStudioModel
                       }
                     </span>
@@ -342,64 +391,86 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   </div>
                 </div>
               ) : (
-                messages.map((m) => (
-                  <div 
-                    key={m.id}
-                    className={cn(
-                      "flex flex-col max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-300",
-                      m.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
-                    )}
-                  >
-                    <div className={cn(
-                      "p-4 rounded-2xl text-sm leading-relaxed prose prose-invert prose-orange max-w-none prose-sm group relative",
-                      m.role === 'user' 
-                        ? "bg-orange-500 text-black font-bold shadow-lg shadow-orange-500/10 rounded-tr-none" 
-                        : "bg-app-card border border-app-border text-app-text rounded-tl-none"
-                    )}>
-                      {m.role === 'user' ? (
-                        <p>{m.content.includes('Context Info:') ? m.content.split('\n\nUser Question: ')[1] : m.content}</p>
-                      ) : (
-                        <>
-                          <Markdown>{m.content}</Markdown>
-                          <div className="absolute -bottom-3 -right-3 flex items-center gap-1.5 z-10">
-                            {isSpeechSynthesisSupported && (
-                              <button
-                                type="button"
-                                onClick={() => toggleSpeak(m.content, m.id)}
-                                className={cn(
-                                  "p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all",
-                                  speakingMessageId === m.id
-                                    ? "text-orange-500 border-orange-500/60 bg-orange-500/15 opacity-100 scale-100 ring-2 ring-orange-500/30"
-                                    : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
-                                )}
-                                title={speakingMessageId === m.id ? "Stop reading aloud" : "Read insight aloud"}
-                              >
-                                {speakingMessageId === m.id ? (
-                                  <Square className="w-3.5 h-3.5 fill-orange-500 text-orange-500 animate-pulse" />
-                                ) : (
-                                  <Volume2 className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => downloadResponse(m.content, m.timestamp)}
-                              className="p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
-                              title="Download as Markdown"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </>
+                messages.map((m) => {
+                  const isActivelyStreaming = streamingMessageId === m.id;
+                  const isAwaitingFirstToken = isActivelyStreaming && !m.content;
+
+                  if (isAwaitingFirstToken) {
+                    return (
+                      <div key={m.id} className="flex gap-1.5 items-center p-4 bg-app-card border border-app-border rounded-2xl rounded-tl-none w-16">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce [animation-delay:0.2s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce [animation-delay:0.4s]" />
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div 
+                      key={m.id}
+                      className={cn(
+                        "flex flex-col max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-300",
+                        m.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
                       )}
+                    >
+                      <div className={cn(
+                        "p-4 rounded-2xl text-sm leading-relaxed prose prose-invert prose-orange max-w-none prose-sm group relative",
+                        m.role === 'user' 
+                          ? "bg-orange-500 text-black font-bold shadow-lg shadow-orange-500/10 rounded-tr-none" 
+                          : "bg-app-card border border-app-border text-app-text rounded-tl-none"
+                      )}>
+                        {m.role === 'user' ? (
+                          <p>{m.content.includes('Context Info:') ? m.content.split('\n\nUser Question: ')[1] : m.content}</p>
+                        ) : (
+                          <>
+                            <Markdown>{m.content}</Markdown>
+                            {isActivelyStreaming && (
+                              <span className="inline-block w-1.5 h-3.5 bg-orange-500 animate-pulse align-middle ml-1 rounded-sm" />
+                            )}
+                            {!isActivelyStreaming && (
+                              <div className="absolute -bottom-3 -right-3 flex items-center gap-1.5 z-10">
+                                {isSpeechSynthesisSupported && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSpeak(m.content, m.id)}
+                                    className={cn(
+                                      "p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all",
+                                      speakingMessageId === m.id
+                                        ? "text-orange-500 border-orange-500/60 bg-orange-500/15 opacity-100 scale-100 ring-2 ring-orange-500/30"
+                                        : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                                    )}
+                                    title={speakingMessageId === m.id ? "Stop reading aloud" : "Read insight aloud"}
+                                  >
+                                    {speakingMessageId === m.id ? (
+                                      <Square className="w-3.5 h-3.5 fill-orange-500 text-orange-500 animate-pulse" />
+                                    ) : (
+                                      <Volume2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => downloadResponse(m.content, m.timestamp)}
+                                  className="p-2 bg-app-card border border-app-border rounded-xl text-app-muted hover:text-orange-500 hover:border-orange-500/50 shadow-lg transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                                  title="Download as Markdown"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[9px] text-app-muted font-bold mt-1.5 uppercase tracking-widest">
+                        {isActivelyStreaming
+                          ? 'Streaming...'
+                          : m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <span className="text-[9px] text-app-muted font-bold mt-1.5 uppercase tracking-widest">
-                      {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
-              {isTyping && (
+              {isTyping && !streamingMessageId && (
                 <div className="flex gap-1.5 items-center p-4 bg-app-card border border-app-border rounded-2xl rounded-tl-none w-16">
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce" />
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce [animation-delay:0.2s]" />
@@ -483,15 +554,26 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   placeholder={isListening ? "Listening to your voice..." : "Ask your coach (or click mic to speak)..."}
                   className="bg-transparent flex-1 px-2 py-2 text-sm focus:outline-none placeholder:text-app-muted"
                 />
-                <button 
-                  type="button"
-                  onClick={() => handleSend()}
-                  disabled={!inputValue.trim() || isTyping}
-                  className="p-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-black rounded-xl transition-all active:scale-95 shrink-0"
-                  title="Send Question"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                {isTyping ? (
+                  <button
+                    type="button"
+                    onClick={stopGeneration}
+                    className="p-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-400 rounded-xl transition-all active:scale-95 shrink-0"
+                    title="Stop Generating"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                  </button>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={() => handleSend()}
+                    disabled={!inputValue.trim()}
+                    className="p-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-black rounded-xl transition-all active:scale-95 shrink-0"
+                    title="Send Question"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div className="flex items-center justify-between mt-4 px-1">
                 <button 

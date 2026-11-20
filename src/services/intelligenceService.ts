@@ -228,48 +228,178 @@ export function buildCoachContext(
 }
 
 
+export interface StreamCoachCallbacks {
+  onToken: (delta: string, fullText: string) => void;
+  signal?: AbortSignal;
+}
+
+function buildSystemInstructionWithContext(settings: AISettings, context: string): string {
+  if (!context) return settings.systemPrompt;
+  return `${settings.systemPrompt}\n\nAthlete Telemetry Context (JSON):\n${context}`;
+}
+
 /**
- * Handles communication with Cloud-based Gemini
+ * Parses Server-Sent Events (SSE) / OpenAI-compatible streaming responses
+ * (used by OpenAI, Groq, Ollama, LM Studio, and oMLX).
+ * Falls back cleanly to single JSON extraction if a server ignores `stream: true`.
  */
-async function callGemini(settings: AISettings, messages: ChatMessage[]): Promise<string> {
-  // Check settings first, then import.meta.env, then process.env (for NodeJS/Build time)
-  const apiKey = 
-    settings.geminiApiKey || 
-    import.meta.env.VITE_GEMINI_API_KEY || 
+async function readOpenAICompatibleStream(
+  response: Response,
+  callbacks: StreamCoachCallbacks,
+  providerLabel: string
+): Promise<string> {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!response.body || (contentType.includes('application/json') && !contentType.includes('event-stream'))) {
+    const data = await response.json();
+    const text =
+      data?.choices?.[0]?.message?.content ??
+      data?.message?.content ??
+      data?.response ??
+      '';
+    if (!text) {
+      throw new Error(`${providerLabel} returned an empty or malformed response. Check if the model is loaded.`);
+    }
+    callbacks.onToken(text, text);
+    return text;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let fullText = '';
+
+  const processLine = (rawLine: string) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith(':')) return;
+
+    const payload = line.startsWith('data:') ? line.slice(5).trim() : line;
+    if (!payload || payload === '[DONE]') return;
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      return;
+    }
+
+    if (parsed?.error) {
+      const errMsg = typeof parsed.error === 'string'
+        ? parsed.error
+        : parsed.error.message || JSON.stringify(parsed.error);
+      throw new Error(`${providerLabel} Stream Error: ${errMsg}`);
+    }
+
+    const delta =
+      parsed?.choices?.[0]?.delta?.content ??
+      parsed?.choices?.[0]?.text ??
+      parsed?.message?.content ??
+      '';
+
+    if (delta) {
+      fullText += delta;
+      callbacks.onToken(delta, fullText);
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      processLine(line);
+    }
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    for (const line of buffer.split(/\r?\n/)) {
+      processLine(line);
+    }
+  }
+
+  if (!fullText) {
+    throw new Error(`${providerLabel} returned an empty stream. Check if the model is loaded.`);
+  }
+
+  return fullText;
+}
+
+/**
+ * Handles streaming communication with Cloud-based Gemini
+ */
+async function callGeminiStream(
+  settings: AISettings,
+  messages: ChatMessage[],
+  systemInstruction: string,
+  callbacks: StreamCoachCallbacks
+): Promise<string> {
+  const apiKey =
+    settings.geminiApiKey ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
     (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined) ||
     (globalThis as any).GEMINI_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error('Gemini API key is required. Please set VITE_GEMINI_API_KEY in .env or provide it in Settings.');
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  
+
   const contents = messages.map(m => ({
     role: m.role === 'user' ? 'user' : 'model',
     parts: [{ text: m.content }]
   }));
 
-  const result = await ai.models.generateContent({
+  const responseStream = await ai.models.generateContentStream({
     model: settings.geminiModel || 'gemini-3.8-flash',
-    contents: contents,
+    contents,
     config: {
-      systemInstruction: settings.systemPrompt
+      systemInstruction,
+      ...(callbacks.signal ? { abortSignal: callbacks.signal } : {})
     }
   });
 
-  return result.text || 'The coach is speechless.';
+  let fullText = '';
+  for await (const chunk of responseStream) {
+    if (callbacks.signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+    const delta = chunk.text ?? '';
+    if (delta) {
+      fullText += delta;
+      callbacks.onToken(delta, fullText);
+    }
+  }
+
+  if (!fullText) {
+    const fallback = 'The coach is speechless.';
+    callbacks.onToken(fallback, fallback);
+    return fallback;
+  }
+
+  return fullText;
 }
 
 /**
- * Handles communication with OpenAI
+ * Handles streaming communication with OpenAI
  */
-async function callOpenAI(settings: AISettings, messages: ChatMessage[]): Promise<string> {
+async function callOpenAIStream(
+  settings: AISettings,
+  messages: ChatMessage[],
+  systemInstruction: string,
+  callbacks: StreamCoachCallbacks
+): Promise<string> {
   const apiKey = settings.openaiApiKey;
   if (!apiKey) throw new Error('OpenAI API key is missing.');
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
+    signal: callbacks.signal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`
@@ -277,10 +407,11 @@ async function callOpenAI(settings: AISettings, messages: ChatMessage[]): Promis
     body: JSON.stringify({
       model: settings.openaiModel || 'gpt-4o',
       messages: [
-        { role: 'system', content: settings.systemPrompt },
+        { role: 'system', content: systemInstruction },
         ...messages.map(m => ({ role: m.role, content: m.content }))
       ],
       temperature: 0.7,
+      stream: true
     })
   });
 
@@ -289,19 +420,24 @@ async function callOpenAI(settings: AISettings, messages: ChatMessage[]): Promis
     throw new Error(`OpenAI Error: ${err}`);
   }
 
-  const data = await response.json();
-  return data.choices[0].message.content;
+  return readOpenAICompatibleStream(response, callbacks, 'OpenAI');
 }
 
 /**
- * Handles communication with Anthropic
+ * Handles streaming communication with Anthropic (SSE)
  */
-async function callAnthropic(settings: AISettings, messages: ChatMessage[]): Promise<string> {
+async function callAnthropicStream(
+  settings: AISettings,
+  messages: ChatMessage[],
+  systemInstruction: string,
+  callbacks: StreamCoachCallbacks
+): Promise<string> {
   const apiKey = settings.anthropicApiKey;
   if (!apiKey) throw new Error('Anthropic API key is missing.');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: callbacks.signal,
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -310,10 +446,11 @@ async function callAnthropic(settings: AISettings, messages: ChatMessage[]): Pro
     },
     body: JSON.stringify({
       model: settings.anthropicModel || 'claude-3-5-sonnet-20240620',
-      system: settings.systemPrompt,
+      system: systemInstruction,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 1024,
       temperature: 0.7,
+      stream: true
     })
   });
 
@@ -322,19 +459,87 @@ async function callAnthropic(settings: AISettings, messages: ChatMessage[]): Pro
     throw new Error(`Anthropic Error: ${err}`);
   }
 
-  const data = await response.json();
-  return data.content[0].text;
+  const contentType = response.headers.get('content-type') || '';
+  if (!response.body || (contentType.includes('application/json') && !contentType.includes('event-stream'))) {
+    const data = await response.json();
+    const text = data?.content?.[0]?.text || '';
+    if (!text) throw new Error('Anthropic returned an empty response.');
+    callbacks.onToken(text, text);
+    return text;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let fullText = '';
+
+  const processLine = (rawLine: string) => {
+    const line = rawLine.trim();
+    if (!line.startsWith('data:')) return;
+
+    const payload = line.slice(5).trim();
+    if (!payload || payload === '[DONE]') return;
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      return;
+    }
+
+    if (parsed?.type === 'error') {
+      throw new Error(`Anthropic Error: ${parsed.error?.message || JSON.stringify(parsed.error)}`);
+    }
+
+    if (parsed?.type === 'content_block_delta' && parsed?.delta?.type === 'text_delta' && parsed.delta.text) {
+      const delta: string = parsed.delta.text;
+      fullText += delta;
+      callbacks.onToken(delta, fullText);
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      processLine(line);
+    }
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    for (const line of buffer.split(/\r?\n/)) {
+      processLine(line);
+    }
+  }
+
+  if (!fullText) {
+    throw new Error('Anthropic returned an empty stream.');
+  }
+
+  return fullText;
 }
 
 /**
- * Handles communication with Groq (OpenAI-compatible)
+ * Handles streaming communication with Groq (OpenAI-compatible)
  */
-async function callGroq(settings: AISettings, messages: ChatMessage[]): Promise<string> {
+async function callGroqStream(
+  settings: AISettings,
+  messages: ChatMessage[],
+  systemInstruction: string,
+  callbacks: StreamCoachCallbacks
+): Promise<string> {
   const apiKey = settings.groqApiKey;
   if (!apiKey) throw new Error('Groq API key is missing.');
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
+    signal: callbacks.signal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`
@@ -342,10 +547,11 @@ async function callGroq(settings: AISettings, messages: ChatMessage[]): Promise<
     body: JSON.stringify({
       model: settings.groqModel || 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: settings.systemPrompt },
+        { role: 'system', content: systemInstruction },
         ...messages.map(m => ({ role: m.role, content: m.content }))
       ],
       temperature: 0.7,
+      stream: true
     })
   });
 
@@ -354,55 +560,71 @@ async function callGroq(settings: AISettings, messages: ChatMessage[]): Promise<
     throw new Error(`Groq Error: ${err}`);
   }
 
-  const data = await response.json();
-  return data.choices[0].message.content;
+  return readOpenAICompatibleStream(response, callbacks, 'Groq');
 }
 
 /**
- * Handles communication with Local OpenAI-compatible APIs (Ollama / LM Studio)
+ * Handles streaming communication with Local OpenAI-compatible APIs (Ollama / LM Studio / oMLX)
  */
-async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promise<string> {
+async function callLocalAIStream(
+  settings: AISettings,
+  messages: ChatMessage[],
+  systemInstruction: string,
+  callbacks: StreamCoachCallbacks
+): Promise<string> {
   const provider = settings.provider;
-  const rawUrl = provider === 'ollama' ? settings.ollamaUrl : settings.lmStudioUrl;
-  const model = provider === 'ollama' ? settings.ollamaModel : settings.lmStudioModel;
-  
+  const rawUrl =
+    provider === 'ollama' ? settings.ollamaUrl :
+    provider === 'omlx' ? (settings.omlxUrl || 'http://127.0.0.1:8000') :
+    settings.lmStudioUrl;
+  const model =
+    provider === 'ollama' ? settings.ollamaModel :
+    provider === 'omlx' ? (settings.omlxModel || 'mlx-community/gemma-3-4b-it-4bit') :
+    settings.lmStudioModel;
+  const hostName =
+    provider === 'ollama' ? 'Ollama' :
+    provider === 'omlx' ? 'oMLX' :
+    'LM Studio';
+
   const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
   const url = `${baseUrl}/v1/chat/completions`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (provider === 'omlx' && settings.omlxApiKey?.trim()) {
+    headers['Authorization'] = `Bearer ${settings.omlxApiKey.trim()}`;
+  }
 
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      signal: callbacks.signal,
+      headers,
       body: JSON.stringify({
         model: model || 'local-model',
         messages: [
-          { role: 'system', content: settings.systemPrompt },
+          { role: 'system', content: systemInstruction },
           ...messages.map(m => ({ role: m.role, content: m.content }))
         ],
         temperature: 0.7,
-        stream: false, // Ensure we get a single JSON object back
+        stream: true
       })
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Local AI error (${response.status}): ${err}`);
+      throw new Error(`${hostName} error (${response.status}): ${err}`);
     }
 
-    const data = await response.json();
-    
-    if (!data || !data.choices || !data.choices[0]?.message?.content) {
-      console.error('Unexpected Local AI Response:', data);
-      const hostName = provider === 'ollama' ? 'Ollama' : 'LM Studio';
-      throw new Error(`${hostName} returned an empty or malformed response. Check if the model is loaded.`);
-    }
-
-    return data.choices[0].message.content;
+    return await readOpenAICompatibleStream(response, callbacks, hostName);
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err;
+    }
     if (err instanceof Error) {
       if (err.message.includes('Failed to fetch')) {
-        const hostName = provider === 'ollama' ? 'Ollama' : 'LM Studio';
-        throw new Error(`Could not connect to ${hostName} at ${rawUrl}. Ensure the server is started and "CORS" is enabled.`);
+        throw new Error(`Could not connect to ${hostName} at ${rawUrl}. Ensure the server is running and CORS is enabled.`);
       }
       throw err;
     }
@@ -411,42 +633,51 @@ async function callLocalAI(settings: AISettings, messages: ChatMessage[]): Promi
 }
 
 /**
- * Main entry point for the coach
+ * Streaming entry point for Velo Coach across all online and local providers.
  */
-export async function getCoachResponse(
-  settings: AISettings, 
+export async function streamCoachResponse(
+  settings: AISettings,
   messages: ChatMessage[],
-  context: string
+  context: string,
+  callbacks: StreamCoachCallbacks
 ): Promise<string> {
-  // Inject context into the last user message
-  const messagesWithContext = [...messages];
-  if (messages.length > 0) {
-    const lastMsgIdx = messagesWithContext.length - 1;
-    const lastMsg = { ...messagesWithContext[lastMsgIdx] };
-    if (lastMsg.role === 'user') {
-      lastMsg.content = `Context Info:\n${context}\n\nUser Question: ${lastMsg.content}`;
-      messagesWithContext[lastMsgIdx] = lastMsg;
-    }
-  }
+  const systemInstruction = buildSystemInstructionWithContext(settings, context);
 
   try {
     switch (settings.provider) {
       case 'gemini':
-        return await callGemini(settings, messagesWithContext);
+        return await callGeminiStream(settings, messages, systemInstruction, callbacks);
       case 'openai':
-        return await callOpenAI(settings, messagesWithContext);
+        return await callOpenAIStream(settings, messages, systemInstruction, callbacks);
       case 'anthropic':
-        return await callAnthropic(settings, messagesWithContext);
+        return await callAnthropicStream(settings, messages, systemInstruction, callbacks);
       case 'groq':
-        return await callGroq(settings, messagesWithContext);
+        return await callGroqStream(settings, messages, systemInstruction, callbacks);
       case 'ollama':
       case 'lm-studio':
-        return await callLocalAI(settings, messagesWithContext);
+      case 'omlx':
+        return await callLocalAIStream(settings, messages, systemInstruction, callbacks);
       default:
         throw new Error(`Unsupported AI provider: ${settings.provider}`);
     }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
     console.error('Coach API Error:', error);
     throw error;
   }
+}
+
+/**
+ * Convenience non-streaming wrapper preserved for callers expecting a resolved string.
+ */
+export async function getCoachResponse(
+  settings: AISettings,
+  messages: ChatMessage[],
+  context: string
+): Promise<string> {
+  return streamCoachResponse(settings, messages, context, {
+    onToken: () => {}
+  });
 }

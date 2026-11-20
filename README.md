@@ -46,6 +46,18 @@ Native desktop packages and installers are available directly from the repositor
 ## What's New
 
 <details open>
+<summary><strong>v1.8.0</strong> — oMLX Local Inference Provider &amp; Real-Time Token Streaming</summary>
+
+<br>
+
+- **oMLX Offline AI Provider (Apple Silicon MLX):** Added **oMLX** to **Settings > Intelligence > AI Provider** (`http://127.0.0.1:8000`) with configurable model ID, optional local Bearer API key support, and system-prompt telemetry placement to take full advantage of oMLX continuous KV prefix caching across follow-up questions.
+- **Universal Real-Time Token Streaming:** Upgraded Velo Coach (`streamCoachResponse`) from blocking completions to live token-by-token streaming across all 7 AI providers (`oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`), eliminating perceived wait freezes on local and reasoning models.
+- **Interactive Stream Cancellation & Voice Parity:** Added an instant **Stop Generating** (`AbortController`) control in the Velo Coach input bar while preserving partial output, and aligned **Voice: Auto** speech playback to trigger cleanly upon stream completion.
+- **Documentation & In-App Help Sync:** Updated the in-app FAQ and `docs/INTELLIGENCE.md` with oMLX configuration, KV prefix caching, CORS guidance, and streaming architecture details.
+
+</details>
+
+<details>
 <summary><strong>v1.7.1</strong> — Two-Tier Data Portability, ZIP Deduplication &amp; Phonetic Alignment</summary>
 
 <br>

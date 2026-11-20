@@ -37,9 +37,18 @@ VeloAnalytics does not charge for AI access. Instead, we use the BYOK model to g
 - **Groq:** High-performance inference for Llama, Mistral, and other open models. Optimized for near-instant responses.
 
 ### Local Providers (Offline/Private)
-- **Ollama / LM Studio:** Run models (like Phi-4, Llama 3, Gemma 3) entirely on your own hardware using OpenAI-compatible endpoints.
-- **Privacy:** Data never leaves your machine.
+- **oMLX (Apple Silicon MLX):** Native Apple Silicon local inference server (`http://127.0.0.1:8000`) with continuous KV prefix caching, OpenAI-compatible `/v1/chat/completions` streaming, and optional Bearer API key support.
+- **Ollama / LM Studio:** Run local models (like Phi-4, Llama 3, Gemma 3) entirely on your own hardware using OpenAI-compatible endpoints (`http://127.0.0.1:11434` for Ollama, `http://127.0.0.1:1234` for LM Studio).
+- **Privacy:** Data never leaves your machine. Native Tauri desktop builds connect directly over loopback; HTTPS web deployments require CORS enabled on your local server.
 - **Cost:** Forever free.
+
+### Real-Time Token Streaming & KV Cache Alignment
+- **Universal Token Streaming:** Velo Coach streams responses live token-by-token across all 7 providers (`oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`) via `streamCoachResponse()`.
+  - **Gemini:** Uses `ai.models.generateContentStream()` from `@google/genai`.
+  - **Anthropic:** Parses Server-Sent Events (`content_block_delta` / `text_delta`).
+  - **OpenAI, Groq, oMLX, Ollama & LM Studio:** Stream OpenAI-compatible SSE (`stream: true`) with automatic JSON fallback if a local server returns a single payload.
+- **Interrupt / Stop Support:** Click the red Stop button in the Velo Coach input bar at any time to abort an active stream cleanly via `AbortController` while preserving partial output.
+- **KV Prefix Cache Placement:** Structured athlete JSON context is placed in the `system` instruction rather than repeated inside the final user message, allowing local engines like **oMLX** to reuse KV prefix caches across multi-turn coaching follow-ups.
 
 ---
 
@@ -65,7 +74,7 @@ When you send a message, the app bundle provides the AI with a dense, **structur
 ### Security Model:
 - **Local Processing:** All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
 - **Direct-to-Vendor:** Your API keys are used to talk directly to Google/OpenAI/Anthropic/Groq from your browser.
-- **Local-First Option:** If using a Local LLM provider (Ollama/LM Studio), the data never leaves your computer.
+- **Local-First Option:** If using a Local LLM provider (`oMLX`, `Ollama`, or `LM Studio`), the data never leaves your computer.
 - **GitHub Safety:** The code is architected to never store hardcoded keys. User-provided keys stay in `localStorage`. Environment variables (like `.env`) are excluded from version control via `.gitignore`, ensuring no secrets are accidentally pushed to GitHub.
 
 ---
@@ -144,24 +153,30 @@ VeloAnalytics features bidirectional voice interaction directly inside the Velo 
 
 ### Architecture & Privacy
 - **Web Speech API:** Utilizes browser-native `SpeechRecognition` (for voice-to-text input) and `SpeechSynthesis` (for text-to-speech verbal playback).
-- **Universal Provider Parity:** The speech layer operates independently of the LLM inference engine. Spoken voice input and audio readout work identically across all cloud AI providers (Google Gemini, OpenAI, Anthropic, Groq) and local offline instances (Ollama, LM Studio).
+- **Universal Provider Parity:** The speech layer operates independently of the LLM inference engine. Spoken voice input and audio readout work identically across all cloud AI providers (Google Gemini, OpenAI, Anthropic, Groq) and local offline instances (oMLX, Ollama, LM Studio).
 - **Zero Extra Cost & Zero Cloud Latency:** Operates entirely on the client device without requiring external speech API subscriptions (such as Whisper or ElevenLabs). Raw voice audio never leaves the browser.
 - **Cycling Science Pronunciation Engine:** Automatic text sanitization converts cycling metric notations (`xPower: 285W`, `RI: 0.95`, `BikeScore: 120`, `Pw:HR: 3.2%`, `W'bal: 14.5 kJ`) into natural, intelligible spoken sentences.
 
 ### How to Use
 - **Voice Questioning:** Click the microphone icon in the chat input bar (or tap while on mobile). Speak your question. Your speech appears live in the input field. Click Send (or press Enter) to submit.
 - **On-Demand Read Aloud:** Click the speaker icon on any assistant message bubble to hear the coach's clinical analysis read aloud. Click the stop button at any time to pause or cancel speech.
-- **Auto-Speak Mode:** Toggle **Voice: On** in the drawer header or in **Settings > Intelligence** to have every coach response read aloud automatically as soon as it is generated.
+- **Auto-Speak Mode:** Toggle **Voice: Auto** in the drawer header or **Auto-Speak Verbal Insights** in **Settings > Intelligence** to have every coach response read aloud automatically once the streamed text response finishes.
 
 ---
 
 ## 9. FAQs
 
 **Q: How do I use voice input and verbal feedback with Velo Coach?**  
-A: Open Velo Coach and click the microphone icon in the input field to speak your question. Click the speaker icon on any response to hear it read aloud, or turn on the "Voice: On" toggle in the header for hands-free auto-speak.
+A: Open Velo Coach and click the microphone icon in the input field to speak your question. Click the speaker icon on any response to hear it read aloud, or turn on the "Voice: Auto" toggle in the header for hands-free auto-speak.
 
-**Q: Does voice interaction work when using local models like Ollama or LM Studio?**  
-A: Yes! Because voice synthesis and recognition run natively in your browser via the Web Speech API, voice works with 100% parity across all models, online or offline.
+**Q: Does voice interaction work when using local models like oMLX, Ollama, or LM Studio?**  
+A: Yes! Because voice synthesis and recognition run natively via the Web Speech API, voice works with 100% parity across all models, online or offline. When Auto-Speak is enabled, Velo Coach streams the text response live and starts reading aloud cleanly once generation completes.
+
+**Q: Does Velo Coach stream responses token-by-token?**  
+A: Yes. All 7 AI providers (oMLX, Ollama, LM Studio, Gemini, OpenAI, Anthropic, and Groq) stream tokens in real time into the chat drawer, with a red Stop button to cancel long generations at any point.
+
+**Q: How do I configure oMLX on Apple Silicon?**  
+A: Start your oMLX server locally (default `http://127.0.0.1:8000`), select **oMLX** under **Settings > Intelligence > AI Provider**, enter your loaded MLX model ID (and optional API key if authentication is enabled in oMLX). For deployed HTTPS web browsers, enable CORS in oMLX; the native macOS Tauri desktop app connects directly over loopback.
 
 **Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**  
 A: Use your voice or press `Command + Spacebar` (`Cmd + Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".
@@ -173,7 +188,7 @@ A: Yes. Apple unifies typing and voice Siri under the same AppIntents framework.
 A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in Settings. If empty, the app falls back to build-time environment variables in your `.env` or Vercel dashboard.
 
 **Q: Is my data used to train models?**  
-A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (Ollama), training is impossible as data remains offline.
+A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (oMLX/Ollama/LM Studio), training is impossible as data remains offline.
 
 **Q: Why does the coach sometimes get math wrong?**  
 A: LLMs can struggle with complex arithmetic. VeloAnalytics mitigates this by **pre-calculating** every metric (xPower, BikeScore, EF, Velo Readiness) and passing them as a **structured JSON schema**. This provides the AI with deterministic, verified figures to interpret rather than forcing it to guess from raw sensor streams.

@@ -193,7 +193,7 @@ export interface FileStatus {
 export type RidingPosition = 'tops' | 'hoods' | 'drops';
 export type SurfaceType = 'road' | 'gravel' | 'mtb';
 
-export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio';
+export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio' | 'omlx';
 
 export interface AISettings {
   provider: AIProvider;
@@ -209,6 +209,9 @@ export interface AISettings {
   ollamaModel: string;
   lmStudioUrl: string;
   lmStudioModel: string;
+  omlxUrl: string;
+  omlxModel: string;
+  omlxApiKey?: string;
   systemPrompt: string;
   wellnessContextDays?: number;
   useExperimentalReadiness?: boolean;

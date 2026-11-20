@@ -256,8 +256,8 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I ask questions with my voice and hear verbal responses?",
-        beginnerAnswer: "Click the microphone icon in the Velo Coach input bar to speak your question directly. Your words appear live on screen. To hear responses read aloud, click the speaker icon on any message, or turn on the 'Voice: On' toggle in the drawer header for automatic hands-free reading.",
-        technicalAnswer: "Voice interaction is powered natively by the browser Web Speech API (SpeechRecognition and SpeechSynthesis). It is 100% private, free, and runs entirely on your device with zero cloud audio API costs. It works universally across all online providers (Gemini, OpenAI, Claude, Groq) and local offline models (Ollama, LM Studio).",
+        beginnerAnswer: "Click the microphone icon in the Velo Coach input bar to speak your question directly. Your words appear live on screen. To hear responses read aloud, click the speaker icon on any message, or turn on the 'Voice: Auto' toggle in the drawer header for automatic hands-free reading.",
+        technicalAnswer: "Voice interaction is powered natively by the browser Web Speech API (SpeechRecognition and SpeechSynthesis). It is 100% private, free, and runs entirely on your device with zero cloud audio API costs. It works universally across all online providers (Gemini, OpenAI, Claude, Groq) and local offline models (oMLX, Ollama, LM Studio). When Auto-Speak is enabled, Velo Coach streams text live first and begins speaking cleanly once the full response completes.",
         keywords: ["voice", "speech", "microphone", "speak", "read aloud", "audio", "verbal", "hands free", "coach"]
       },
       {
@@ -279,10 +279,16 @@ const FAQ_DATA: FAQCategory[] = [
         keywords: ["groq", "fast", "llama", "speed", "performance"]
       },
       {
-        question: "Can I use my own local LLM (Ollama/LM Studio)?",
-        beginnerAnswer: "Yes! If you run AI on your own computer, you can connect VeloAnalytics to it. This keeps 100% of your data on your own machine.",
-        technicalAnswer: "VeloAnalytics supports OpenAI-compatible local APIs. By setting the Provider to Local LLM and pointing the URL to your local instance (e.g. http://localhost:11434), the app communicates with your local hardware using the fetch API with CORS headers.",
-        keywords: ["ollama", "lm-studio", "local", "privacy", "offline"]
+        question: "Can I use my own local LLM (oMLX, Ollama, or LM Studio)?",
+        beginnerAnswer: "Yes! If you run AI locally on your Mac or PC, you can connect VeloAnalytics to oMLX (Apple Silicon MLX), Ollama, or LM Studio in Settings > Intelligence. This keeps 100% of your coaching conversations offline on your own machine.",
+        technicalAnswer: "VeloAnalytics supports OpenAI-compatible local `/v1/chat/completions` endpoints: oMLX (default http://127.0.0.1:8000, with optional Bearer API key support and continuous KV prefix caching on Apple Silicon), Ollama (http://127.0.0.1:11434), and LM Studio (http://127.0.0.1:1234). Athlete telemetry context is placed in the system prompt so oMLX can reuse its KV prefix cache across follow-up turns. Native Tauri desktop builds connect directly over loopback; HTTPS browser deployments require CORS enabled in your local server.",
+        keywords: ["omlx", "mlx", "ollama", "lm-studio", "local", "privacy", "offline", "apple silicon", "kv cache", "cors"]
+      },
+      {
+        question: "Does Velo Coach stream AI responses in real time?",
+        beginnerAnswer: "Yes! Responses appear word-by-word as the AI thinks across every supported provider—including oMLX, Ollama, LM Studio, Gemini, OpenAI, Anthropic, and Groq. You can also click the red Stop button anytime to halt a long answer.",
+        technicalAnswer: "streamCoachResponse() implements true token-level streaming across all 7 providers: Gemini uses generateContentStream(), Anthropic parses Server-Sent Events (content_block_delta), and OpenAI, Groq, oMLX, Ollama, and LM Studio stream OpenAI-compatible SSE chunks (`stream: true`) with AbortController cancellation and automatic JSON fallback if a local server returns a single payload.",
+        keywords: ["stream", "streaming", "tokens", "live", "stop", "abort", "sse", "omlx", "latency", "speed"]
       },
       {
         question: "How do I ask about a specific ride from the past?",
@@ -523,15 +529,65 @@ export const FAQSection: React.FC = () => {
     );
   };
 
-  const filteredCategories = FAQ_DATA.map(category => ({
-    ...category,
-    items: category.items.filter(item => 
-      item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.beginnerAnswer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.technicalAnswer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.keywords?.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-  })).filter(category => category.items.length > 0);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const queryTokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
+  const hasActiveSearch = queryTokens.length > 0;
+
+  const scoreFaqItem = (item: FAQItem): number => {
+    if (!hasActiveSearch) return 0;
+
+    const question = item.question.toLowerCase();
+    const keywords = (item.keywords || []).map(k => k.toLowerCase());
+    const beginner = item.beginnerAnswer.toLowerCase();
+    const technical = item.technicalAnswer.toLowerCase();
+
+    let totalScore = 0;
+
+    for (const token of queryTokens) {
+      const inQuestion = question.includes(token);
+      const exactKeyword = keywords.some(k => k === token);
+      const inKeywords = exactKeyword || keywords.some(k => k.includes(token));
+      const inBeginner = beginner.includes(token);
+      const inTechnical = technical.includes(token);
+
+      if (!inQuestion && !inKeywords && !inBeginner && !inTechnical) {
+        return -1;
+      }
+
+      if (inQuestion) totalScore += 10;
+      if (exactKeyword) totalScore += 12;
+      else if (inKeywords) totalScore += 6;
+      if (inBeginner) totalScore += 2;
+      if (inTechnical) totalScore += 1;
+    }
+
+    if (queryTokens.length > 1) {
+      if (question.includes(normalizedQuery)) totalScore += 15;
+      if (keywords.some(k => k === normalizedQuery)) totalScore += 15;
+      if (beginner.includes(normalizedQuery) || technical.includes(normalizedQuery)) totalScore += 4;
+    }
+
+    return totalScore;
+  };
+
+  const filteredCategories = FAQ_DATA.map(category => {
+    if (!hasActiveSearch) {
+      return { ...category, topScore: 0 };
+    }
+
+    const scoredItems = category.items
+      .map(item => ({ item, score: scoreFaqItem(item) }))
+      .filter(entry => entry.score >= 0)
+      .sort((a, b) => b.score - a.score);
+
+    return {
+      ...category,
+      items: scoredItems.map(entry => entry.item),
+      topScore: scoredItems.length > 0 ? scoredItems[0].score : -1
+    };
+  })
+    .filter(category => category.items.length > 0)
+    .sort((a, b) => (hasActiveSearch ? b.topScore - a.topScore : 0));
 
   return (
     <div className="space-y-6">
@@ -540,14 +596,14 @@ export const FAQSection: React.FC = () => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted" />
         <input 
           type="text"
-          placeholder="Try 'climbing', 'stress', or 'readiness'..."
+          placeholder="Try 'omlx cors', 'garmin sleep', or 'readiness'..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-app-bg/50 border border-app-border rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-orange-500/50 transition-all"
         />
       </div>
 
-      {!searchQuery && (
+      {!hasActiveSearch && (
         <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border self-start w-fit overflow-x-auto max-w-full no-scrollbar">
           {FAQ_DATA.map(category => (
             <button
@@ -569,14 +625,14 @@ export const FAQSection: React.FC = () => {
       <div className="space-y-3">
         {filteredCategories.map(category => (
           <div key={category.name} className="space-y-3">
-            {(searchQuery || activeCategory === category.name) && (
+            {(hasActiveSearch || activeCategory === category.name) && (
               <h4 className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mt-6 ml-2">
                 {category.name}
               </h4>
             )}
-            {(searchQuery || activeCategory === category.name) && category.items.map((item, idx) => (
+            {(hasActiveSearch || activeCategory === category.name) && category.items.map((item) => (
               <div 
-                key={idx}
+                key={item.question}
                 className="bg-app-bg/30 border border-app-border rounded-2xl overflow-hidden transition-all hover:border-app-border/80"
               >
                 <button
