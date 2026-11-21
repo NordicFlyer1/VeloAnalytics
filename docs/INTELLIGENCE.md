@@ -31,16 +31,24 @@ VeloAnalytics utilizes a multi-layered priority system for managing API keys (Ge
 VeloAnalytics does not charge for AI access. Instead, we use the BYOK model to give you total control over costs, privacy, and model quality.
 
 ### Cloud Providers (Online)
-- **Google Gemini:** Optimized for speed and large context windows. Best for daily summaries. (Default: Gemini 2.5 Flash / Gemini 3 Flash Preview).
-- **OpenAI (GPT-4o):** Exceptional reasoning and clinical analysis.
-- **Anthropic (Claude 3.5):** Highly nuanced coaching personas and data interpretation.
-- **Groq:** High-performance inference for Llama, Mistral, and other open models. Optimized for near-instant responses.
+- **Google Gemini:** Optimized for speed and large context windows. Best for daily summaries and deep training-block synthesis (Default: `gemini-3.8-flash`).
+- **OpenAI (GPT-4o):** Exceptional reasoning and clinical analysis (Default: `gpt-4o`).
+- **Anthropic (Claude 3.5):** Highly nuanced coaching personas and data interpretation (Default: `claude-3-5-sonnet-20240620`).
+- **Groq:** High-performance inference for Llama and other open models. Optimized for near-instant responses (Default: `llama-3.3-70b-versatile`).
 
 ### Local Providers (Offline/Private)
-- **oMLX (Apple Silicon MLX):** Native Apple Silicon local inference server (`http://127.0.0.1:8000`) with continuous KV prefix caching, OpenAI-compatible `/v1/chat/completions` streaming, and optional Bearer API key support.
-- **Ollama / LM Studio:** Run local models (like Phi-4, Llama 3, Gemma 3) entirely on your own hardware using OpenAI-compatible endpoints (`http://127.0.0.1:11434` for Ollama, `http://127.0.0.1:1234` for LM Studio).
+- **oMLX (Apple Silicon MLX):** Native Apple Silicon local inference server (`http://127.0.0.1:8000`, default model `mlx-community/gemma-3-4b-it-4bit`) with continuous KV prefix caching, OpenAI-compatible `/v1/chat/completions` streaming, and optional Bearer API key support.
+- **Ollama / LM Studio:** Run local models entirely on your own hardware using OpenAI-compatible endpoints (`http://127.0.0.1:11434` / `gemma3:4b` for Ollama, `http://127.0.0.1:1234` / `phi-4-mini-instruct` for LM Studio).
 - **Privacy:** Data never leaves your machine. Native Tauri desktop builds connect directly over loopback; HTTPS web deployments require CORS enabled on your local server.
 - **Cost:** Forever free.
+
+### Per-Provider Coach Personas & User-Editable Presets
+- **Independent Prompts per Provider:** System prompts in **Settings > Intelligence > Coach Persona** are stored separately for each of the 7 providers (`providerPrompts`). Switching between an 8 GB local model and a cloud API automatically switches to that provider's tailored prompt.
+- **Tailored Starter Defaults:**
+  - **Local Analyst (8GB)** (default for `oMLX`, `Ollama`, `LM Studio`): Strict zero-math narrative translator anchored on pre-computed JSON fields (`trainingBlock7Days`, `trainingBlock28Days`, `athleteCurrentState.readiness`, `athleteCurrentState.performance`, and `activityContext`) to eliminate arithmetic drift on 4B–14B local models.
+  - **Cloud Senior Coach** (default for `Google Gemini`, `OpenAI`, `Anthropic`, `Groq`): Multi-week analytical synthesis across acute/chronic trajectories, block density, session execution, and 24–48h guidance.
+  - **Classic Clinical:** Concise all-purpose VeloAnalytics coaching persona.
+- **Fully User-Editable:** Select any preset from the scrollable capsule strip, edit text directly in place, and click **Update Preset** to persist changes back to the preset—or **Rename**, **Save As** to create new custom presets, **Restore** built-in defaults, **Delete** custom presets, or **Reset Default** for the active provider. All per-provider prompts and custom presets export and import atomically in Config JSON backups.
 
 ### Real-Time Token Streaming & KV Cache Alignment
 - **Universal Token Streaming:** Velo Coach streams responses live token-by-token across all 7 providers (`oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`) via `streamCoachResponse()`.
@@ -69,7 +77,8 @@ When you send a message, the app bundle provides the AI with a dense, **structur
   - **HRV Sequence:** Multi-day history of overnight HRV vs. your personal baseline bounds from Garmin Connect HRV Status exports (supports 1-Day, 7-Day, 4-Week, and custom range formats).
   - **Velo Readiness (VRS):** The complete breakdown of the 5-in-1 composite readiness score, including active penalties (Sleep Debt, ACWR spikes, autonomic saturation).
 4. **Fitness Trends (PMC):** Your current `LTS` (Fitness), `STS` (Fatigue), and `SB` (Form / Freshness, `SB = LTS - STS`), plus a 14-day projection.
-5. **Historical Library:** A searchable index of your 20 most recent activities (Name, Date, FileName, and BikeScore).
+5. **Pre-Computed Training Blocks (`trainingBlock7Days` & `trainingBlock28Days`):** Rolling 7-day and 28-day summaries (`totalRides`, `totalKm`, `totalHours`, `totalBikeScore`, `totalAscentMeters`, `totalWorkKJ`) plus pre-computed 28-day weekly averages (`weeklyAvgKm`, `weeklyAvgHours`, `weeklyAvgBikeScore`) so local models require zero arithmetic.
+6. **Historical Library:** A reverse-chronological index of up to 40 recent activities (Name, Date, FileName, and BikeScore).
 
 ### Security Model:
 - **Local Processing:** All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
@@ -108,8 +117,8 @@ The coach understands your naming conventions and historical data.
 
 - **Functionality:** Found in Settings > Maintenance under "Data Portability".
 - **Two-Tier Portability Architecture:**
-  - **Config Bundle (`Download Config`):** Captures application configuration, secret API keys (AI, Garmin, Maps, Weather), Garmin sync rules, physiological thresholds, and equipment profiles into `veloanalytics_config_backup_YYYY-MM-DD.json`.
-  - **FIT Files Archive (`Export .FIT Archive (ZIP)`):** Extracts all raw `.fit` files directly from IndexedDB, compresses them in memory via `fflate`, and downloads `veloanalytics_fit_archive_YYYY-MM-DD.zip`.
+  - **Config Bundle (`Download Config`):** Captures application configuration, secret API keys (AI, Garmin, Maps, Weather), per-provider Coach Personas and editable prompt presets, Garmin sync rules, physiological thresholds, and equipment profiles into `veloanalytics_config_backup_YYYY-MM-DD.json`.
+  - **FIT Files Archive (`Export .FIT Archive (ZIP)`):** Extracts all raw `.FIT` files directly from IndexedDB, compresses them in memory via `fflate`, and downloads `veloanalytics_fit_archive_YYYY-MM-DD.zip`.
   - **Content & Signature Deduplication:** Uses byte content fingerprinting and session timestamps (`startTime`, duration, distance) during export to eliminate duplicate files and prevent spurious `_2.fit` suffixes.
 - **Clean Migration Flow:**
   - Step 1: Import the Config JSON in Settings > Maintenance to restore all settings, thresholds, and API keys atomically.
@@ -191,10 +200,10 @@ A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in S
 A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (oMLX/Ollama/LM Studio), training is impossible as data remains offline.
 
 **Q: Why does the coach sometimes get math wrong?**  
-A: LLMs can struggle with complex arithmetic. VeloAnalytics mitigates this by **pre-calculating** every metric (xPower, BikeScore, EF, Velo Readiness) and passing them as a **structured JSON schema**. This provides the AI with deterministic, verified figures to interpret rather than forcing it to guess from raw sensor streams.
+A: Smaller local LLMs can struggle with arithmetic. VeloAnalytics mitigates this by **pre-calculating** every metric (`xPower`, `BikeScore`, `EF`, `Velo Readiness`, and rolling `trainingBlock7Days` / `trainingBlock28Days` volume rollups including weekly averages) and passing them as a **structured JSON schema**. Paired with the **Local Analyst (8GB)** preset, models act as zero-math narrative translators rather than guessing from raw streams.
 
 **Q: What is "Velo Experimental Readiness"?**  
 A: It is an opt-in algorithm that calculates physiological readiness using a multi-factor weighting (Sleep, HRV, Recovery, Load) and penalty logic. See the Methodology document for the full formula.
 
-**Q: How do I update my coach's rules?**  
-A: Update the **System Prompt** in Settings with your preferred coaching methodology or persona.
+**Q: How do I customize or switch Coach Personas between local and cloud AI models?**  
+A: Open **Settings > Intelligence > Coach Persona**. System prompts are stored **independently per AI provider** (`oMLX`, `Ollama`, `LM Studio`, `Gemini`, `OpenAI`, `Anthropic`, `Groq`), defaulting to **Local Analyst (8GB)** for local servers and **Cloud Senior Coach** for cloud APIs. Every preset is fully user-editable: tweak text directly, click **Update Preset** to save edits back to a preset, **Rename**, or **Save As** to create custom presets for specific models—all included in your Config JSON backup.

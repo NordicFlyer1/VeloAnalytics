@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { AISettings, ActivitySummary, PMCDataPoint, ChatMessage, HistoricalActivity, SleepMetric, HRVMetric } from '../types';
 import { calculateVeloReadiness, calculateStandardReadiness } from './wellnessService';
+import { getEffectiveSystemPrompt } from './promptPresets';
 
 /**
  * Distills complex activity and performance data into a structured JSON format for the LLM.
@@ -136,6 +137,51 @@ export function buildCoachContext(
     efficiencyFactor = Number((summary.xPower / summary.avgHeartRate).toFixed(2));
   }
 
+  // 4. Rolling 7-Day & 28-Day Training Block Rollups (Pre-computed so smaller local models do zero math)
+  const nowMs = Date.now();
+  const msInDay = 86400000;
+  const sevenDaysAgoMs = nowMs - 7 * msInDay;
+  const twentyEightDaysAgoMs = nowMs - 28 * msInDay;
+
+  let rides7d = 0;
+  let dist7d = 0;
+  let dur7d = 0;
+  let bikeScore7d = 0;
+  let ascent7d = 0;
+  let work7d = 0;
+
+  let rides28d = 0;
+  let dist28d = 0;
+  let dur28d = 0;
+  let bikeScore28d = 0;
+  let ascent28d = 0;
+  let work28d = 0;
+
+  for (const act of history) {
+    if (!act?.date && !act?.startTime) continue;
+    const actTime = act.startTime
+      ? new Date(act.startTime).getTime()
+      : new Date(`${act.date}T12:00:00`).getTime();
+    if (isNaN(actTime)) continue;
+
+    if (actTime >= sevenDaysAgoMs) {
+      rides7d++;
+      dist7d += act.distance || 0;
+      dur7d += act.duration || 0;
+      bikeScore7d += act.bikeScore || 0;
+      ascent7d += act.totalAscent || 0;
+      work7d += act.work || 0;
+    }
+    if (actTime >= twentyEightDaysAgoMs) {
+      rides28d++;
+      dist28d += act.distance || 0;
+      dur28d += act.duration || 0;
+      bikeScore28d += act.bikeScore || 0;
+      ascent28d += act.totalAscent || 0;
+      work28d += act.work || 0;
+    }
+  }
+
   const contextData = {
     system: {
       date: new Date().toISOString().split('T')[0],
@@ -176,6 +222,25 @@ export function buildCoachContext(
         criticalPower: cp,
         wPrime: wPrime
       }
+    },
+    trainingBlock7Days: {
+      totalRides: rides7d,
+      totalKm: Number((dist7d / 1000).toFixed(1)),
+      totalHours: Number((dur7d / 3600).toFixed(1)),
+      totalBikeScore: Math.round(bikeScore7d),
+      totalAscentMeters: Math.round(ascent7d),
+      totalWorkKJ: Math.round(work7d)
+    },
+    trainingBlock28Days: {
+      totalRides: rides28d,
+      totalKm: Number((dist28d / 1000).toFixed(1)),
+      totalHours: Number((dur28d / 3600).toFixed(1)),
+      totalBikeScore: Math.round(bikeScore28d),
+      totalAscentMeters: Math.round(ascent28d),
+      totalWorkKJ: Math.round(work28d),
+      weeklyAvgKm: Number(((dist28d / 1000) / 4).toFixed(1)),
+      weeklyAvgHours: Number(((dur28d / 3600) / 4).toFixed(1)),
+      weeklyAvgBikeScore: Math.round(bikeScore28d / 4)
     },
     activityContext: summary ? {
       name: summary.name,
@@ -234,8 +299,9 @@ export interface StreamCoachCallbacks {
 }
 
 function buildSystemInstructionWithContext(settings: AISettings, context: string): string {
-  if (!context) return settings.systemPrompt;
-  return `${settings.systemPrompt}\n\nAthlete Telemetry Context (JSON):\n${context}`;
+  const activePrompt = getEffectiveSystemPrompt(settings);
+  if (!context) return activePrompt;
+  return `${activePrompt}\n\nAthlete Telemetry Context (JSON):\n${context}`;
 }
 
 /**

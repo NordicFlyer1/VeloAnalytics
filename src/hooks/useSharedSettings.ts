@@ -11,6 +11,15 @@ import {
   getGarminSettings, 
   saveGarminSettings 
 } from '../services/garmin/garminAuth';
+import {
+  CLOUD_SENIOR_COACH_PROMPT,
+  DEFAULT_PROMPT_PRESETS,
+  LEGACY_DEFAULT_SYSTEM_PROMPT,
+  buildDefaultActivePresets,
+  buildDefaultProviderPrompts,
+  getDefaultPresetIdForProvider,
+  getDefaultPromptForProvider
+} from '../services/promptPresets';
 
 const DEFAULT_AI_SETTINGS: AISettings = {
   provider: 'gemini',
@@ -29,7 +38,10 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   omlxUrl: 'http://127.0.0.1:8000',
   omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
   omlxApiKey: '',
-  systemPrompt: 'You are an expert cycling coach. Analyze metrics with clinical precision but also encourage the athlete. Keep responses concise and focused on physiological insights. You will receive context in a structured JSON format containing profile data, detailed activity metrics (xPower, RI, BikeScore, EF), and wellness trends (HRV, Sleep, Velo-Readiness). Always use VeloAnalytics native metrics: xPower, BikeScore™, Relative Intensity (RI), and Efficiency Factor (EF). Do not reference third-party proprietary metrics. CRITICAL: Historical sequences (Sleep, HRV, PMC) are provided in reverse-chronological order (Newest/Latest data point first).',
+  systemPrompt: CLOUD_SENIOR_COACH_PROMPT,
+  providerPrompts: buildDefaultProviderPrompts(),
+  promptPresets: DEFAULT_PROMPT_PRESETS,
+  activePresetByProvider: buildDefaultActivePresets(),
   wellnessContextDays: 7,
   useExperimentalReadiness: false,
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
@@ -37,6 +49,75 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   autoSpeakResponses: false,
   voiceRate: 1.05
 };
+
+function normalizeAiSettings(parsed: any): AISettings {
+  if (!parsed || typeof parsed !== 'object') {
+    return DEFAULT_AI_SETTINGS;
+  }
+
+  // Migration: split localUrl/localModel into ollama/lmStudio fields if they exist from old version
+  if (parsed.localUrl && !parsed.ollamaUrl) {
+    parsed.ollamaUrl = parsed.localUrl;
+    parsed.lmStudioUrl = parsed.localUrl;
+  }
+  if (parsed.localModel && !parsed.ollamaModel) {
+    parsed.ollamaModel = parsed.localModel;
+    parsed.lmStudioModel = parsed.localModel;
+  }
+
+  // Merge with defaults to ensure environment waterfall works if field is empty string
+  const merged: AISettings = { ...DEFAULT_AI_SETTINGS, ...parsed };
+
+  // Migrate to modern gemini-3.8-flash if model was unset or set to older previews
+  if (parsed.geminiModel === 'gemini-1.5-pro' || parsed.geminiModel === 'gemini-3-flash-preview' || !parsed.geminiModel) {
+    merged.geminiModel = 'gemini-3.8-flash';
+  }
+
+  // Secondary fallback check: if saved value is an empty string but env has a value, use env
+  if (!parsed.geminiApiKey && DEFAULT_AI_SETTINGS.geminiApiKey) merged.geminiApiKey = DEFAULT_AI_SETTINGS.geminiApiKey;
+  if (!parsed.openaiApiKey && DEFAULT_AI_SETTINGS.openaiApiKey) merged.openaiApiKey = DEFAULT_AI_SETTINGS.openaiApiKey;
+  if (!parsed.anthropicApiKey && DEFAULT_AI_SETTINGS.anthropicApiKey) merged.anthropicApiKey = DEFAULT_AI_SETTINGS.anthropicApiKey;
+  if (!parsed.groqApiKey && DEFAULT_AI_SETTINGS.groqApiKey) merged.groqApiKey = DEFAULT_AI_SETTINGS.groqApiKey;
+  if (!parsed.googleMapsApiKey && DEFAULT_AI_SETTINGS.googleMapsApiKey) merged.googleMapsApiKey = DEFAULT_AI_SETTINGS.googleMapsApiKey;
+  if (!parsed.openWeatherMapApiKey && DEFAULT_AI_SETTINGS.openWeatherMapApiKey) merged.openWeatherMapApiKey = DEFAULT_AI_SETTINGS.openWeatherMapApiKey;
+
+  const defaultProviderPrompts = buildDefaultProviderPrompts();
+  const defaultActivePresets = buildDefaultActivePresets();
+
+  const nextProviderPrompts = {
+    ...defaultProviderPrompts,
+    ...(parsed.providerPrompts && typeof parsed.providerPrompts === 'object' ? parsed.providerPrompts : {})
+  };
+
+  const nextActivePresets = {
+    ...defaultActivePresets,
+    ...(parsed.activePresetByProvider && typeof parsed.activePresetByProvider === 'object' ? parsed.activePresetByProvider : {})
+  };
+
+  // Preserve custom legacy systemPrompt on initial migration to per-provider prompts
+  if (!parsed.providerPrompts && typeof parsed.systemPrompt === 'string') {
+    const trimmedSaved = parsed.systemPrompt.trim();
+    if (trimmedSaved.length > 0 && trimmedSaved !== LEGACY_DEFAULT_SYSTEM_PROMPT.trim()) {
+      nextProviderPrompts[merged.provider] = parsed.systemPrompt;
+      nextActivePresets[merged.provider] = 'custom';
+    }
+  }
+
+  merged.providerPrompts = nextProviderPrompts;
+  merged.activePresetByProvider = nextActivePresets;
+  merged.promptPresets =
+    Array.isArray(parsed.promptPresets) && parsed.promptPresets.length > 0
+      ? parsed.promptPresets
+      : DEFAULT_PROMPT_PRESETS;
+  merged.systemPrompt =
+    nextProviderPrompts[merged.provider] || getDefaultPromptForProvider(merged.provider);
+
+  if (!merged.activePresetByProvider[merged.provider]) {
+    merged.activePresetByProvider[merged.provider] = getDefaultPresetIdForProvider(merged.provider);
+  }
+
+  return merged;
+}
 
 export function useSharedSettings() {
   const [cp, setCP] = useState(() => {
@@ -165,36 +246,10 @@ export function useSharedSettings() {
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem('veloanalytics_ai_settings');
     if (!saved) return DEFAULT_AI_SETTINGS;
-    
+
     try {
       const parsed = JSON.parse(saved);
-      // Migration: split localUrl/localModel into ollama/lmStudio fields if they exist from old version
-      if (parsed.localUrl && !parsed.ollamaUrl) {
-        parsed.ollamaUrl = parsed.localUrl;
-        parsed.lmStudioUrl = parsed.localUrl;
-      }
-      if (parsed.localModel && !parsed.ollamaModel) {
-        parsed.ollamaModel = parsed.localModel;
-        parsed.lmStudioModel = parsed.localModel;
-      }
-
-      // Merge with defaults to ensure environment waterfall works if field is empty string
-      const merged = { ...DEFAULT_AI_SETTINGS, ...parsed };
-      
-      // Migrate to modern gemini-3.8-flash if model was unset or set to older previews
-      if (parsed.geminiModel === 'gemini-1.5-pro' || parsed.geminiModel === 'gemini-3-flash-preview' || !parsed.geminiModel) {
-        merged.geminiModel = 'gemini-3.8-flash';
-      }
-      
-      // Secondary fallback check: if saved value is an empty string but env has a value, use env
-      if (!parsed.geminiApiKey && DEFAULT_AI_SETTINGS.geminiApiKey) merged.geminiApiKey = DEFAULT_AI_SETTINGS.geminiApiKey;
-      if (!parsed.openaiApiKey && DEFAULT_AI_SETTINGS.openaiApiKey) merged.openaiApiKey = DEFAULT_AI_SETTINGS.openaiApiKey;
-      if (!parsed.anthropicApiKey && DEFAULT_AI_SETTINGS.anthropicApiKey) merged.anthropicApiKey = DEFAULT_AI_SETTINGS.anthropicApiKey;
-      if (!parsed.groqApiKey && DEFAULT_AI_SETTINGS.groqApiKey) merged.groqApiKey = DEFAULT_AI_SETTINGS.groqApiKey;
-      if (!parsed.googleMapsApiKey && DEFAULT_AI_SETTINGS.googleMapsApiKey) merged.googleMapsApiKey = DEFAULT_AI_SETTINGS.googleMapsApiKey;
-      if (!parsed.openWeatherMapApiKey && DEFAULT_AI_SETTINGS.openWeatherMapApiKey) merged.openWeatherMapApiKey = DEFAULT_AI_SETTINGS.openWeatherMapApiKey;
-
-      return merged;
+      return normalizeAiSettings(parsed);
     } catch (e) {
       return DEFAULT_AI_SETTINGS;
     }
@@ -206,7 +261,7 @@ export function useSharedSettings() {
    */
   const buildConfigPayload = () => ({
     application: 'VeloAnalytics',
-    version: '1.8.0',
+    version: '1.8.1',
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     cp,
@@ -365,7 +420,7 @@ export function useSharedSettings() {
       if (config.cpMode !== undefined) setCpMode(config.cpMode);
       if (config.powerZoneDefinitions !== undefined) setPowerZoneDefinitions(config.powerZoneDefinitions);
       if (config.hrZoneDefinitions !== undefined) setHrZoneDefinitions(config.hrZoneDefinitions);
-      if (config.aiSettings !== undefined) setAiSettings(config.aiSettings);
+      if (config.aiSettings !== undefined) setAiSettings(normalizeAiSettings(config.aiSettings));
       if (config.sleepHistory !== undefined) setSleepHistory(config.sleepHistory);
       if (config.hrvHistory !== undefined) setHrvHistory(config.hrvHistory);
       
@@ -427,7 +482,26 @@ export function useSharedSettings() {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const updateAiSettings = (updates: Partial<AISettings>) => {
-    setAiSettings(prev => ({ ...prev, ...updates }));
+    setAiSettings(prev => {
+      const next: AISettings = { ...prev, ...updates };
+      const targetProvider = next.provider;
+      const mergedProviderPrompts = {
+        ...buildDefaultProviderPrompts(),
+        ...(prev.providerPrompts || {}),
+        ...(updates.providerPrompts || {})
+      };
+
+      if (updates.provider && updates.systemPrompt === undefined && updates.providerPrompts === undefined) {
+        next.systemPrompt = mergedProviderPrompts[targetProvider] || getDefaultPromptForProvider(targetProvider);
+      } else if (updates.systemPrompt !== undefined && updates.providerPrompts === undefined) {
+        mergedProviderPrompts[targetProvider] = updates.systemPrompt;
+      } else if (updates.providerPrompts && updates.systemPrompt === undefined) {
+        next.systemPrompt = mergedProviderPrompts[targetProvider] || next.systemPrompt;
+      }
+
+      next.providerPrompts = mergedProviderPrompts;
+      return next;
+    });
   };
 
   const addBike = (bike: Omit<Equipment, 'id'>) => {

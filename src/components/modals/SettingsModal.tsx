@@ -9,8 +9,14 @@ import {
 import { cn } from '../../lib/utils';
 import { 
   RidingPosition, SurfaceType, Equipment, ZoneDefinition, 
-  HistoricalActivity, AISettings, SleepMetric, HRVMetric
+  HistoricalActivity, AISettings, SleepMetric, HRVMetric,
+  AIProvider, SystemPromptPreset
 } from '../../types';
+import {
+  DEFAULT_PROMPT_PRESETS,
+  getDefaultPresetIdForProvider,
+  getDefaultPromptForProvider
+} from '../../services/promptPresets';
 import { parseSleepCSV, parseHRVCSV } from '../../services/wellnessService';
 import { 
   getGarminApiKey, 
@@ -208,6 +214,183 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       .reduce((sum, h) => sum + (h.distance || 0), 0);
     return (bike.startingMileage + historicalDist) / 1000; // Return in KM
   };
+
+  // Editable Coach Prompt Presets State
+  const [isCreatingPreset, setIsCreatingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [isRenamingPreset, setIsRenamingPreset] = useState(false);
+  const [renamePresetValue, setRenamePresetValue] = useState('');
+
+  const activeProvider: AIProvider = aiSettings.provider;
+  const providerDisplayName =
+    activeProvider === 'omlx'
+      ? 'oMLX'
+      : activeProvider === 'lm-studio'
+      ? 'LM Studio'
+      : activeProvider === 'openai'
+      ? 'OpenAI'
+      : activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1);
+
+  const promptPresets: SystemPromptPreset[] =
+    aiSettings.promptPresets && aiSettings.promptPresets.length > 0
+      ? aiSettings.promptPresets
+      : DEFAULT_PROMPT_PRESETS;
+
+  const activeProviderPrompt =
+    aiSettings.providerPrompts?.[activeProvider] ??
+    aiSettings.systemPrompt ??
+    getDefaultPromptForProvider(activeProvider);
+
+  const activePresetId = aiSettings.activePresetByProvider?.[activeProvider];
+  const selectedPreset =
+    promptPresets.find((p) => p.id === activePresetId) ||
+    promptPresets.find((p) => p.prompt.trim() === activeProviderPrompt.trim()) ||
+    null;
+
+  const isPromptModifiedFromPreset = Boolean(
+    selectedPreset && selectedPreset.prompt !== activeProviderPrompt
+  );
+
+  const isBuiltinPreset = (id: string) =>
+    DEFAULT_PROMPT_PRESETS.some((p) => p.id === id);
+
+  const handlePromptChange = (newPrompt: string) => {
+    updateAiSettings({
+      systemPrompt: newPrompt,
+      providerPrompts: {
+        ...(aiSettings.providerPrompts || {}),
+        [activeProvider]: newPrompt
+      }
+    });
+  };
+
+  const handleSelectPreset = (preset: SystemPromptPreset) => {
+    setIsCreatingPreset(false);
+    setIsRenamingPreset(false);
+    updateAiSettings({
+      systemPrompt: preset.prompt,
+      providerPrompts: {
+        ...(aiSettings.providerPrompts || {}),
+        [activeProvider]: preset.prompt
+      },
+      activePresetByProvider: {
+        ...(aiSettings.activePresetByProvider || {}),
+        [activeProvider]: preset.id
+      }
+    });
+  };
+
+  const handleUpdateSelectedPreset = () => {
+    if (!selectedPreset) return;
+    const updatedPresets = promptPresets.map((p) =>
+      p.id === selectedPreset.id ? { ...p, prompt: activeProviderPrompt } : p
+    );
+    updateAiSettings({
+      promptPresets: updatedPresets
+    });
+  };
+
+  const handleCreatePreset = () => {
+    const trimmedName = newPresetName.trim();
+    if (!trimmedName) return;
+    const newId = `custom-${Date.now()}`;
+    const created: SystemPromptPreset = {
+      id: newId,
+      name: trimmedName,
+      description: `Custom preset (${providerDisplayName})`,
+      prompt: activeProviderPrompt
+    };
+    updateAiSettings({
+      promptPresets: [...promptPresets, created],
+      activePresetByProvider: {
+        ...(aiSettings.activePresetByProvider || {}),
+        [activeProvider]: newId
+      }
+    });
+    setNewPresetName('');
+    setIsCreatingPreset(false);
+  };
+
+  const handleRenameSelectedPreset = () => {
+    const trimmed = renamePresetValue.trim();
+    if (!selectedPreset || !trimmed) return;
+    const updatedPresets = promptPresets.map((p) =>
+      p.id === selectedPreset.id ? { ...p, name: trimmed } : p
+    );
+    updateAiSettings({ promptPresets: updatedPresets });
+    setIsRenamingPreset(false);
+    setRenamePresetValue('');
+  };
+
+  const handleDeleteSelectedPreset = () => {
+    if (!selectedPreset || promptPresets.length <= 1 || isBuiltinPreset(selectedPreset.id)) return;
+    const remaining = promptPresets.filter((p) => p.id !== selectedPreset.id);
+    const fallbackPreset =
+      remaining.find((p) => p.id === getDefaultPresetIdForProvider(activeProvider)) || remaining[0];
+    updateAiSettings({
+      promptPresets: remaining,
+      activePresetByProvider: {
+        ...(aiSettings.activePresetByProvider || {}),
+        [activeProvider]: fallbackPreset.id
+      }
+    });
+  };
+
+  const handleResetProviderPrompt = () => {
+    const defaultPresetId = getDefaultPresetIdForProvider(activeProvider);
+    const factoryPreset = DEFAULT_PROMPT_PRESETS.find((p) => p.id === defaultPresetId);
+    const currentMatchingPreset = promptPresets.find((p) => p.id === defaultPresetId);
+    const targetPrompt =
+      factoryPreset?.prompt || getDefaultPromptForProvider(activeProvider);
+
+    // If user modified a built-in preset, keep their custom preset edits unless they pick Reset;
+    // reset the active provider's prompt to the factory default for this provider.
+    const nextPresets =
+      currentMatchingPreset && factoryPreset && currentMatchingPreset.prompt !== factoryPreset.prompt
+        ? promptPresets
+        : promptPresets;
+
+    setIsCreatingPreset(false);
+    setIsRenamingPreset(false);
+
+    updateAiSettings({
+      promptPresets: nextPresets,
+      systemPrompt: targetPrompt,
+      providerPrompts: {
+        ...(aiSettings.providerPrompts || {}),
+        [activeProvider]: targetPrompt
+      },
+      activePresetByProvider: {
+        ...(aiSettings.activePresetByProvider || {}),
+        [activeProvider]:
+          factoryPreset && currentMatchingPreset?.prompt === factoryPreset.prompt
+            ? defaultPresetId
+            : 'custom'
+      }
+    });
+  };
+
+  const handleRestoreBuiltinPreset = () => {
+    if (!selectedPreset) return;
+    const factoryPreset = DEFAULT_PROMPT_PRESETS.find((p) => p.id === selectedPreset.id);
+    if (!factoryPreset) return;
+    const updatedPresets = promptPresets.map((p) =>
+      p.id === factoryPreset.id ? { ...factoryPreset } : p
+    );
+    updateAiSettings({
+      promptPresets: updatedPresets,
+      systemPrompt: factoryPreset.prompt,
+      providerPrompts: {
+        ...(aiSettings.providerPrompts || {}),
+        [activeProvider]: factoryPreset.prompt
+      }
+    });
+  };
+
+  useEffect(() => {
+    setIsCreatingPreset(false);
+    setIsRenamingPreset(false);
+  }, [activeProvider]);
 
   if (!showSettings) return null;
 
@@ -927,19 +1110,213 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   )}
 
-                  {/* System Prompt */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">Coach Persona (System Prompt)</label>
+                  {/* System Prompt (Per-Provider + User-Editable Presets) */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 ml-1">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">
+                          Coach Persona — {providerDisplayName}
+                        </label>
+                        <span className="text-[9px] text-app-muted uppercase tracking-wider font-bold opacity-75">
+                          (Per-Provider)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleResetProviderPrompt}
+                        className="text-[9px] text-orange-500 hover:text-orange-600 font-bold uppercase tracking-widest transition-colors"
+                        title={`Reset ${providerDisplayName} prompt to recommended default`}
+                      >
+                        Reset Default
+                      </button>
+                    </div>
+
+                    {/* Editable Preset Capsule Bar */}
+                    <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border max-w-full overflow-x-auto no-scrollbar gap-1 items-center">
+                      {promptPresets.map((preset) => {
+                        const isActive = selectedPreset?.id === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handleSelectPreset(preset)}
+                            title={preset.description || preset.name}
+                            className={cn(
+                              "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0",
+                              isActive
+                                ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+                                : "text-app-muted hover:text-app-text"
+                            )}
+                          >
+                            <span>{preset.name}</span>
+                            {isActive && isPromptModifiedFromPreset && (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full bg-black/75"
+                                title="Edited for this provider (not yet saved back to preset)"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsRenamingPreset(false);
+                          setNewPresetName('');
+                          setIsCreatingPreset(true);
+                        }}
+                        className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full text-orange-500 hover:text-orange-400 transition-all flex items-center gap-1 whitespace-nowrap shrink-0"
+                        title="Save the current prompt text as a new editable preset"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Save As</span>
+                      </button>
+                    </div>
+
+                    {/* Inline Save-As / Rename Bar */}
+                    {isCreatingPreset && (
+                      <div className="flex flex-wrap items-center gap-2 bg-app-bg/50 border border-orange-500/40 rounded-full px-4 py-2">
+                        <input
+                          type="text"
+                          value={newPresetName}
+                          onChange={(e) => setNewPresetName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleCreatePreset();
+                            if (e.key === 'Escape') setIsCreatingPreset(false);
+                          }}
+                          placeholder="New preset name (e.g., Qwen3 8GB Race)..."
+                          className="bg-transparent flex-1 min-w-[160px] text-xs font-bold focus:outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreatePreset}
+                          disabled={!newPresetName.trim()}
+                          className="px-3.5 py-1.5 rounded-full bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest disabled:opacity-40"
+                        >
+                          Save Preset
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsCreatingPreset(false)}
+                          className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {isRenamingPreset && selectedPreset && (
+                      <div className="flex flex-wrap items-center gap-2 bg-app-bg/50 border border-orange-500/40 rounded-full px-4 py-2">
+                        <input
+                          type="text"
+                          value={renamePresetValue}
+                          onChange={(e) => setRenamePresetValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRenameSelectedPreset();
+                            if (e.key === 'Escape') setIsRenamingPreset(false);
+                          }}
+                          placeholder="Preset name..."
+                          className="bg-transparent flex-1 min-w-[160px] text-xs font-bold focus:outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRenameSelectedPreset}
+                          disabled={!renamePresetValue.trim()}
+                          className="px-3.5 py-1.5 rounded-full bg-orange-500 text-black text-[10px] font-bold uppercase tracking-widest disabled:opacity-40"
+                        >
+                          Save Name
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsRenamingPreset(false)}
+                          className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-app-muted hover:text-app-text"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Active Preset Toolbar (Only shown cleanly as a slim action row) */}
+                    {selectedPreset && !isCreatingPreset && !isRenamingPreset && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-[10px]">
+                        <span className="text-app-muted font-medium">
+                          {isPromptModifiedFromPreset
+                            ? `Edited from "${selectedPreset.name}" — active for ${providerDisplayName}.`
+                            : selectedPreset.description || `Using "${selectedPreset.name}" preset for ${providerDisplayName}.`}
+                        </span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {isPromptModifiedFromPreset && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={handleUpdateSelectedPreset}
+                                className="inline-flex items-center gap-1 text-orange-500 hover:text-orange-400 font-bold uppercase tracking-widest transition-colors"
+                                title={`Overwrite "${selectedPreset.name}" preset with these edits`}
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>Update Preset</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectPreset(selectedPreset)}
+                                className="text-app-muted hover:text-app-text font-bold uppercase tracking-widest transition-colors"
+                              >
+                                Revert
+                              </button>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRenamePresetValue(selectedPreset.name);
+                              setIsRenamingPreset(true);
+                            }}
+                            className="text-app-muted hover:text-app-text font-bold uppercase tracking-widest transition-colors"
+                          >
+                            Rename
+                          </button>
+                          {isBuiltinPreset(selectedPreset.id) &&
+                            DEFAULT_PROMPT_PRESETS.find((p) => p.id === selectedPreset.id)?.prompt !== selectedPreset.prompt && (
+                              <button
+                                type="button"
+                                onClick={handleRestoreBuiltinPreset}
+                                className="inline-flex items-center gap-1 text-app-muted hover:text-orange-500 font-bold uppercase tracking-widest transition-colors"
+                                title="Restore built-in preset original text"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Restore</span>
+                              </button>
+                            )}
+                          {!isBuiltinPreset(selectedPreset.id) && promptPresets.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={handleDeleteSelectedPreset}
+                              className="inline-flex items-center gap-1 text-red-400 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                              title="Delete custom preset"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex gap-3 bg-app-bg/50 border border-app-border rounded-3xl px-5 py-4 focus-within:border-orange-500/50 transition-colors">
                       <MessageSquare className="w-4 h-4 text-orange-500 shrink-0 mt-1" />
                       <textarea 
                         rows={12}
-                        value={aiSettings.systemPrompt} 
-                        onChange={(e) => updateAiSettings({ systemPrompt: e.target.value })}
-                        className="bg-transparent w-full text-sm font-medium focus:outline-none resize-y min-h-[300px] leading-relaxed custom-scrollbar"
-                        placeholder="Define how the coach should speak..."
+                        value={activeProviderPrompt} 
+                        onChange={(e) => handlePromptChange(e.target.value)}
+                        className="bg-transparent w-full text-sm font-medium focus:outline-none resize-y min-h-[260px] leading-relaxed custom-scrollbar"
+                        placeholder={`Define how Velo Coach responds when using ${providerDisplayName}...`}
                       />
                     </div>
+                    <p className="text-[10px] text-app-muted font-medium ml-1">
+                      Saved independently per AI provider and included in Config JSON backups. Edit any preset freely or save your own for specific local/cloud models.
+                    </p>
                   </div>
 
                   {/* Wellness Context Window */}

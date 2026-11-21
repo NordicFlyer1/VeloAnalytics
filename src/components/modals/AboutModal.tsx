@@ -42,7 +42,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                   <span>Performance Insights</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.8.0</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v1.8.1</span>
                 </h2>
                 <button 
                   onClick={() => setShowAboutModal(false)}
@@ -226,10 +226,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                           <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                         </div>
                         <div className="space-y-1 sm:space-y-2">
-                          <h4 className="text-xs sm:text-sm font-bold text-app-text">Contextual Help</h4>
+                          <h4 className="text-xs sm:text-sm font-bold text-app-text">Contextual Help &amp; Searchable Docs</h4>
                           <p className="text-[10px] sm:text-xs text-app-muted leading-relaxed">
-                            Look for the small <span className="text-orange-500 font-bold italic">i</span> icons next to section headers. 
-                            Clicking them will show a quick explainer for that block.
+                            Look for the small <span className="text-orange-500 font-bold italic">i</span> icons next to section headers for instant metric explainers, switch to the <span className="text-app-text font-semibold">Method</span> tab for full physiological formulas, or use the <span className="text-app-text font-semibold">FAQ</span> tab for multi-word topic search across plain-English and technical deep dives.
                           </p>
                         </div>
                       </div>

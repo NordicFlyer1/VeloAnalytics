@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 
@@ -250,9 +250,15 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "What is the Velo Coach?",
-        beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing. It also knows your recent sleep, HRV trends, and 6-week fitness base.",
-        technicalAnswer: "The coach context is a structured JSON schema containing: 1) System thresholds (CP/W'); 2) Calculated activity metrics (xPower, RI, BikeScore, EF, Aerobic Decoupling); 3) Sensor aggregates (Avg/Max Power, HR, Cadence, Speed); 4) Wellness timelines (Sleep durations, Quality, HRV Baselines); and 5) Performance indices (CTL, ATL, TSB) with 14-day projections.",
-        keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent", "json"]
+        beginnerAnswer: "The coach has a complete view of your fitness 'engine'. It sees your Critical Power, anaerobic battery (W'), and every major stat from your rides like power, heart rate, cadence, speed, and climbing—plus your 7-day and 28-day training volume, recent sleep, HRV trends, and 6-week fitness base.",
+        technicalAnswer: "The coach context (buildCoachContext) serializes a structured JSON schema containing: 1) System thresholds (CP/W'); 2) Selected ride metrics (xPower, RI, BikeScore, EF, Aerobic Decoupling, Work kJ); 3) Pre-computed rolling 7-day and 28-day block rollups including weekly averages (trainingBlock7Days & trainingBlock28Days); 4) Reverse-chronological Wellness timelines (Sleep stages/scores, HRV baselines); 5) Performance indices (LTS, STS, SB) with 14-day projections; and 6) Up to 40 recent activities.",
+        keywords: ["intelligence", "coach", "data", "access", "privacy", "metrics", "cp", "wprime", "xpower", "kj", "ascent", "json", "7 days", "28 days", "7d", "28d", "weeklyavg", "training block", "rollup", "history", "40"]
+      },
+      {
+        question: "Can I use different system prompts and editable presets for local vs. cloud AI models?",
+        beginnerAnswer: "Yes! Under Settings > Intelligence > Coach Persona, each AI provider saves its own system prompt automatically. Local options (oMLX, Ollama, LM Studio) default to a concise 'Local Analyst (8GB)' prompt, while cloud APIs (Gemini, OpenAI, Claude, Groq) default to 'Cloud Senior Coach'. Every preset is completely editable: modify text in place, click 'Update Preset' or 'Rename', create new ones with 'Save As', restore built-in defaults, or delete custom presets.",
+        technicalAnswer: "AISettings stores independent per-provider prompts in providerPrompts and user-editable templates in promptPresets (plus activePresetByProvider). Local providers default to a zero-math narrative translator anchored on pre-computed trainingBlock7Days, trainingBlock28Days, readiness, and activityContext fields to minimize arithmetic drift on 4B-14B models (8 GB RAM). Cloud providers default to a multi-week analytical synthesis prompt. All per-provider overrides and custom presets persist in localStorage and export/import inside Config JSON bundles.",
+        keywords: ["preset", "presets", "system prompt", "persona", "per-provider", "local", "8gb", "omlx", "ollama", "lm studio", "gemini", "openai", "anthropic", "groq", "edit", "custom", "save as", "rename", "reset", "restore"]
       },
       {
         question: "How do I ask questions with my voice and hear verbal responses?",
@@ -336,6 +342,12 @@ const FAQ_DATA: FAQCategory[] = [
         beginnerAnswer: "VeloAnalytics is source-available under a non-commercial license. Anyone can inspect the code and use it for their personal training, but commercial reuse and distribution are restricted.",
         technicalAnswer: "The project is licensed under the VeloAnalytics Software License Version 1.1 (Source-Available, Non-Commercial). Users and athletes are granted the right to inspect, build, modify, and audit the source code locally for non-commercial personal analysis. Commercial exploitation and unauthorized third-party redistribution are strictly prohibited without written consent from the author.",
         keywords: ["license", "source available", "open source", "commercial", "terms", "legal", "copyright"]
+      },
+      {
+        question: "How does the FAQ search in Performance Insights work?",
+        beginnerAnswer: "Type multiple words in any order—like 'omlx cors', 'coach presets', or 'garmin sleep'—and VeloAnalytics finds every FAQ containing all of your words, putting the closest title and keyword matches at the top.",
+        technicalAnswer: "FAQ search uses multi-word AND token matching with punctuation normalization and weighted relevance ranking across question titles (+10), exact keywords (+12), partial keywords (+6), category names (+4), plain-English answers (+2), technical deep dives (+1), and multi-word exact phrases (+15), then sorts matching categories by highest top item score.",
+        keywords: ["faq", "search", "help", "performance insights", "find", "keywords", "multi-word", "ranking", "guide"]
       }
     ]
   },
@@ -450,9 +462,9 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         question: "How do I backup my data and settings?",
-        beginnerAnswer: "Go to Settings > Maintenance. You have two dedicated export tools: click 'Download Config' to save all your preferences, secret API keys (AI, Garmin, Maps), and bike profiles as a JSON file. Click 'Export .FIT Archive (ZIP)' to batch-export all raw .FIT activity files stored in your browser database into a compressed ZIP folder.",
-        technicalAnswer: "VeloAnalytics separates configuration from binary ride data for maximal reliability: 'Download Config' serializes localStorage settings, Garmin Connect credentials/sync rules, thresholds, and equipment profiles into veloanalytics_config_backup.json. 'Export .FIT Archive (ZIP)' retrieves every original .fit file from IndexedDB, compresses them in memory with fflate, and downloads veloanalytics_fit_archive.zip.",
-        keywords: ["backup", "export", "download", "save", "config", "zip", "fit archive", "json"]
+        beginnerAnswer: "Go to Settings > Maintenance. You have two dedicated export tools: click 'Download Config' to save all your preferences, secret API keys (AI, Garmin, Maps), per-provider Coach Personas and custom presets, and bike profiles as a JSON file. Click 'Export .FIT Archive (ZIP)' to batch-export all raw .FIT activity files stored in your browser database into a compressed ZIP folder.",
+        technicalAnswer: "VeloAnalytics separates configuration from binary ride data for maximal reliability: 'Download Config' serializes localStorage settings, providerPrompts, promptPresets, Garmin Connect credentials/sync rules, thresholds, and equipment profiles into veloanalytics_config_backup.json. 'Export .FIT Archive (ZIP)' retrieves every original .fit file from IndexedDB, compresses them in memory with fflate, and downloads veloanalytics_fit_archive.zip.",
+        keywords: ["backup", "export", "download", "save", "config", "zip", "fit archive", "json", "presets", "prompts"]
       },
       {
         question: "How do I restore a backup from another device?",
@@ -530,13 +542,20 @@ export const FAQSection: React.FC = () => {
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const queryTokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
+  const queryTokens = normalizedQuery
+    ? normalizedQuery
+        .split(/\s+/)
+        .map(t => t.replace(/^[.,?!;:'"()]+|[.,?!;:'"()]+$/g, ''))
+        .map(t => (t === '.fit' ? 'fit' : t))
+        .filter(Boolean)
+    : [];
   const hasActiveSearch = queryTokens.length > 0;
 
-  const scoreFaqItem = (item: FAQItem): number => {
+  const scoreFaqItem = (item: FAQItem, categoryName: string): number => {
     if (!hasActiveSearch) return 0;
 
     const question = item.question.toLowerCase();
+    const categoryLower = categoryName.toLowerCase();
     const keywords = (item.keywords || []).map(k => k.toLowerCase());
     const beginner = item.beginnerAnswer.toLowerCase();
     const technical = item.technicalAnswer.toLowerCase();
@@ -547,24 +566,27 @@ export const FAQSection: React.FC = () => {
       const inQuestion = question.includes(token);
       const exactKeyword = keywords.some(k => k === token);
       const inKeywords = exactKeyword || keywords.some(k => k.includes(token));
+      const inCategory = categoryLower.includes(token);
       const inBeginner = beginner.includes(token);
       const inTechnical = technical.includes(token);
 
-      if (!inQuestion && !inKeywords && !inBeginner && !inTechnical) {
+      if (!inQuestion && !inKeywords && !inCategory && !inBeginner && !inTechnical) {
         return -1;
       }
 
       if (inQuestion) totalScore += 10;
       if (exactKeyword) totalScore += 12;
       else if (inKeywords) totalScore += 6;
+      if (inCategory) totalScore += 4;
       if (inBeginner) totalScore += 2;
       if (inTechnical) totalScore += 1;
     }
 
     if (queryTokens.length > 1) {
-      if (question.includes(normalizedQuery)) totalScore += 15;
-      if (keywords.some(k => k === normalizedQuery)) totalScore += 15;
-      if (beginner.includes(normalizedQuery) || technical.includes(normalizedQuery)) totalScore += 4;
+      const cleanedPhrase = queryTokens.join(' ');
+      if (question.includes(cleanedPhrase)) totalScore += 15;
+      if (keywords.some(k => k === cleanedPhrase)) totalScore += 15;
+      if (beginner.includes(cleanedPhrase) || technical.includes(cleanedPhrase)) totalScore += 4;
     }
 
     return totalScore;
@@ -576,7 +598,7 @@ export const FAQSection: React.FC = () => {
     }
 
     const scoredItems = category.items
-      .map(item => ({ item, score: scoreFaqItem(item) }))
+      .map(item => ({ item, score: scoreFaqItem(item, category.name) }))
       .filter(entry => entry.score >= 0)
       .sort((a, b) => b.score - a.score);
 
@@ -589,18 +611,38 @@ export const FAQSection: React.FC = () => {
     .filter(category => category.items.length > 0)
     .sort((a, b) => (hasActiveSearch ? b.topScore - a.topScore : 0));
 
+  const totalMatches = filteredCategories.reduce((sum, cat) => sum + cat.items.length, 0);
+
   return (
     <div className="space-y-6">
       {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted" />
-        <input 
-          type="text"
-          placeholder="Try 'omlx cors', 'garmin sleep', or 'readiness'..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-app-bg/50 border border-app-border rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-orange-500/50 transition-all"
-        />
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted" />
+          <input 
+            type="text"
+            placeholder="Try 'omlx cors', 'coach presets', 'garmin sleep', or 'readiness'..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-app-bg/50 border border-app-border rounded-2xl py-3 pl-12 pr-10 text-sm focus:outline-none focus:border-orange-500/50 transition-all"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear FAQ search"
+              title="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-app-muted hover:text-app-text hover:bg-app-card transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {hasActiveSearch && totalMatches > 0 && (
+          <p className="text-[10px] font-bold uppercase tracking-widest text-app-muted ml-2">
+            Showing {totalMatches} matching {totalMatches === 1 ? 'topic' : 'topics'} across {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'}
+          </p>
+        )}
       </div>
 
       {!hasActiveSearch && (
@@ -683,8 +725,9 @@ export const FAQSection: React.FC = () => {
         ))}
 
         {filteredCategories.length === 0 && (
-          <div className="py-12 text-center">
+          <div className="py-12 text-center space-y-2">
             <p className="text-sm text-app-muted">No results found for "{searchQuery}"</p>
+            <p className="text-[11px] text-app-muted/70">Try fewer or broader keywords, or clear search to browse categories.</p>
           </div>
         )}
       </div>

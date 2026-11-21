@@ -195,6 +195,13 @@ export type SurfaceType = 'road' | 'gravel' | 'mtb';
 
 export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio' | 'omlx';
 
+export interface SystemPromptPreset {
+  id: string;
+  name: string;
+  description?: string;
+  prompt: string;
+}
+
 export interface AISettings {
   provider: AIProvider;
   geminiApiKey: string;
@@ -213,6 +220,9 @@ export interface AISettings {
   omlxModel: string;
   omlxApiKey?: string;
   systemPrompt: string;
+  providerPrompts?: Partial<Record<AIProvider, string>>;
+  promptPresets?: SystemPromptPreset[];
+  activePresetByProvider?: Partial<Record<AIProvider, string>>;
   wellnessContextDays?: number;
   useExperimentalReadiness?: boolean;
   googleMapsApiKey?: string;

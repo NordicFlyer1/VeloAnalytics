@@ -46,6 +46,17 @@ Native desktop packages and installers are available directly from the repositor
 ## What's New
 
 <details open>
+<summary><strong>v1.8.1</strong> — Per-Provider Editable Coach Prompts, 7d/28d Block Rollups &amp; Multi-Word FAQ Search</summary>
+
+<br>
+
+- **Per-Provider System Prompts & User-Editable Presets:** **Settings > Intelligence > Coach Persona** now stores independent system prompts for every AI provider (`oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`). Local providers default to **Local Analyst (8GB)** while cloud providers default to **Cloud Senior Coach**, with a mobile-friendly capsule preset strip allowing users to edit any preset directly, click **Update Preset**, **Rename**, **Restore**, **Delete**, or create new presets via **Save As** (all synced inside Config JSON backups).
+- **Pre-Computed 7-Day & 28-Day Training Block Rollups:** Added pre-computed `trainingBlock7Days` and `trainingBlock28Days` rollups (rides, kilometers, hours, `BikeScore™`, ascent, work kJ, and pre-calculated 28-day weekly averages `weeklyAvgKm`, `weeklyAvgHours`, and `weeklyAvgBikeScore`) to Velo Coach's telemetry payload (`buildCoachContext`) so smaller local 4B–14B models perform zero arithmetic.
+- **Multi-Word FAQ Search & Help System Upgrade:** Upgraded **Performance Insights > FAQ** with multi-word (`AND`) token matching, category/title/keyword relevance ranking, punctuation-tolerant tokenization, an instant search-clear button, and updated in-app + repository AI help documentation.
+
+</details>
+
+<details>
 <summary><strong>v1.8.0</strong> — oMLX Local Inference Provider &amp; Real-Time Token Streaming</summary>
 
 <br>
