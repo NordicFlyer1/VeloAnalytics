@@ -43,13 +43,13 @@ export const DEFAULT_PROMPT_PRESETS: SystemPromptPreset[] = [
   {
     id: 'local-compact',
     name: 'Local Analyst (8GB)',
-    description: 'Zero-math narrative translator tuned for smaller local models (oMLX, Ollama, LM Studio).',
+    description: 'Zero-math narrative translator tuned for smaller local models (Apple FM system, oMLX, Ollama, LM Studio).',
     prompt: LOCAL_COMPACT_PROMPT
   },
   {
     id: 'cloud-senior-coach',
     name: 'Cloud Senior Coach',
-    description: 'Multi-week analytical synthesis tuned for high-context cloud models (Gemini, OpenAI, Claude, Groq).',
+    description: 'Multi-week analytical synthesis tuned for high-context cloud models (Gemini, OpenAI, Claude, Groq, Apple FM pcc).',
     prompt: CLOUD_SENIOR_COACH_PROMPT
   },
   {
@@ -67,11 +67,12 @@ export const ALL_AI_PROVIDERS: AIProvider[] = [
   'groq',
   'ollama',
   'lm-studio',
-  'omlx'
+  'omlx',
+  'apple-fm'
 ];
 
 export function isLocalProvider(provider: AIProvider): boolean {
-  return provider === 'ollama' || provider === 'lm-studio' || provider === 'omlx';
+  return provider === 'ollama' || provider === 'lm-studio' || provider === 'omlx' || provider === 'apple-fm';
 }
 
 export function getDefaultPresetIdForProvider(provider: AIProvider): string {
@@ -90,7 +91,8 @@ export function buildDefaultProviderPrompts(): Record<AIProvider, string> {
     groq: CLOUD_SENIOR_COACH_PROMPT,
     ollama: LOCAL_COMPACT_PROMPT,
     'lm-studio': LOCAL_COMPACT_PROMPT,
-    omlx: LOCAL_COMPACT_PROMPT
+    omlx: LOCAL_COMPACT_PROMPT,
+    'apple-fm': LOCAL_COMPACT_PROMPT
   };
 }
 
@@ -102,7 +104,8 @@ export function buildDefaultActivePresets(): Record<AIProvider, string> {
     groq: 'cloud-senior-coach',
     ollama: 'local-compact',
     'lm-studio': 'local-compact',
-    omlx: 'local-compact'
+    omlx: 'local-compact',
+    'apple-fm': 'local-compact'
   };
 }
 

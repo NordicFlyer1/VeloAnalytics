@@ -29,13 +29,22 @@ All 7 pre-configured desktop template files are provided in:
 | Target Path on Your Mac | Source in Repository | Purpose |
 | :--- | :--- | :--- |
 | `src-tauri/Cargo.toml` | `native-macos/src-tauri-templates/Cargo.toml` | Crates config (`dirs-next`, `serde`, `tauri-plugin-fs`, `tauri-plugin-http`) |
-| `src-tauri/capabilities/default.json` | `native-macos/src-tauri-templates/default.json` | Filesystem, execution, and Garmin HTTP permissions |
+| `src-tauri/capabilities/default.json` | `native-macos/src-tauri-templates/default.json` | Filesystem, Garmin HTTP, and loopback local AI (`Apple FM` / `oMLX` / `Ollama` / `LM Studio`) permissions |
 | `src-tauri/src/lib.rs` | `native-macos/src-tauri-templates/lib.rs` | Rust command writing `siri_snapshot.json` & HTTP plugin init |
 | `src-tauri/src/main.rs` | `native-macos/src-tauri-templates/main.rs` | Standard entry point delegating to `app_lib::run()` |
 | `src-tauri/tauri.conf.json` | `native-macos/src-tauri-templates/tauri.conf.json` | Window dimensions, bundle identifier, and macOS config |
 | `src-tauri/Info.plist` | `native-macos/src-tauri-templates/Info.plist` | Microphone and speech recognition usage descriptions |
 | `src-tauri/Entitlements.plist` | `native-macos/src-tauri-templates/Entitlements.plist` | Hardware audio input and networking sandbox entitlements |
 | Xcode Project File | `native-macos/VeloAppIntents.swift` | Native Swift App Intents & Siri phrases |
+
+---
+
+## Mac-Only Feature: Apple Foundation Models (`Apple FM` / `fm serve`)
+
+Because `native-macos/src-tauri-templates/default.json` permits loopback HTTP connections (`127.0.0.1` and `localhost`) via `tauri-plugin-http`, the macOS desktop build talks directly to Apple's `fm serve` CLI (`http://127.0.0.1:1976`) without WKWebView cross-site `403` rejections.
+
+- **Requirements:** Apple Silicon Mac, **macOS 27 or later**, Apple Intelligence enabled.
+- **Usage:** Run `fm serve` in Terminal, then select **Apple FM** in **Settings > Intelligence** and choose **`system`** (offline on-device) or **`pcc`** (Apple Private Cloud Compute). See [docs/INTELLIGENCE.md](../docs/INTELLIGENCE.md) for full details.
 
 ---
 

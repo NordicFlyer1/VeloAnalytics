@@ -36,25 +36,68 @@ VeloAnalytics does not charge for AI access. Instead, we use the BYOK model to g
 - **Anthropic (Claude 3.5):** Highly nuanced coaching personas and data interpretation (Default: `claude-3-5-sonnet-20240620`).
 - **Groq:** High-performance inference for Llama and other open models. Optimized for near-instant responses (Default: `llama-3.3-70b-versatile`).
 
-### Local Providers (Offline/Private)
+### Local & Native OS Providers (Offline / Private)
+- **Apple FM (macOS Only — `fm serve`):** Connects Velo Coach directly to Apple's built-in Foundation Models CLI (`http://127.0.0.1:1976`) on Apple Silicon Macs running macOS 27 or later—with zero API keys or separate model weights to download. Supports both **`system`** (`AFM 3 Core`, on-device, offline, ~4K token context, unlimited) and **`pcc`** (`AFM 3 Cloud`, Apple Private Cloud Compute, ~32K token context, online with Apple account quotas).
 - **oMLX (Apple Silicon MLX):** Native Apple Silicon local inference server (`http://127.0.0.1:8000`, default model `mlx-community/gemma-3-4b-it-4bit`) with continuous KV prefix caching, OpenAI-compatible `/v1/chat/completions` streaming, and optional Bearer API key support.
 - **Ollama / LM Studio:** Run local models entirely on your own hardware using OpenAI-compatible endpoints (`http://127.0.0.1:11434` / `gemma3:4b` for Ollama, `http://127.0.0.1:1234` / `phi-4-mini-instruct` for LM Studio).
-- **Privacy:** Data never leaves your machine. Native Tauri desktop builds connect directly over loopback; HTTPS web deployments require CORS enabled on your local server.
-- **Cost:** Forever free.
+- **Native Tauri Loopback Transport:** Inside the Tauri desktop app, local AI calls (`Apple FM`, `oMLX`, `Ollama`, `LM Studio`) execute through Rust (`@tauri-apps/plugin-http`) rather than WebView `fetch()`, eliminating browser `Origin` and `Sec-Fetch-Site` headers so strict loopback servers (including `fm serve`) never return `403 Cross-site requests are not allowed`.
+- **Cost:** Forever free for local models (`Apple FM system`, `oMLX`, `Ollama`, `LM Studio`); `Apple FM pcc` uses your existing Apple Intelligence / Private Cloud Compute allocation.
+
+---
+
+### Apple Foundation Models (`Apple FM` — macOS Only)
+
+VeloAnalytics includes first-class support for Apple's Foundation Models CLI (`/usr/bin/fm`) directly inside **Settings > Intelligence > AI Provider > Apple FM**.
+
+#### System Requirements
+- **Operating System:** macOS 27 or later.
+- **Hardware:** Apple Silicon Mac (`M1` or newer) with **Apple Intelligence** enabled in macOS System Settings.
+- **Recommended Runtime:** **VeloAnalytics macOS Desktop (Tauri)** app (recommended because native Rust HTTP connects directly to `http://127.0.0.1:1976` without triggering `fm serve`'s browser cross-site block).
+
+#### Features & Benefits
+- **Zero Setup & Zero API Keys:** Uses the Apple Intelligence foundation models already built into macOS (`AFM 3 Core` / `AFM 3 Cloud`) without downloading multi-gigabyte GGUF/MLX weights or managing vendor billing.
+- **Two Selectable Targets in Settings:**
+  - **`system` (On-Device / Offline):** Runs 100% locally on Apple Silicon unified memory with unlimited usage, zero internet requirement, and a strict 4,096-token transcript limit. Velo Coach automatically enables **Compact Context Mode** when `system` is selected (minified JSON, 3-day wellness trend slice, 5 recent rides while preserving full pre-computed 7-day and 28-day block rollups, and a sliding 4-message conversation window) so you do not have to lower your Lookback setting manually. Best paired with the **Local Analyst (8GB)** prompt preset.
+  - **`pcc` (Private Cloud Compute):** Routes heavier coaching synthesis to Apple's encrypted Private Cloud Compute servers (~32K token context with full 28-day wellness trends and 40-ride history) without sending data to third-party AI vendors. Subject to active internet connectivity and Apple's daily usage limits. Best paired with the **Cloud Senior Coach** prompt preset.
+- **Full Velo Coach Parity:** Supports real-time token streaming, **Stop Generating** cancellation, **Voice Input / Auto-Speak**, and pre-computed `trainingBlock7Days` / `trainingBlock28Days` rollups.
+
+#### Step-by-Step Setup (`fm serve`)
+1. Open **Terminal.app** on your Mac and verify which Apple Foundation Models are active on your system:
+   ```bash
+   fm models
+   ```
+   Confirm `system (AFM 3 Core)` (and optionally `pcc (AFM 3 Cloud)`) shows a checkmark.
+2. Start Apple's local OpenAI-compatible server:
+   ```bash
+   fm serve
+   ```
+   This binds to `http://127.0.0.1:1976` by default. Keep this Terminal window running while chatting with Velo Coach.
+3. Open the **VeloAnalytics macOS Desktop** app and go to **Settings > Intelligence > AI Provider**.
+4. Select **Apple FM**.
+5. Confirm **Local Server URL** is `http://127.0.0.1:1976` and choose **`system (On-Device)`** or **`pcc (Apple Cloud)`** under **Apple FM Target** (or type a custom model ID under **Local Model ID**).
+6. Match your **Coach Persona** preset to your chosen target (`Local Analyst (8GB)` for `system`, or `Cloud Senior Coach` for `pcc`).
+
+> **Note:** Apple's `fm serve` intentionally rejects cross-site browser requests (`HTTP 403`) because it runs without authentication on loopback. The VeloAnalytics **Tauri macOS Desktop** app bypasses this cleanly via Rust `@tauri-apps/plugin-http`. If you run VeloAnalytics in a standard web browser (Safari/Chrome) against `fm serve`, place a local reverse proxy on loopback (e.g., `127.0.0.1:1977` -> `127.0.0.1:1976`) that answers `OPTIONS` preflights and strips `Origin`, `Referer`, and `Sec-Fetch-*` headers.
+
+#### Apple FM vs. Siri Integration in VeloAnalytics
+- **Siri (`Settings > Intelligence > Apple Intelligence & Siri`):** Reads a compact local snapshot (`siri_snapshot.json`) via Swift `VeloAppIntents` to give <50 ms spoken or Spotlight readouts for fixed phrases (such as *"What is my Velo Readiness?"* or *"What was my last ride?"*). It does not perform open-ended LLM reasoning.
+- **Apple FM (`AI Provider: Apple FM`):** Connects Velo Coach's interactive chat drawer to Apple's `system` or `pcc` LLMs over your full physiological telemetry JSON, enabling open-ended coaching analysis and follow-up Q&A.
+
+---
 
 ### Per-Provider Coach Personas & User-Editable Presets
-- **Independent Prompts per Provider:** System prompts in **Settings > Intelligence > Coach Persona** are stored separately for each of the 7 providers (`providerPrompts`). Switching between an 8 GB local model and a cloud API automatically switches to that provider's tailored prompt.
+- **Independent Prompts per Provider:** System prompts in **Settings > Intelligence > Coach Persona** are stored separately for each of the 8 providers (`providerPrompts`). Switching between a compact on-device model (`Apple FM system`, `oMLX`, `Ollama`, `LM Studio`) and a cloud API (`Gemini`, `OpenAI`, `Anthropic`, `Groq`) automatically switches to that provider's tailored prompt.
 - **Tailored Starter Defaults:**
-  - **Local Analyst (8GB)** (default for `oMLX`, `Ollama`, `LM Studio`): Strict zero-math narrative translator anchored on pre-computed JSON fields (`trainingBlock7Days`, `trainingBlock28Days`, `athleteCurrentState.readiness`, `athleteCurrentState.performance`, and `activityContext`) to eliminate arithmetic drift on 4B–14B local models.
-  - **Cloud Senior Coach** (default for `Google Gemini`, `OpenAI`, `Anthropic`, `Groq`): Multi-week analytical synthesis across acute/chronic trajectories, block density, session execution, and 24–48h guidance.
+  - **Local Analyst (8GB)** (default for `Apple FM`, `oMLX`, `Ollama`, `LM Studio`): Strict zero-math narrative translator anchored on pre-computed JSON fields (`trainingBlock7Days`, `trainingBlock28Days`, `athleteCurrentState.readiness`, `athleteCurrentState.performance`, and `activityContext`) to eliminate arithmetic drift on compact on-device models.
+  - **Cloud Senior Coach** (default for `Google Gemini`, `OpenAI`, `Anthropic`, `Groq`, and recommended when switching `Apple FM` to `pcc`): Multi-week analytical synthesis across acute/chronic trajectories, block density, session execution, and 24–48h guidance.
   - **Classic Clinical:** Concise all-purpose VeloAnalytics coaching persona.
 - **Fully User-Editable:** Select any preset from the scrollable capsule strip, edit text directly in place, and click **Update Preset** to persist changes back to the preset—or **Rename**, **Save As** to create new custom presets, **Restore** built-in defaults, **Delete** custom presets, or **Reset Default** for the active provider. All per-provider prompts and custom presets export and import atomically in Config JSON backups.
 
 ### Real-Time Token Streaming & KV Cache Alignment
-- **Universal Token Streaming:** Velo Coach streams responses live token-by-token across all 7 providers (`oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`) via `streamCoachResponse()`.
+- **Universal Token Streaming:** Velo Coach streams responses live token-by-token across all 8 providers (`Apple FM`, `oMLX`, `Ollama`, `LM Studio`, `Google Gemini`, `OpenAI`, `Anthropic`, and `Groq`) via `streamCoachResponse()`.
   - **Gemini:** Uses `ai.models.generateContentStream()` from `@google/genai`.
   - **Anthropic:** Parses Server-Sent Events (`content_block_delta` / `text_delta`).
-  - **OpenAI, Groq, oMLX, Ollama & LM Studio:** Stream OpenAI-compatible SSE (`stream: true`) with automatic JSON fallback if a local server returns a single payload.
+  - **OpenAI, Groq, Apple FM, oMLX, Ollama & LM Studio:** Stream OpenAI-compatible SSE (`stream: true`) via native Rust HTTP in Tauri desktop or `fetch()` in browsers, with automatic JSON fallback if a local server returns a single payload.
 - **Interrupt / Stop Support:** Click the red Stop button in the Velo Coach input bar at any time to abort an active stream cleanly via `AbortController` while preserving partial output.
 - **KV Prefix Cache Placement:** Structured athlete JSON context is placed in the `system` instruction rather than repeated inside the final user message, allowing local engines like **oMLX** to reuse KV prefix caches across multi-turn coaching follow-ups.
 
@@ -83,7 +126,7 @@ When you send a message, the app bundle provides the AI with a dense, **structur
 ### Security Model:
 - **Local Processing:** All data parsing happens in your browser/app. No VeloAnalytics server ever sees your files.
 - **Direct-to-Vendor:** Your API keys are used to talk directly to Google/OpenAI/Anthropic/Groq from your browser.
-- **Local-First Option:** If using a Local LLM provider (`oMLX`, `Ollama`, or `LM Studio`), the data never leaves your computer.
+- **Local-First Option:** If using a Local LLM provider (`Apple FM system`, `oMLX`, `Ollama`, or `LM Studio`), telemetry never leaves your computer (`Apple FM pcc` uses Apple's encrypted Private Cloud Compute).
 - **GitHub Safety:** The code is architected to never store hardcoded keys. User-provided keys stay in `localStorage`. Environment variables (like `.env`) are excluded from version control via `.gitignore`, ensuring no secrets are accidentally pushed to GitHub.
 
 ---
@@ -162,7 +205,7 @@ VeloAnalytics features bidirectional voice interaction directly inside the Velo 
 
 ### Architecture & Privacy
 - **Web Speech API:** Utilizes browser-native `SpeechRecognition` (for voice-to-text input) and `SpeechSynthesis` (for text-to-speech verbal playback).
-- **Universal Provider Parity:** The speech layer operates independently of the LLM inference engine. Spoken voice input and audio readout work identically across all cloud AI providers (Google Gemini, OpenAI, Anthropic, Groq) and local offline instances (oMLX, Ollama, LM Studio).
+- **Universal Provider Parity:** The speech layer operates independently of the LLM inference engine. Spoken voice input and audio readout work identically across all cloud AI providers (Google Gemini, OpenAI, Anthropic, Groq) and local offline instances (Apple FM, oMLX, Ollama, LM Studio).
 - **Zero Extra Cost & Zero Cloud Latency:** Operates entirely on the client device without requiring external speech API subscriptions (such as Whisper or ElevenLabs). Raw voice audio never leaves the browser.
 - **Cycling Science Pronunciation Engine:** Automatic text sanitization converts cycling metric notations (`xPower: 285W`, `RI: 0.95`, `BikeScore: 120`, `Pw:HR: 3.2%`, `W'bal: 14.5 kJ`) into natural, intelligible spoken sentences.
 
@@ -178,14 +221,17 @@ VeloAnalytics features bidirectional voice interaction directly inside the Velo 
 **Q: How do I use voice input and verbal feedback with Velo Coach?**  
 A: Open Velo Coach and click the microphone icon in the input field to speak your question. Click the speaker icon on any response to hear it read aloud, or turn on the "Voice: Auto" toggle in the header for hands-free auto-speak.
 
-**Q: Does voice interaction work when using local models like oMLX, Ollama, or LM Studio?**  
+**Q: Does voice interaction work when using local models like Apple FM, oMLX, Ollama, or LM Studio?**  
 A: Yes! Because voice synthesis and recognition run natively via the Web Speech API, voice works with 100% parity across all models, online or offline. When Auto-Speak is enabled, Velo Coach streams the text response live and starts reading aloud cleanly once generation completes.
 
 **Q: Does Velo Coach stream responses token-by-token?**  
-A: Yes. All 7 AI providers (oMLX, Ollama, LM Studio, Gemini, OpenAI, Anthropic, and Groq) stream tokens in real time into the chat drawer, with a red Stop button to cancel long generations at any point.
+A: Yes. All 8 AI providers (Apple FM, oMLX, Ollama, LM Studio, Gemini, OpenAI, Anthropic, and Groq) stream tokens in real time into the chat drawer, with a red Stop button to cancel long generations at any point.
+
+**Q: How do I set up Apple FM (macOS Foundation Models)?**  
+A: On an Apple Silicon Mac running macOS 27+ with Apple Intelligence enabled, run `fm serve` in Terminal (`http://127.0.0.1:1976`), then select **Apple FM** in **Settings > Intelligence** inside the VeloAnalytics macOS Desktop app. Choose **`system`** (`AFM 3 Core`, offline, 4,096-token limit with automatic Compact Context Mode) paired with **Local Analyst (8GB)**, or **`pcc`** (`AFM 3 Cloud`, Apple Private Cloud Compute, ~32K full-context window) paired with **Cloud Senior Coach**.
 
 **Q: How do I configure oMLX on Apple Silicon?**  
-A: Start your oMLX server locally (default `http://127.0.0.1:8000`), select **oMLX** under **Settings > Intelligence > AI Provider**, enter your loaded MLX model ID (and optional API key if authentication is enabled in oMLX). For deployed HTTPS web browsers, enable CORS in oMLX; the native macOS Tauri desktop app connects directly over loopback.
+A: Start your oMLX server locally (default `http://127.0.0.1:8000`), select **oMLX** under **Settings > Intelligence > AI Provider**, enter your loaded MLX model ID (and optional API key if authentication is enabled in oMLX). Native macOS Tauri desktop builds connect directly over Rust loopback; deployed HTTPS web browsers require CORS enabled in oMLX.
 
 **Q: How do I use Siri, Type to Siri, and Spotlight with VeloAnalytics?**  
 A: Use your voice or press `Command + Spacebar` (`Cmd + Space`) to type to Siri or search in Spotlight: "What is my Velo Readiness?", "What was my last ride?", or "Ask Velo Coach".
@@ -197,7 +243,7 @@ A: Yes. Apple unifies typing and voice Siri under the same AppIntents framework.
 A: Paste your Google Maps and OpenWeatherMap keys into the Intelligence tab in Settings. If empty, the app falls back to build-time environment variables in your `.env` or Vercel dashboard.
 
 **Q: Is my data used to train models?**  
-A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (oMLX/Ollama/LM Studio), training is impossible as data remains offline.
+A: If using Cloud Providers (OpenAI/Google), they may use data according to their API Terms of Service (usually API data is *not* used for training). If using Local Providers (`Apple FM system`, `oMLX`, `Ollama`, `LM Studio`), training is impossible as data remains offline.
 
 **Q: Why does the coach sometimes get math wrong?**  
 A: Smaller local LLMs can struggle with arithmetic. VeloAnalytics mitigates this by **pre-calculating** every metric (`xPower`, `BikeScore`, `EF`, `Velo Readiness`, and rolling `trainingBlock7Days` / `trainingBlock28Days` volume rollups including weekly averages) and passing them as a **structured JSON schema**. Paired with the **Local Analyst (8GB)** preset, models act as zero-math narrative translators rather than guessing from raw streams.
@@ -206,4 +252,4 @@ A: Smaller local LLMs can struggle with arithmetic. VeloAnalytics mitigates this
 A: It is an opt-in algorithm that calculates physiological readiness using a multi-factor weighting (Sleep, HRV, Recovery, Load) and penalty logic. See the Methodology document for the full formula.
 
 **Q: How do I customize or switch Coach Personas between local and cloud AI models?**  
-A: Open **Settings > Intelligence > Coach Persona**. System prompts are stored **independently per AI provider** (`oMLX`, `Ollama`, `LM Studio`, `Gemini`, `OpenAI`, `Anthropic`, `Groq`), defaulting to **Local Analyst (8GB)** for local servers and **Cloud Senior Coach** for cloud APIs. Every preset is fully user-editable: tweak text directly, click **Update Preset** to save edits back to a preset, **Rename**, or **Save As** to create custom presets for specific models—all included in your Config JSON backup.
+A: Open **Settings > Intelligence > Coach Persona**. System prompts are stored **independently per AI provider** (`Apple FM`, `oMLX`, `Ollama`, `LM Studio`, `Gemini`, `OpenAI`, `Anthropic`, `Groq`), defaulting to **Local Analyst (8GB)** for local servers and **Cloud Senior Coach** for cloud APIs. Every preset is fully user-editable: tweak text directly, click **Update Preset** to save edits back to a preset, **Rename**, or **Save As** to create custom presets for specific models—all included in your Config JSON backup.

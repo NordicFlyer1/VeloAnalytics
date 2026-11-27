@@ -193,7 +193,7 @@ export interface FileStatus {
 export type RidingPosition = 'tops' | 'hoods' | 'drops';
 export type SurfaceType = 'road' | 'gravel' | 'mtb';
 
-export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio' | 'omlx';
+export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'lm-studio' | 'omlx' | 'apple-fm';
 
 export interface SystemPromptPreset {
   id: string;
@@ -219,6 +219,8 @@ export interface AISettings {
   omlxUrl: string;
   omlxModel: string;
   omlxApiKey?: string;
+  appleFmUrl?: string;
+  appleFmModel?: string;
   systemPrompt: string;
   providerPrompts?: Partial<Record<AIProvider, string>>;
   promptPresets?: SystemPromptPreset[];

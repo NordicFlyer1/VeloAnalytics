@@ -262,13 +262,14 @@ export const IntelligenceDrawer: React.FC<IntelligenceDrawerProps> = ({
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     <span className="text-[10px] text-app-muted uppercase font-bold tracking-widest">
-                      {aiSettings.provider === 'omlx' ? 'oMLX' : aiSettings.provider} • {
+                      {aiSettings.provider === 'omlx' ? 'oMLX' : aiSettings.provider === 'apple-fm' ? 'Apple FM' : aiSettings.provider} • {
                         aiSettings.provider === 'gemini' ? aiSettings.geminiModel : 
                         aiSettings.provider === 'openai' ? aiSettings.openaiModel :
                         aiSettings.provider === 'anthropic' ? aiSettings.anthropicModel :
                         aiSettings.provider === 'groq' ? aiSettings.groqModel :
                         aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
                         aiSettings.provider === 'omlx' ? aiSettings.omlxModel :
+                        aiSettings.provider === 'apple-fm' ? (aiSettings.appleFmModel || 'system') :
                         aiSettings.lmStudioModel
                       }
                     </span>

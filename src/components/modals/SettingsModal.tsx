@@ -225,6 +225,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const providerDisplayName =
     activeProvider === 'omlx'
       ? 'oMLX'
+      : activeProvider === 'apple-fm'
+      ? 'Apple FM'
       : activeProvider === 'lm-studio'
       ? 'LM Studio'
       : activeProvider === 'openai'
@@ -892,7 +894,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="space-y-4">
                     <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">AI Provider</label>
                     <div className="flex bg-app-bg/50 p-1 rounded-full border border-app-border max-w-full overflow-x-auto no-scrollbar gap-1">
-                      {(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'lm-studio', 'omlx'] as const).map(p => (
+                      {(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'lm-studio', 'omlx', 'apple-fm'] as const).map(p => (
                         <button
                            key={p}
                            onClick={() => updateAiSettings({ provider: p })}
@@ -908,7 +910,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                            {p === 'ollama' && <Cpu className="w-3.5 h-3.5" />}
                            {p === 'lm-studio' && <Brain className="w-3.5 h-3.5" />}
                            {p === 'omlx' && <Cpu className="w-3.5 h-3.5" />}
-                           <span>{p === 'omlx' ? 'oMLX' : p.replace('-', ' ')}</span>
+                           {p === 'apple-fm' && <Sparkles className="w-3.5 h-3.5" />}
+                           <span>{p === 'omlx' ? 'oMLX' : p === 'apple-fm' ? 'Apple FM' : p.replace('-', ' ')}</span>
                          </button>
                       ))}
                     </div>
@@ -978,8 +981,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
 
                   {/* Local Server Settings */}
-                  {['ollama', 'lm-studio', 'omlx'].includes(aiSettings.provider) && (
+                  {['ollama', 'lm-studio', 'omlx', 'apple-fm'].includes(aiSettings.provider) && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {aiSettings.provider === 'apple-fm' && (
+                        <div className="bg-app-bg/50 border border-app-border rounded-2xl p-4 sm:p-5 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-orange-500">
+                              Mac-Only Feature • macOS 27+ Apple Silicon
+                            </span>
+                            <span className="text-[10px] font-mono text-app-muted">
+                              fm serve → 127.0.0.1:1976
+                            </span>
+                          </div>
+                          <p className="text-xs text-app-text/90 leading-relaxed">
+                            Connects Velo Coach to Apple&apos;s built-in Foundation Models CLI (<code className="font-mono text-orange-400">fm serve</code>). Choose <span className="font-bold">system</span> for 100% offline on-device coaching (~4K context with automatic Compact Context Mode; pair with <span className="font-semibold">Local Analyst (8GB)</span>) or <span className="font-bold">pcc</span> for Apple Private Cloud Compute (~32K full-context window; pair with <span className="font-semibold">Cloud Senior Coach</span>).
+                          </p>
+                          <div className="text-[10px] text-app-muted leading-relaxed space-y-1">
+                            <p>
+                              <strong className="text-app-text">Quick Start:</strong> Open Terminal on your Mac, run <code className="font-mono text-app-text">fm serve</code> (check models with <code className="font-mono text-app-text">fm models</code>), then use the VeloAnalytics macOS Desktop app—which routes loopback calls through Rust without browser cross-site blocks.
+                            </p>
+                            <p>
+                              <strong className="text-app-text">Note:</strong> When <code className="font-mono text-app-text">system</code> is selected, Velo Coach automatically compacts JSON telemetry (3-day wellness slice, 5 recent rides, full 7d/28d totals, and a 4-message sliding window) to fit inside 4,096 tokens. Siri/Shortcuts below delivers fast fixed lookups from <code className="font-mono text-app-text">siri_snapshot.json</code>.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <div className="flex items-center justify-between ml-1">
                           <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold">Local Server URL</label>
@@ -995,6 +1022,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   omlxUrl: 'http://127.0.0.1:8000',
                                   omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
                                   omlxApiKey: ''
+                                });
+                              } else if (aiSettings.provider === 'apple-fm') {
+                                updateAiSettings({
+                                  appleFmUrl: 'http://127.0.0.1:1976',
+                                  appleFmModel: 'system'
                                 });
                               } else {
                                 updateAiSettings({ 
@@ -1015,16 +1047,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             placeholder={
                               aiSettings.provider === 'ollama' ? "http://127.0.0.1:11434" :
                               aiSettings.provider === 'omlx' ? "http://127.0.0.1:8000" :
+                              aiSettings.provider === 'apple-fm' ? "http://127.0.0.1:1976" :
                               "http://127.0.0.1:1234"
                             }
                             value={
                               aiSettings.provider === 'ollama' ? aiSettings.ollamaUrl :
                               aiSettings.provider === 'omlx' ? (aiSettings.omlxUrl ?? 'http://127.0.0.1:8000') :
+                              aiSettings.provider === 'apple-fm' ? (aiSettings.appleFmUrl ?? 'http://127.0.0.1:1976') :
                               aiSettings.lmStudioUrl
                             } 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaUrl: e.target.value });
                               else if (aiSettings.provider === 'omlx') updateAiSettings({ omlxUrl: e.target.value });
+                              else if (aiSettings.provider === 'apple-fm') updateAiSettings({ appleFmUrl: e.target.value });
                               else updateAiSettings({ lmStudioUrl: e.target.value });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"
@@ -1033,9 +1068,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <p className="text-[10px] text-app-muted font-medium ml-1">
                           {aiSettings.provider === 'omlx'
                             ? 'Apple Silicon MLX local inference server with continuous KV prefix caching and live token streaming.'
+                            : aiSettings.provider === 'apple-fm'
+                            ? 'Default port 1976 for macOS fm serve. Native Tauri desktop builds bypass browser cross-site blocks automatically; web browsers require a local CORS-stripping reverse proxy.'
                             : 'Private connection to your local machine hardware with live token streaming.'}
                         </p>
                       </div>
+
+                      {aiSettings.provider === 'apple-fm' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-app-muted uppercase tracking-widest font-bold ml-1">
+                            Apple FM Target
+                          </label>
+                          <div className="inline-flex bg-app-bg/50 p-1 rounded-full border border-app-border gap-1">
+                            {([
+                              { id: 'system', label: 'system (On-Device)' },
+                              { id: 'pcc', label: 'pcc (Apple Cloud)' }
+                            ] as const).map((target) => {
+                              const currentModel = (aiSettings.appleFmModel ?? 'system').trim();
+                              const isActive = currentModel === target.id;
+                              return (
+                                <button
+                                  key={target.id}
+                                  type="button"
+                                  onClick={() => updateAiSettings({ appleFmModel: target.id })}
+                                  className={cn(
+                                    "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all whitespace-nowrap",
+                                    isActive
+                                      ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+                                      : "text-app-muted hover:text-app-text"
+                                  )}
+                                >
+                                  {target.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between ml-1">
@@ -1052,6 +1121,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   omlxUrl: 'http://127.0.0.1:8000',
                                   omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
                                   omlxApiKey: ''
+                                });
+                              } else if (aiSettings.provider === 'apple-fm') {
+                                updateAiSettings({
+                                  appleFmUrl: 'http://127.0.0.1:1976',
+                                  appleFmModel: 'system'
                                 });
                               } else {
                                 updateAiSettings({ 
@@ -1072,16 +1146,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             placeholder={
                               aiSettings.provider === 'ollama' ? "gemma3:4b" :
                               aiSettings.provider === 'omlx' ? "mlx-community/gemma-3-4b-it-4bit" :
+                              aiSettings.provider === 'apple-fm' ? "system" :
                               "phi-4-mini-instruct"
                             }
                             value={
                               aiSettings.provider === 'ollama' ? aiSettings.ollamaModel :
                               aiSettings.provider === 'omlx' ? (aiSettings.omlxModel ?? 'mlx-community/gemma-3-4b-it-4bit') :
+                              aiSettings.provider === 'apple-fm' ? (aiSettings.appleFmModel ?? 'system') :
                               aiSettings.lmStudioModel
                             } 
                             onChange={(e) => {
                               if (aiSettings.provider === 'ollama') updateAiSettings({ ollamaModel: e.target.value });
                               else if (aiSettings.provider === 'omlx') updateAiSettings({ omlxModel: e.target.value });
+                              else if (aiSettings.provider === 'apple-fm') updateAiSettings({ appleFmModel: e.target.value });
                               else updateAiSettings({ lmStudioModel: e.target.value });
                             }}
                             className="bg-transparent w-full text-sm font-bold focus:outline-none"

@@ -38,6 +38,8 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   omlxUrl: 'http://127.0.0.1:8000',
   omlxModel: 'mlx-community/gemma-3-4b-it-4bit',
   omlxApiKey: '',
+  appleFmUrl: 'http://127.0.0.1:1976',
+  appleFmModel: 'system',
   systemPrompt: CLOUD_SENIOR_COACH_PROMPT,
   providerPrompts: buildDefaultProviderPrompts(),
   promptPresets: DEFAULT_PROMPT_PRESETS,
@@ -261,7 +263,7 @@ export function useSharedSettings() {
    */
   const buildConfigPayload = () => ({
     application: 'VeloAnalytics',
-    version: '1.8.1',
+    version: '1.9.0',
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     cp,

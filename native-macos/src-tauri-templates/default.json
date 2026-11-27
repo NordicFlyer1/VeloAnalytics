@@ -26,7 +26,15 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://personal.connectapi.garmin.com/**" }
+        { "url": "https://personal.connectapi.garmin.com/**" },
+        { "url": "http://127.0.0.1:*" },
+        { "url": "http://127.0.0.1:*/*" },
+        { "url": "http://127.0.0.1:*/**" },
+        { "url": "http://127.0.0.1/**" },
+        { "url": "http://localhost:*" },
+        { "url": "http://localhost:*/*" },
+        { "url": "http://localhost:*/**" },
+        { "url": "http://localhost/**" }
       ]
     }
   ]

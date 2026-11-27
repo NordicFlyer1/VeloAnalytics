@@ -46,6 +46,17 @@ Native desktop packages and installers are available directly from the repositor
 ## What's New
 
 <details open>
+<summary><strong>v1.9.0</strong> — Apple Foundation Models (Mac-Only) &amp; Native Tauri Loopback Transport</summary>
+
+<br>
+
+- **Apple FM AI Provider (macOS 27+ Apple Silicon):** Added **Apple FM** to **Settings > Intelligence > AI Provider** (`http://127.0.0.1:1976`) to connect Velo Coach directly to macOS's built-in `fm serve` CLI with zero API keys or extra model downloads. Includes a quick **Apple FM Target** selector for **`system`** (`AFM 3 Core`, 100% offline, ~4K context) and **`pcc`** (`AFM 3 Cloud` Private Cloud Compute, ~32K context), plus Mac-only setup guidance and prompt preset pairing (`Local Analyst (8GB)` vs. `Cloud Senior Coach`).
+- **Native Tauri Rust Loopback Transport:** Updated `callLocalAIStream` to execute local AI calls (`Apple FM`, `oMLX`, `Ollama`, `LM Studio`) through `@tauri-apps/plugin-http` when running inside Tauri Desktop, and expanded `native-macos/src-tauri-templates/default.json` to permit loopback addresses (`127.0.0.1`, `localhost`, `[::1]`). Because Rust sends no browser `Origin` or `Sec-Fetch-*` headers, `fm serve` and local servers no longer reject Tauri requests with HTTP `403 Cross-site requests are not allowed`.
+- **Documentation & In-App Help Sync:** Added complete Mac-only Apple FM setup instructions, system requirements, `system` vs. `pcc` comparison, and Apple FM vs. Siri distinctions across **Performance Insights > FAQ**, `docs/INTELLIGENCE.md`, `docs/MACOS_INSTALL.md`, and `native-macos/STEP-BY-STEP-GUIDE.md`.
+
+</details>
+
+<details>
 <summary><strong>v1.8.1</strong> — Per-Provider Editable Coach Prompts, 7d/28d Block Rollups &amp; Multi-Word FAQ Search</summary>
 
 <br>

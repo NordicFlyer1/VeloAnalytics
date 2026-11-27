@@ -61,3 +61,17 @@ VeloAnalytics is an independent, source-available, non-commercial cycling analyt
 ## 4. Preserving Data During Future Updates
 
 When updating to a newer version of VeloAnalytics, drag the new release `.app` into `/Applications` and select **Replace**. Your saved rides, equipment profiles, physiological thresholds, and local cache are preserved automatically.
+
+---
+
+## 5. Mac-Only Feature: Apple Foundation Models (`Apple FM`)
+
+On Apple Silicon Macs running **macOS 27 or later** with **Apple Intelligence** enabled, the native VeloAnalytics desktop app can connect Velo Coach directly to Apple's built-in `fm serve` endpoint (`http://127.0.0.1:1976`):
+
+- Open **Terminal.app** and start Apple's local server with `fm serve`.
+- In VeloAnalytics, open **Settings > Intelligence > AI Provider** and select **Apple FM**.
+- Choose **`system`** (offline on-device `AFM 3 Core`) or **`pcc`** (`AFM 3 Cloud` via Apple Private Cloud Compute).
+- Because the macOS desktop app routes local AI calls through Rust (`@tauri-apps/plugin-http`), it communicates directly over loopback without triggering `fm serve`'s browser cross-site restrictions.
+
+For complete setup instructions, prompt preset pairings, and troubleshooting, see [Intelligence & Siri Setup Guide](INTELLIGENCE.md).
+
